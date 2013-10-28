@@ -1,0 +1,15 @@
+* {
+	font-family: Arial;
+	background-color: #4f94cd;
+}
+
+h1{
+	color: white;
+	border: 2px solid white;
+}
+
+img{
+	width: 200px;
+	height: 200px;
+}
+
