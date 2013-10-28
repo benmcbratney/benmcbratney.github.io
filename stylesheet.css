@@ -1,15 +1,42 @@
 * {
-	font-family: Arial;
-	background-color: #4f94cd;
+	font-family: Georgia;
+	color: black;
 }
 
-h1{
-	color: white;
-	border: 2px solid white;
-}
 
 img{
+	display: block;
+	margin-right: auto;
+	margin-left: auto;
 	width: 200px;
-	height: 200px;
+	height: 300px;
+	padding-top: 30px;
+}
+
+.menu {
+	text-align: center;
+	color: white;
+	font-style: normal;
+	padding-bottom: 30px;
+}
+
+a {
+	text-decoration: none;
+
+}
+
+#toptitle {
+	border-bottom: 2px solid black;
+}
+
+ul {
+	list-style-type:none;
+	margin:0;
+	padding:0;
+}
+
+#contact{
+	text-align: center;
+	padding-top: 30px;
 }
 
