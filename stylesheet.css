@@ -1,33 +1,47 @@
 * {
-	font-family: Georgia;
-	color: black;
+	font-family: Impact;
+	color: white;
+}
+
+html {
+	background-image: url('assets/Olympic_swimming.jpg');
+	background-size: 100%;
 }
 
 
-img{
+#profilepic{
 	display: block;
-	margin-right: auto;
 	margin-left: auto;
+	margin-right: auto;
 	width: 200px;
 	height: 300px;
-	padding-top: 30px;
+	clear: both;
+	padding: 20px;
+	border-radius: 200px;
 }
 
-.menu {
-	text-align: center;
-	color: white;
+#top-nav {
 	font-style: normal;
-	padding-bottom: 30px;
+	padding-bottom: -10px;
+	margin: auto;
+	width: 300px;
+}
+
+#top-nav ul li {
+	display: inline;
+	padding: 10px;
 }
 
 a {
 	text-decoration: none;
 	color: #B8B8B8;
-
 }
 
-#toptitle {
-	border-bottom: 2px solid black;
+#top-title {
+	border-bottom: 2px solid white;
+	position: relative;
+	margin: 5px;
+	padding-bottom: 60px;
 }
 
 ul {
@@ -36,6 +50,21 @@ ul {
 	padding:0;
 }
 
+section {
+	width: 60%;
+	float: left;
+}
+
+aside {
+	width: 35%;
+	float: left;
+}
+
+footer{
+	clear: both;
+}
+
+
 #contact{
 	text-align: center;
 	padding-top: 30px;
@@ -43,9 +72,11 @@ ul {
 
 #sidebar{
 	text-align: center;
+	clear: both;
 }
 
 #site-footer{
 	text-align: center;
+	clear: both;
 }
 
