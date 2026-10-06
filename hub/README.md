@@ -86,6 +86,12 @@ be in the Google Home app (not an old Nest account), on a personal Gmail account
    `NEST_REFRESH_TOKEN` and deploy.
 6. Reopen Home Hub. The thermostat card appears on its own.
 
+## Smart home (later)
+
+Kasa, WiZ, iRobot and friends can only be reached from inside the house, so they go
+through Home Assistant. See **[HOME-ASSISTANT.md](HOME-ASSISTANT.md)** for running it
+free on a Mac mini.
+
 ## Personal greetings (optional)
 
 The greeting under the date changes every 15 minutes. Add a `FAMILY` **Secret** to
