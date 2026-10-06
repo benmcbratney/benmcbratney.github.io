@@ -508,8 +508,8 @@
       var info = el("div", "t-info");
       info.appendChild(el("div", "t-name", t.name));
       var status = !t.online ? "Offline"
-        : t.hvac === "HEATING" ? "Heating"
-        : t.hvac === "COOLING" ? "Cooling"
+        : t.hvac === "HEATING" ? "🔥 Heating"
+        : t.hvac === "COOLING" ? "❄️ Cooling"
         : t.mode === "OFF" ? "Off"
         : t.eco ? "Eco"
         : "Holding";
