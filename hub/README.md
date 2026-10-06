@@ -61,7 +61,7 @@ overnight so the battery cycles a bit.
 ## How it behaves
 
 - Refreshes chores/groceries every minute, calendar every 5 min, weather every 15 min.
-- Night mode (default 10pm–6am): just a big clock and your next event over the dimmed night skyline. Tap to wake for 2 min.
+- Night mode (default 11pm–6am): just a big clock and your next event over the dimmed night skyline. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check and pick up code changes.
 - Weather comes from Open-Meteo (free, no key).
 
