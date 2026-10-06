@@ -101,8 +101,9 @@
 
   var problems = {};
   var lastSync = null;
+  // Every loader reports here; a clean report also means fresh data, so bump "Updated".
   function setProblem(key, msg) {
-    if (msg) problems[key] = msg; else delete problems[key];
+    if (msg) problems[key] = msg; else { delete problems[key]; lastSync = new Date(); }
     renderStatus();
   }
   function renderStatus() {
