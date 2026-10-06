@@ -133,7 +133,7 @@
     $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
     $("greeting").textContent = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
     renderPrecipAlert(now);
-    updateBackdrop(now);
+    updateBackdrop();
 
     var night = isNightHour(h) && Date.now() > wakeUntil && $("settings").hidden;
     $("night").hidden = !night;
@@ -153,36 +153,45 @@
   });
 
   // ------------------------------------------------------------- photo backdrop
-  // Freely licensed Chicago photos from Wikimedia Commons, loaded by the iPad at
-  // runtime. Daytime shots between sunrise and sunset, night shots otherwise,
-  // rotating every hour.
+  // A freely licensed Wikimedia Commons photo that matches the current weather,
+  // loaded by the iPad at runtime. At night the photo is dimmed (or swapped for a
+  // starry sky when it's clear).
 
   var PHOTOS = {
-    day: [
-      { file: "2010-02-19 3000x2000 chicago skyline.jpg", credit: "J. Crocker" },
-      { file: "2004-07-14 2600x1500 chicago lake skyline.jpg", credit: "J. Crocker" },
-      { file: "Chicago Skyline Hi-Res.jpg", credit: "Buphoff, CC BY-SA 3.0" },
-    ],
-    night: [
-      { file: "Chicago Lakefront Night Skyline.jpg", credit: "Tony Webster" },
-      { file: "Chicago River and downtown skyline at night (49768092838).jpg", credit: "Matt Kieffer" },
-      { file: "Chicago skyline at night from 360 Chicago observation deck (49713365311).jpg", credit: "Matt Kieffer" },
-    ],
+    clear: { file: "Gfp-illinois-chicago-lake-michigan-horizon.jpg", credit: "Yinan Chen, public domain" },
+    partly: { file: "Blue-skies-cumulus-clouds.jpg", credit: "Cbuske46" },
+    night: { file: "Starry night sky.jpg", credit: "Eddie Basler" },
+    cloudy: { file: "Grey cloudy sky.jpg", credit: "Gnu-Bricoleur, CC BY 4.0" },
+    fog: { file: "Early morning fog.jpg", credit: "public domain" },
+    rain: { file: "Raindrops on a window.jpg", credit: "Andromeda2064" },
+    snow: { file: "Winter forest after snow storm (45643768335).jpg", credit: "Tom Ek" },
+    storm: { file: "Lightning cloud to cloud (aka).jpg", credit: "André Karwath, CC BY-SA 2.5" },
   };
   var sun = null; // { rise: Date, set: Date } from the weather feed
+  var currentWx = null; // { code, isDay } from the weather feed
   var shownPhoto = null;
   var frontLayer = "bg-a";
+  var failedPhotos = {}; // url -> time to try again
 
   function commonsUrl(file, width) {
     return "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(file.replace(/ /g, "_")) + "?width=" + width;
   }
 
-  function currentPhoto(now) {
+  // WMO weather code → photo.
+  function photoKind(code, isDay) {
+    if (code >= 95) return "storm";
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "snow";
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "rain";
+    if (code === 45 || code === 48) return "fog";
+    if (code === 3) return "cloudy";
+    if (!isDay) return code === 2 ? "cloudy" : "night";
+    return code === 2 ? "partly" : "clear";
+  }
+
+  function currentPhoto() {
     if (settings.photoUrl) return { url: settings.photoUrl, credit: "", link: "" };
-    var h = now.getHours();
-    var dark = sun ? now < sun.rise || now >= sun.set : h < 7 || h >= 19;
-    var set = dark ? PHOTOS.night : PHOTOS.day;
-    var p = set[Math.floor(now.getTime() / 3600000) % set.length];
+    if (!currentWx) return null; // keep the plain gradient until the first forecast arrives
+    var p = PHOTOS[photoKind(currentWx.code, currentWx.isDay)];
     return {
       url: commonsUrl(p.file, 1920),
       credit: "📷 " + p.credit + " · Wikimedia Commons",
@@ -190,9 +199,14 @@
     };
   }
 
-  function updateBackdrop(now) {
-    var photo = currentPhoto(now);
-    if (shownPhoto === photo.url) return;
+  function updateBackdrop() {
+    // Dim photos after dark, except the starry sky, which is already dark.
+    var dim = !!currentWx && !currentWx.isDay && !settings.photoUrl &&
+      photoKind(currentWx.code, currentWx.isDay) !== "night";
+    document.querySelector(".backdrop").classList.toggle("dim", dim);
+    var photo = currentPhoto();
+    if (!photo || shownPhoto === photo.url) return;
+    if (failedPhotos[photo.url] > Date.now()) return;
     shownPhoto = photo.url;
     // Preload, then crossfade, so the wall never flashes blank.
     var img = new Image();
@@ -207,7 +221,10 @@
       c.textContent = photo.credit;
       if (photo.link) c.href = photo.link; else c.removeAttribute("href");
     };
-    img.onerror = function () { if (shownPhoto === photo.url) shownPhoto = null; }; // retry next tick
+    img.onerror = function () {
+      failedPhotos[photo.url] = Date.now() + 10 * 60 * 1000; // try again in 10 minutes
+      if (shownPhoto === photo.url) shownPhoto = null;
+    };
     img.src = photo.url;
   }
 
@@ -242,10 +259,12 @@
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
+        currentWx = { code: c.weather_code, isDay: !!c.is_day };
+        updateBackdrop();
         storePrecip(d);
         if (day.sunrise && day.sunset) {
           sun = { rise: parseWall(day.sunrise[0]), set: parseWall(day.sunset[0]) };
-          updateBackdrop(new Date());
+          updateBackdrop();
         }
         var now = wmo(c.weather_code, c.is_day);
         var box = $("weather");

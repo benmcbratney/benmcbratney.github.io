@@ -50,6 +50,10 @@ button, input { font: inherit; color: inherit; }
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 28%, rgba(0,0,0,0.10) 70%, rgba(0,0,0,0.45) 100%);
 }
+/* After dark, dim whatever weather photo is showing. */
+.backdrop.dim::after {
+  background: linear-gradient(to bottom, rgba(5,10,25,0.70) 0%, rgba(5,10,25,0.50) 40%, rgba(5,10,25,0.65) 100%);
+}
 
 #hub {
   position: relative; z-index: 1;

@@ -99,12 +99,19 @@ be in the Google Home app (not an old Nest account), on a personal Gmail account
 
 ## Background photos
 
-The backdrop rotates hourly through freely licensed Chicago skyline photos from
-Wikimedia Commons (daytime shots between sunrise and sunset, night shots after
-dark). The photographer is credited in the bottom-right corner. To use your own
-photo instead, paste its URL into ⚙︎ → Background photo URL.
+The backdrop matches the current weather, using freely licensed photos from
+Wikimedia Commons that the iPad loads directly. After dark the photo is dimmed,
+and clear nights get a starry sky. The photographer is credited in the
+bottom-right corner. To use your own photo instead, paste its URL into
+⚙︎ → Background photo URL.
 
-- J. Crocker — *2010-02-19 3000x2000 chicago skyline.jpg*, *2004-07-14 2600x1500 chicago lake skyline.jpg*
-- Buphoff — *Chicago Skyline Hi-Res.jpg* (CC BY-SA 3.0)
-- Tony Webster — *Chicago Lakefront Night Skyline.jpg*
-- Matt Kieffer — *Chicago River and downtown skyline at night (49768092838).jpg*, *Chicago skyline at night from 360 Chicago observation deck (49713365311).jpg*
+| Weather | Photo | Photographer |
+|---|---|---|
+| Clear (day) | *Gfp-illinois-chicago-lake-michigan-horizon.jpg* | Yinan Chen, public domain |
+| Partly cloudy (day) | *Blue-skies-cumulus-clouds.jpg* | Cbuske46 |
+| Clear (night) | *Starry night sky.jpg* | Eddie Basler |
+| Cloudy / overcast | *Grey cloudy sky.jpg* | Gnu-Bricoleur, CC BY 4.0 |
+| Fog | *Early morning fog.jpg* | public domain |
+| Rain / drizzle / showers | *Raindrops on a window.jpg* | Andromeda2064 |
+| Snow | *Winter forest after snow storm (45643768335).jpg* | Tom Ek |
+| Thunderstorm | *Lightning cloud to cloud (aka).jpg* | André Karwath, CC BY-SA 2.5 |
