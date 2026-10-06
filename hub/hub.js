@@ -10,7 +10,7 @@
     placeName: "Lake Forest",
     lat: "42.2586",
     lon: "-87.8406",
-    nightStart: "23",
+    nightStart: "22",
     nightEnd: "6",
     days: "5",
     photoUrl: "",
