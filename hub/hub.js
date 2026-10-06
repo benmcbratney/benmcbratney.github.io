@@ -146,7 +146,7 @@
     }
 
     // Reload once a night to keep an old iPad's memory tidy and pick up code updates.
-    if (h === 3 && now.getMinutes() === 30 && performance.now() > 120000) location.reload();
+    if (h === 3 && now.getMinutes() === 30 && performance.now() > 120000) freshReload(window.HUB_VERSION || "");
   }
 
   $("night").addEventListener("click", function () {
@@ -930,6 +930,34 @@
     };
   }
 
+  // ------------------------------------------------------------- self-update
+  // Wall displays never get "refreshed" by a person, and iPads hold on to cached
+  // files. Every 10 minutes, ask for version.json (uncached); if a newer version is
+  // published, reload through a fresh URL so the new index.html and assets load.
+
+  function freshReload(version) {
+    location.replace(location.pathname + "?v=" + encodeURIComponent(version || Date.now()));
+  }
+
+  function checkForUpdate() {
+    if (!window.HUB_VERSION || !window.fetch) return;
+    fetch("version.json?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) {
+        if (!v || !v.version || v.version === window.HUB_VERSION) return;
+        // Don't yank the page out from under someone typing or in settings.
+        var active = document.activeElement;
+        if ((active && active.tagName === "INPUT") || !$("settings").hidden) return;
+        // At most one update reload per 30 minutes, in case a cache serves stale files.
+        var last = 0;
+        try { last = +localStorage.getItem("homehub.updateReload") || 0; } catch (e) {}
+        if (Date.now() - last < 30 * 60 * 1000) return;
+        try { localStorage.setItem("homehub.updateReload", String(Date.now())); } catch (e) {}
+        freshReload(v.version);
+      })
+      .catch(function () {});
+  }
+
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
@@ -949,5 +977,7 @@
   setInterval(loadCalendar, 5 * 60 * 1000);
   setInterval(loadWeather, 15 * 60 * 1000);
   setInterval(function () { renderAgenda(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshAll(); });
+  setInterval(checkForUpdate, 10 * 60 * 1000);
+  setTimeout(checkForUpdate, 30 * 1000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { refreshAll(); checkForUpdate(); } });
 })();

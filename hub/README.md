@@ -118,7 +118,11 @@ and says when the Bears are on.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
-- Reloads itself at 3:30am to keep memory in check and pick up code changes.
+- Reloads itself at 3:30am to keep memory in check.
+- Updates itself: every 10 minutes (and whenever it's reopened) it checks `version.json`; when a
+  newer version is published it reloads through a fresh URL, so the iPad never sticks on cached files.
+  **When changing the hub, bump the version** in `version.json` and in `index.html` (the
+  `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`).
 - Weather comes from Open-Meteo (free, no key).
 - Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill replaces the
   greeting under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
