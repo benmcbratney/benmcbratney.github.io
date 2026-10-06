@@ -26,6 +26,7 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `HOME_TZ` | Text | `America/Chicago` |
    | `CHORES_PROJECT` | Text | Todoist project name, default `Chores` |
    | `GROCERY_PROJECT` | Text | Todoist project name, default `Groceries` |
+| `FAMILY` | Secret | optional, for personal greetings (see below) |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
    ⚙ Settings → pick the calendar → *Integrate calendar* → **Secret address in iCal format**.
@@ -84,6 +85,26 @@ be in the Google Home app (not an old Nest account), on a personal Gmail account
    on the permissions screen. The last page shows a token; add it as a Secret named
    `NEST_REFRESH_TOKEN` and deploy.
 6. Reopen Home Hub. The thermostat card appears on its own.
+
+## Personal greetings (optional)
+
+The greeting under the date changes every 15 minutes. Add a `FAMILY` **Secret** to
+the Worker and it'll mix in lines with your family's names and your dog's. The names
+stay in Cloudflare, not in this public repo:
+
+```json
+{"parents": ["Mom", "Dad"], "kids": ["Kid One", "Kid Two"], "nicknames": ["Nickname"], "dog": "Dog's name"}
+```
+
+Any field can be left out. A nickname with "stress" in it gets its own calm-down lines.
+An all-day calendar event with "birthday" and a family name in it ("Kid One's birthday")
+becomes "🎂 Happy birthday, Kid One!".
+
+**Bears game days:** add the Bears schedule to Google Calendar (Other calendars → +
+→ Browse calendars of interest → Sports → American Football → NFL → Chicago Bears).
+Then add it to `CALENDARS` like your other calendars. It's a public calendar, so use
+its *Public address in iCal format*. On game days the greeting counts down to kickoff
+and says when the Bears are on.
 
 ## How it behaves
 

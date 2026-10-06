@@ -131,7 +131,7 @@
     t.textContent = timeText;
     t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
     $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
-    $("greeting").textContent = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    setGreeting(greetingFor(now));
     renderPrecipAlert(now);
     updateBackdrop();
 
@@ -228,6 +228,190 @@
     img.src = photo.url;
   }
 
+  // ------------------------------------------------------------- greeting
+  // A new line every 15 minutes, rotating between something special (holiday,
+  // birthday), something about right now (weather, chores, calendar, day of the
+  // week) and a time-of-day line. Stable within each 15-minute slot.
+
+  var TIME_LINES = [
+    [0, 5, ["Still up, night owl?", "Burning the midnight oil 🦉", "Bed's calling 😴"]],
+    [5, 8, ["Rise and shine ☀️", "Early bird gets the worm", "Coffee's calling ☕", "Up and at 'em"]],
+    [8, 11, ["Good morning", "Morning! Make it a good one", "Let's get after it", "Hope you slept well"]],
+    [11, 13, ["Lunchtime — what're we thinking?", "Halfway through the day", "Snack check 🥨"]],
+    [13, 17, ["Good afternoon", "Afternoon slump? Snack time", "Hang in there — dinner's coming", "Keep it rolling"]],
+    [17, 19, ["What's for dinner?", "Dinner time — who's cooking?", "Good evening", "Home stretch"]],
+    [19, 22, ["Good evening", "Time to unwind", "Couch o'clock 🛋️", "Feet up, you earned it"]],
+    [22, 24, ["Lights out soon", "Lock up and wind down 🔒", "Almost bedtime", "Sweet dreams soon 🌙"]],
+  ];
+
+  var AFFIRMATIONS = [
+    "Hey sexy 😏", "You look good today 😍", "Hey good lookin' 👀", "Looking sharp! 😎",
+    "Nice hair 😉", "Somebody's glowing today ✨", "Smile — it looks good on you 😊",
+    "You've got this 💪", "You're doing amazing 🌟", "You're crushing it 🔥", "Proud of you 🙌",
+    "Main character energy 💅", "Big things today 🚀", "Today's gonna be a good one 🌈",
+    "You're kind of a big deal 😌", "Certified awesome ✅",
+  ];
+
+  function nthWeekday(year, month, weekday, n) {
+    var first = new Date(year, month, 1).getDay();
+    return 1 + ((weekday - first + 7) % 7) + (n - 1) * 7;
+  }
+
+  function holidayLines(now) {
+    var m = now.getMonth() + 1, d = now.getDate();
+    if (m === 1 && d === 1) return ["Happy New Year! 🎆", "New year, fresh start ✨"];
+    if (m === 2 && d === 14) return ["Happy Valentine's Day ❤️", "Love you guys 💕"];
+    if (m === 3 && d === 17) return ["Happy St. Paddy's ☘️", "Wear green or get pinched ☘️"];
+    if (m === 7 && d === 4) return ["Happy Fourth! 🎆", "Fireworks tonight? 🎇"];
+    if (m === 10 && d === 31) return ["Happy Halloween 🎃", "Got the candy? 🍬", "Trick or treat 👻"];
+    if (m === 11 && d === nthWeekday(now.getFullYear(), 10, 4, 4)) return ["Happy Thanksgiving 🦃", "Save room for pie 🥧"];
+    if (m === 12 && d === 24) return ["Merry Christmas Eve 🎄", "Santa's on the way 🎅"];
+    if (m === 12 && d === 25) return ["Merry Christmas 🎄", "Ho ho ho 🎅"];
+    if (m === 12 && d === 31) return ["Happy New Year's Eve 🥂", "Last one of the year — make it count"];
+    return [];
+  }
+
+  function todaysEvents(now) {
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var tomorrow = addDays(today, 1);
+    return events.filter(function (e) { return e.start < tomorrow && e.end > today; });
+  }
+
+  function specialLines(now) {
+    var lines = holidayLines(now);
+    var everyone = fam ? fam.parents.concat(fam.kids, fam.dog ? [fam.dog] : []) : [];
+    todaysEvents(now).forEach(function (e) {
+      if (e.allDay && /birthday|bday/i.test(e.title)) {
+        var who = everyone.filter(function (n) { return e.title.toLowerCase().indexOf(n.toLowerCase()) >= 0; })[0];
+        lines.push(who ? "🎂 Happy birthday, " + who + "! 🎉" : "🎂 " + e.title + " today!");
+      }
+      // Subscribe to a Bears schedule calendar and game days get their own lines.
+      if (!e.allDay && /\bbears\b/i.test(e.title)) {
+        if (now < e.start) lines.push("Bears game today — Bear Down! 🐻", "🐻 " + e.title + " · kickoff " + fmtTime(e.start));
+        else if (now < e.end) lines.push("Bears are on right now 🐻🏈");
+      }
+    });
+    return lines;
+  }
+
+  // ------------------------------------------------------------- family greetings
+  // Names come from the Worker's FAMILY secret, so they never live in this public repo.
+
+  var fam = null;
+
+  function loadFamily() {
+    if (demo) return Promise.resolve();
+    return api("/family").then(function (data) { fam = data.family || null; }).catch(function () {});
+  }
+
+  function familyLines(now) {
+    if (!fam) return [];
+    var h = now.getHours(), lines = [];
+    var slot = Math.floor(now.getTime() / (15 * 60 * 1000));
+    var kid = fam.kids.length ? fam.kids[slot % fam.kids.length] : null;
+    var nick = fam.nicknames.length ? fam.nicknames[slot % fam.nicknames.length] : null;
+    var parent = fam.parents.length ? fam.parents[slot % fam.parents.length] : null;
+    var dog = fam.dog;
+
+    if (dog) {
+      if (h >= 6 && h < 9) lines.push("Did " + dog + " get breakfast? 🦴");
+      else if (h >= 17 && h < 20) lines.push("Did " + dog + " get dinner? 🦴");
+      else if (h >= 9 && h < 17) lines.push("Has anyone walked " + dog + "? 🐕");
+      lines.push(dog + " says hi 🐶", "Give " + dog + " a scratch 🐾", "Who's the goodest? " + dog + " is 🐶",
+        "Be the person " + dog + " thinks you are 🐶");
+    }
+    if (kid) {
+      if (h < 11) lines.push("Good morning, " + kid + "! ☀️");
+      else if (h >= 20) lines.push("Teeth brushed, " + kid + "? 🪥");
+      else lines.push("Hi " + kid + "! 👋");
+      lines.push(kid + ", you're awesome ⭐");
+    }
+    if (nick) {
+      if (/stress/i.test(nick)) lines.push("Deep breaths, " + nick + " 😌", "Chill vibes only, " + nick + " 🧘");
+      else lines.push("Hey " + nick + " 👋", "Looking good, " + nick + " ✨");
+    }
+    if (parent) lines.push("Hi " + parent + " 👋", parent + " is the best ⭐");
+    if (fam.kids.length > 1 && h >= 7 && h < 21) lines.push("Love you, " + listNames(fam.kids) + " ❤️");
+    return lines;
+  }
+
+  function listNames(names) {
+    if (names.length <= 2) return names.join(" & ");
+    return names.slice(0, -1).join(", ") + " & " + names[names.length - 1];
+  }
+
+  function contextLines(now) {
+    var lines = [], h = now.getHours(), dow = now.getDay();
+
+    // Weather
+    if (currentWx) {
+      var code = currentWx.code, t = currentWx.tempF;
+      if (t != null && t <= 0) lines.push("Chiberia out there 🥶 — bundle up");
+      else if (t != null && t <= 25) lines.push("Brr, it's a cold one — hats and gloves 🧤");
+      else if (t != null && t >= 88) lines.push("Hot one today — stay hydrated 💧");
+      if (code >= 95) lines.push("Stormy out — stay in, stay dry ⛈");
+      else if ((code >= 71 && code <= 77) || code === 85 || code === 86) lines.push("Snowy out there — boots on ❄️", "Snow day vibes ☃️");
+      else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) lines.push("Rainy day — good day for soup 🍲", "Don't forget an umbrella ☔");
+      else if (code === 45 || code === 48) lines.push("Foggy out — drive careful 🌫");
+      else if (currentWx.isDay && code <= 1 && t >= 62 && t <= 80) lines.push("Gorgeous out — get some fresh air 🌞", "Perfect day for a walk");
+    }
+
+    // Bears (regular season runs September into early January)
+    var month = now.getMonth() + 1;
+    if (month >= 9 || month === 1) {
+      lines.push("Bear Down 🐻");
+      if (dow === 0) lines.push("Bears Sunday? 🐻🏈");
+    } else if (month === 8) {
+      lines.push("Football's almost back — Bear Down 🐻");
+    }
+
+    // Day of the week
+    if (dow === 1 && h < 12) lines.push("Happy Monday. Coffee first ☕");
+    if (dow === 2) lines.push("Taco Tuesday? 🌮");
+    if (dow === 3) lines.push("Hump day — halfway there 🐪");
+    if (dow === 4) lines.push("Almost Friday 🙌");
+    if (dow === 5) lines.push(h >= 16 ? "Weekend starts now 🎉" : "Happy Friday! 🎉");
+    if (dow === 6) lines.push("Happy Saturday — no alarms ⏰");
+    if (dow === 0) lines.push(h >= 17 ? "Peek at the week ahead 📅" : "Lazy Sunday ☕");
+
+    // Chores and calendar
+    if (lists.chores.length) {
+      var todo = visibleChores();
+      var today = ymd(now);
+      if (!todo.length) lines.push("Chores all done — nice work! 🙌");
+      else if (todo.some(function (c) { return c.due && c.due.slice(0, 10) < today; })) lines.push("A few chores are waiting on you ✋");
+    }
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate()), end = addDays(start, 1);
+    var todayCount = events.filter(function (e) { return e.start < end && e.end > start; }).length;
+    if (todayCount >= 4) lines.push("Busy day — " + todayCount + " things on the calendar");
+    else if (todayCount === 0 && h < 17) lines.push("Nothing on the calendar today 😌");
+    return lines;
+  }
+
+  function greetingFor(now) {
+    var h = now.getHours();
+    var timeLines = ["Hello"];
+    TIME_LINES.forEach(function (r) { if (h >= r[0] && h < r[1]) timeLines = r[2]; });
+    var special = specialLines(now), context = contextLines(now), family = familyLines(now);
+    var slot = Math.floor(now.getTime() / (15 * 60 * 1000));
+    var pick = function (list) { return list[Math.floor(slot / 4) % list.length]; };
+    // An hour cycles: special (or family) → the moment → family or a pep talk → time of day.
+    var turn = slot % 4;
+    if (turn === 0) return special.length ? pick(special) : family.length ? pick(family) : pick(context.length ? context : timeLines);
+    if (turn === 1) return context.length ? pick(context) : pick(timeLines);
+    if (turn === 2) return pick(family.concat(AFFIRMATIONS));
+    return pick(timeLines);
+  }
+
+  function setGreeting(text) {
+    var g = $("greeting");
+    if (g.textContent === text) return;
+    g.textContent = text;
+    g.classList.remove("swap");
+    void g.offsetWidth; // restart the fade
+    g.classList.add("swap");
+  }
+
   // ------------------------------------------------------------- weather (Open-Meteo, no key)
 
   var WMO = {
@@ -259,7 +443,7 @@
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
-        currentWx = { code: c.weather_code, isDay: !!c.is_day };
+        currentWx = { code: c.weather_code, isDay: !!c.is_day, tempF: c.temperature_2m };
         updateBackdrop();
         storePrecip(d);
         if (day.sunrise && day.sunset) {
@@ -731,7 +915,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily()]).then(function () {
       lastSync = new Date();
       renderStatus();
     });
