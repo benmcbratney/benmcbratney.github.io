@@ -26,7 +26,7 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `HOME_TZ` | Text | `America/Chicago` |
    | `CHORES_PROJECT` | Text | Todoist project name, default `Chores` |
    | `GROCERY_PROJECT` | Text | Todoist project name, default `Groceries` |
-| `FAMILY` | Secret | optional, for personal greetings (see below) |
+   | `FAMILY` | Secret | optional, for personal greetings (see below) |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
    ⚙ Settings → pick the calendar → *Integrate calendar* → **Secret address in iCal format**.
@@ -111,7 +111,7 @@ and says when the Bears are on.
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
-- Night mode (default 11pm–6am): just a big clock and your next event over the dimmed night skyline. Tap to wake for 2 min.
+- Night mode (default 11pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check and pick up code changes.
 - Weather comes from Open-Meteo (free, no key).
 - Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill replaces the

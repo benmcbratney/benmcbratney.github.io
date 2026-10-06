@@ -254,6 +254,8 @@ button, input { font: inherit; color: inherit; }
 body.is-night #hub { visibility: hidden; }
 .night-time { font-size: 180px; font-weight: 100; letter-spacing: -4px; font-variant-numeric: tabular-nums; }
 .night-next { font-size: 22px; opacity: 0.7; margin-top: 8px; }
+.night-wx { font-size: 22px; opacity: 0.7; margin-top: 14px; }
+.night-wx:empty, .night-next:empty { display: none; }
 
 /* ---------------------------------------------------------------- settings */
 
