@@ -206,6 +206,8 @@
     var dim = !!currentWx && !currentWx.isDay && !settings.photoUrl &&
       photoKind(currentWx.code, currentWx.isDay) !== "night";
     document.querySelector(".backdrop").classList.toggle("dim", dim);
+    // Smoky dark panels with light text once the sun is down (any photo).
+    document.body.classList.toggle("glass-dark", !!currentWx && !currentWx.isDay && !settings.photoUrl);
     var photo = currentPhoto();
     if (!photo || shownPhoto === photo.url) return;
     if (failedPhotos[photo.url] > Date.now()) return;
