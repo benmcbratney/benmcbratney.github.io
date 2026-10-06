@@ -244,6 +244,14 @@
     [22, 24, ["Lights out soon", "Lock up and wind down 🔒", "Almost bedtime", "Sweet dreams soon 🌙"]],
   ];
 
+  var AFFIRMATIONS = [
+    "Hey sexy 😏", "You look good today 😍", "Hey good lookin' 👀", "Looking sharp! 😎",
+    "Nice hair 😉", "Somebody's glowing today ✨", "Smile — it looks good on you 😊",
+    "You've got this 💪", "You're doing amazing 🌟", "You're crushing it 🔥", "Proud of you 🙌",
+    "Main character energy 💅", "Big things today 🚀", "Today's gonna be a good one 🌈",
+    "You're kind of a big deal 😌", "Certified awesome ✅",
+  ];
+
   function nthWeekday(year, month, weekday, n) {
     var first = new Date(year, month, 1).getDay();
     return 1 + ((weekday - first + 7) % 7) + (n - 1) * 7;
@@ -309,7 +317,8 @@
       if (h >= 6 && h < 9) lines.push("Did " + dog + " get breakfast? 🦴");
       else if (h >= 17 && h < 20) lines.push("Did " + dog + " get dinner? 🦴");
       else if (h >= 9 && h < 17) lines.push("Has anyone walked " + dog + "? 🐕");
-      lines.push(dog + " says hi 🐶", "Give " + dog + " a scratch 🐾", "Who's the goodest? " + dog + " is 🐶");
+      lines.push(dog + " says hi 🐶", "Give " + dog + " a scratch 🐾", "Who's the goodest? " + dog + " is 🐶",
+        "Be the person " + dog + " thinks you are 🐶");
     }
     if (kid) {
       if (h < 11) lines.push("Good morning, " + kid + "! ☀️");
@@ -386,11 +395,11 @@
     var special = specialLines(now), context = contextLines(now), family = familyLines(now);
     var slot = Math.floor(now.getTime() / (15 * 60 * 1000));
     var pick = function (list) { return list[Math.floor(slot / 4) % list.length]; };
-    // An hour cycles: special (or family) → the moment → family (or time) → time of day.
+    // An hour cycles: special (or family) → the moment → family or a pep talk → time of day.
     var turn = slot % 4;
     if (turn === 0) return special.length ? pick(special) : family.length ? pick(family) : pick(context.length ? context : timeLines);
     if (turn === 1) return context.length ? pick(context) : pick(timeLines);
-    if (turn === 2) return family.length ? pick(family) : pick(timeLines);
+    if (turn === 2) return pick(family.concat(AFFIRMATIONS));
     return pick(timeLines);
   }
 
