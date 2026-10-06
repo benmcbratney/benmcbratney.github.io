@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Home Hub</title>
+  <meta name="robots" content="noindex">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Home Hub">
+  <meta name="theme-color" content="#f6f1ea">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="stylesheet" href="hub.css">
+</head>
+<body>
+  <main id="hub">
+    <header class="top">
+      <div class="clock">
+        <div id="time" class="time">--:--</div>
+        <div id="date" class="date"></div>
+      </div>
+      <div id="weather" class="weather"></div>
+    </header>
+
+    <section class="card agenda">
+      <h2>Coming up</h2>
+      <div id="agenda" class="agenda-list"></div>
+    </section>
+
+    <section class="card chores">
+      <h2>Chores <span id="chores-count" class="count"></span></h2>
+      <ul id="chores" class="tasks"></ul>
+    </section>
+
+    <section class="card grocery">
+      <h2>Groceries <span id="grocery-count" class="count"></span></h2>
+      <form id="grocery-add" class="add" autocomplete="off">
+        <input id="grocery-input" type="text" placeholder="Add an item…" enterkeyhint="done">
+        <button type="submit" aria-label="Add">+</button>
+      </form>
+      <ul id="grocery" class="tasks"></ul>
+    </section>
+
+    <footer class="status">
+      <span id="status-text"></span>
+      <button id="open-settings" class="gear" aria-label="Settings">⚙︎</button>
+    </footer>
+  </main>
+
+  <div id="night" class="night" hidden>
+    <div id="night-time" class="night-time"></div>
+    <div id="night-next" class="night-next"></div>
+  </div>
+
+  <div id="settings" class="modal" hidden>
+    <form id="settings-form" class="modal-card" autocomplete="off">
+      <h2>Settings</h2>
+      <p class="hint">Saved only on this device. Leave the backend blank to run on demo data.</p>
+      <label>Backend URL <input name="workerUrl" type="url" placeholder="https://home-hub.yourname.workers.dev"></label>
+      <label>Hub key <input name="hubKey" type="password"></label>
+      <div class="row">
+        <label>Place <input name="placeName"></label>
+        <label>Latitude <input name="lat" inputmode="decimal"></label>
+        <label>Longitude <input name="lon" inputmode="decimal"></label>
+      </div>
+      <div class="row">
+        <label>Night starts <input name="nightStart" type="number" min="0" max="23"></label>
+        <label>Night ends <input name="nightEnd" type="number" min="0" max="23"></label>
+        <label>Days shown <input name="days" type="number" min="1" max="14"></label>
+      </div>
+      <div class="actions">
+        <button type="button" id="settings-cancel">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="hub.js"></script>
+</body>
+</html>
