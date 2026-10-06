@@ -263,14 +263,72 @@
     return [];
   }
 
-  function specialLines(now) {
-    var lines = holidayLines(now);
+  function todaysEvents(now) {
     var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     var tomorrow = addDays(today, 1);
-    events.forEach(function (e) {
-      if (e.allDay && e.start < tomorrow && e.end > today && /birthday|bday/i.test(e.title)) lines.push("🎂 " + e.title + " today!");
+    return events.filter(function (e) { return e.start < tomorrow && e.end > today; });
+  }
+
+  function specialLines(now) {
+    var lines = holidayLines(now);
+    var everyone = fam ? fam.parents.concat(fam.kids, fam.dog ? [fam.dog] : []) : [];
+    todaysEvents(now).forEach(function (e) {
+      if (e.allDay && /birthday|bday/i.test(e.title)) {
+        var who = everyone.filter(function (n) { return e.title.toLowerCase().indexOf(n.toLowerCase()) >= 0; })[0];
+        lines.push(who ? "🎂 Happy birthday, " + who + "! 🎉" : "🎂 " + e.title + " today!");
+      }
+      // Subscribe to a Bears schedule calendar and game days get their own lines.
+      if (!e.allDay && /\bbears\b/i.test(e.title)) {
+        if (now < e.start) lines.push("Bears game today — Bear Down! 🐻", "🐻 " + e.title + " · kickoff " + fmtTime(e.start));
+        else if (now < e.end) lines.push("Bears are on right now 🐻🏈");
+      }
     });
     return lines;
+  }
+
+  // ------------------------------------------------------------- family greetings
+  // Names come from the Worker's FAMILY secret, so they never live in this public repo.
+
+  var fam = null;
+
+  function loadFamily() {
+    if (demo) return Promise.resolve();
+    return api("/family").then(function (data) { fam = data.family || null; }).catch(function () {});
+  }
+
+  function familyLines(now) {
+    if (!fam) return [];
+    var h = now.getHours(), lines = [];
+    var slot = Math.floor(now.getTime() / (15 * 60 * 1000));
+    var kid = fam.kids.length ? fam.kids[slot % fam.kids.length] : null;
+    var nick = fam.nicknames.length ? fam.nicknames[slot % fam.nicknames.length] : null;
+    var parent = fam.parents.length ? fam.parents[slot % fam.parents.length] : null;
+    var dog = fam.dog;
+
+    if (dog) {
+      if (h >= 6 && h < 9) lines.push("Did " + dog + " get breakfast? 🦴");
+      else if (h >= 17 && h < 20) lines.push("Did " + dog + " get dinner? 🦴");
+      else if (h >= 9 && h < 17) lines.push("Has anyone walked " + dog + "? 🐕");
+      lines.push(dog + " says hi 🐶", "Give " + dog + " a scratch 🐾", "Who's the goodest? " + dog + " is 🐶");
+    }
+    if (kid) {
+      if (h < 11) lines.push("Good morning, " + kid + "! ☀️");
+      else if (h >= 20) lines.push("Teeth brushed, " + kid + "? 🪥");
+      else lines.push("Hi " + kid + "! 👋");
+      lines.push(kid + ", you're awesome ⭐");
+    }
+    if (nick) {
+      if (/stress/i.test(nick)) lines.push("Deep breaths, " + nick + " 😌", "Chill vibes only, " + nick + " 🧘");
+      else lines.push("Hey " + nick + " 👋", "Looking good, " + nick + " ✨");
+    }
+    if (parent) lines.push("Hi " + parent + " 👋", parent + " is the best ⭐");
+    if (fam.kids.length > 1 && h >= 7 && h < 21) lines.push("Love you, " + listNames(fam.kids) + " ❤️");
+    return lines;
+  }
+
+  function listNames(names) {
+    if (names.length <= 2) return names.join(" & ");
+    return names.slice(0, -1).join(", ") + " & " + names[names.length - 1];
   }
 
   function contextLines(now) {
@@ -287,6 +345,15 @@
       else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) lines.push("Rainy day — good day for soup 🍲", "Don't forget an umbrella ☔");
       else if (code === 45 || code === 48) lines.push("Foggy out — drive careful 🌫");
       else if (currentWx.isDay && code <= 1 && t >= 62 && t <= 80) lines.push("Gorgeous out — get some fresh air 🌞", "Perfect day for a walk");
+    }
+
+    // Bears (regular season runs September into early January)
+    var month = now.getMonth() + 1;
+    if (month >= 9 || month === 1) {
+      lines.push("Bear Down 🐻");
+      if (dow === 0) lines.push("Bears Sunday? 🐻🏈");
+    } else if (month === 8) {
+      lines.push("Football's almost back — Bear Down 🐻");
     }
 
     // Day of the week
@@ -316,12 +383,14 @@
     var h = now.getHours();
     var timeLines = ["Hello"];
     TIME_LINES.forEach(function (r) { if (h >= r[0] && h < r[1]) timeLines = r[2]; });
-    var special = specialLines(now), context = contextLines(now);
+    var special = specialLines(now), context = contextLines(now), family = familyLines(now);
     var slot = Math.floor(now.getTime() / (15 * 60 * 1000));
-    var pick = function (list) { return list[Math.floor(slot / 3) % list.length]; };
-    var turn = slot % 3;
-    if (turn === 0 && special.length) return pick(special);
-    if (turn !== 2 && context.length) return pick(context);
+    var pick = function (list) { return list[Math.floor(slot / 4) % list.length]; };
+    // An hour cycles: special (or family) → the moment → family (or time) → time of day.
+    var turn = slot % 4;
+    if (turn === 0) return special.length ? pick(special) : family.length ? pick(family) : pick(context.length ? context : timeLines);
+    if (turn === 1) return context.length ? pick(context) : pick(timeLines);
+    if (turn === 2) return family.length ? pick(family) : pick(timeLines);
     return pick(timeLines);
   }
 
@@ -837,7 +906,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily()]).then(function () {
       lastSync = new Date();
       renderStatus();
     });

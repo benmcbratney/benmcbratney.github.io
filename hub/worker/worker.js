@@ -12,6 +12,8 @@
 //   HOME_TZ          plain   e.g. America/Chicago
 //   CHORES_PROJECT   plain   Todoist project name for chores   (default "Chores")
 //   GROCERY_PROJECT  plain   Todoist project name for groceries (default "Groceries")
+//   FAMILY           secret  optional JSON for personal greetings, e.g.
+//                            {"parents":["Mom","Dad"],"kids":["A","B"],"nicknames":["Ace"],"dog":"Rex"}
 //
 // Optional Nest thermostats (Google Device Access — see hub/README.md):
 //   NEST_PROJECT_ID     plain   Device Access project ID
@@ -24,6 +26,7 @@
 //   GET  /todoist/lists
 //   POST /todoist/close   {"id": "..."}
 //   POST /todoist/add     {"list": "chores"|"grocery", "content": "..."}
+//   GET  /family                       personal greeting names (null when FAMILY isn't set)
 //   GET  /nest                         thermostats (null when Nest isn't configured)
 //   POST /nest/set        {"id": "...", "heatC": 20.5, "coolC": 24}   (either or both)
 //   GET  /nest/connect    (browser, no key) start Google sign-in
@@ -72,6 +75,9 @@ export default {
           body: JSON.stringify({ content: String(content).trim(), project_id }),
         });
         return json(trimTask(task));
+      }
+      if (url.pathname === "/family" && request.method === "GET") {
+        return json({ family: family(env) });
       }
       if (url.pathname === "/nest" && request.method === "GET") {
         return json({ thermostats: await nestThermostats(env) });
@@ -165,6 +171,21 @@ async function todoistLists(env) {
   };
   const [chores, grocery] = await Promise.all([load(ids.chores), load(ids.grocery)]);
   return { chores, grocery };
+}
+
+// ---------------------------------------------------------------- Family (personal greetings)
+
+// Names live here, as a Worker secret, so they never land in the public repo.
+function family(env) {
+  if (!env.FAMILY) return null;
+  let f;
+  try {
+    f = JSON.parse(env.FAMILY);
+  } catch {
+    throw new Error("FAMILY isn't valid JSON");
+  }
+  const names = (v) => (Array.isArray(v) ? v : v ? [v] : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 12);
+  return { parents: names(f.parents), kids: names(f.kids), nicknames: names(f.nicknames), dog: names(f.dog)[0] || null };
 }
 
 // ---------------------------------------------------------------- Nest (Google Smart Device Management)
