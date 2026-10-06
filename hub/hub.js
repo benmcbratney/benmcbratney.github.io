@@ -458,6 +458,122 @@
     });
   });
 
+  // ------------------------------------------------------------- Nest thermostats
+
+  var thermostats = [];
+  var pendingSet = {}; // id -> { heatF, coolF, timer }
+  var demoThermostatList = null;
+
+  function cToF(c) { return Math.round(c * 9 / 5 + 32); }
+  function fToC(f) { return Math.round((f - 32) * 5 / 9 * 100) / 100; }
+
+  function loadNest() {
+    if (demo && !demoThermostatList) demoThermostatList = demoThermostats(); // keep demo taps
+    var p = demo ? Promise.resolve({ thermostats: demoThermostatList }) : api("/nest");
+    return p.then(function (data) {
+      thermostats = data.thermostats || [];
+      renderNest();
+      setProblem("thermostat", null);
+    }).catch(function (e) {
+      // An older Worker without Nest support answers 404: just hide the card.
+      if (/HTTP 404/.test(e.message)) { thermostats = []; renderNest(); return; }
+      setProblem("thermostat", e.message);
+    });
+  }
+
+  function targets(t) {
+    var p = pendingSet[t.id];
+    return {
+      heatF: p && p.heatF != null ? p.heatF : t.heatC != null ? cToF(t.heatC) : null,
+      coolF: p && p.coolF != null ? p.coolF : t.coolC != null ? cToF(t.coolC) : null,
+      pending: !!p,
+    };
+  }
+
+  function renderNest() {
+    var card = $("nest-card");
+    var show = thermostats.length > 0;
+    card.hidden = !show;
+    $("hub").classList.toggle("has-nest", show);
+    if (!show) return;
+    $("nest-title").textContent = thermostats.length > 1 ? "Thermostats" : "Thermostat";
+
+    var box = $("nest");
+    box.innerHTML = "";
+    thermostats.forEach(function (t) {
+      var tg = targets(t);
+      var adjustable = t.online && !t.eco && t.mode !== "OFF";
+      var row = el("div", "tstat" + (t.hvac === "HEATING" ? " heating" : t.hvac === "COOLING" ? " cooling" : ""));
+
+      var info = el("div", "t-info");
+      info.appendChild(el("div", "t-name", t.name));
+      var status = !t.online ? "Offline"
+        : t.hvac === "HEATING" ? "Heating"
+        : t.hvac === "COOLING" ? "Cooling"
+        : t.mode === "OFF" ? "Off"
+        : t.eco ? "Eco"
+        : "Holding";
+      if (t.humidity != null) status += " · " + Math.round(t.humidity) + "% humidity";
+      info.appendChild(el("div", "t-status", status));
+      row.appendChild(info);
+
+      row.appendChild(el("div", "t-now", t.ambientC != null ? cToF(t.ambientC) + "°" : "--"));
+
+      var ctrl = el("div", "t-ctrl");
+      var minus = el("button", null, "−");
+      var plus = el("button", null, "+");
+      minus.setAttribute("aria-label", "Lower " + t.name);
+      plus.setAttribute("aria-label", "Raise " + t.name);
+      var label;
+      if (t.mode === "OFF") label = "Off";
+      else if (t.eco) label = "Eco";
+      else if (t.mode === "HEATCOOL") label = tg.heatF + "–" + tg.coolF + "°";
+      else if (t.mode === "COOL") label = tg.coolF + "°";
+      else label = tg.heatF + "°";
+      var target = el("span", "t-target" + (t.mode === "HEATCOOL" ? " range" : "") + (tg.pending ? " pending" : ""), label);
+      minus.disabled = plus.disabled = !adjustable;
+      minus.addEventListener("click", function () { nudge(t, -1); });
+      plus.addEventListener("click", function () { nudge(t, 1); });
+      ctrl.appendChild(minus);
+      ctrl.appendChild(target);
+      ctrl.appendChild(plus);
+      row.appendChild(ctrl);
+
+      box.appendChild(row);
+    });
+  }
+
+  function nudge(t, delta) {
+    var tg = targets(t);
+    var clamp = function (f) { return Math.max(50, Math.min(90, f)); };
+    var p = pendingSet[t.id] || {};
+    if (t.mode === "HEAT" || t.mode === "HEATCOOL") p.heatF = clamp(tg.heatF + delta);
+    if (t.mode === "COOL" || t.mode === "HEATCOOL") p.coolF = clamp(tg.coolF + delta);
+    clearTimeout(p.timer);
+    // Wait for the taps to stop, then send one change (Google rate-limits commands).
+    p.timer = setTimeout(function () { sendSetpoint(t, p); }, 1200);
+    pendingSet[t.id] = p;
+    renderNest();
+  }
+
+  function sendSetpoint(t, p) {
+    var body = { id: t.id };
+    if (p.heatF != null) body.heatC = fToC(p.heatF);
+    if (p.coolF != null) body.coolC = fToC(p.coolF);
+    var send = demo ? Promise.resolve().then(function () {
+      if (body.heatC != null) t.heatC = body.heatC;
+      if (body.coolC != null) t.coolC = body.coolC;
+    }) : api("/nest/set", { method: "POST", body: body });
+    send.then(function () {
+      if (pendingSet[t.id] === p) delete pendingSet[t.id];
+      if (demo) renderNest(); else setTimeout(loadNest, 3000);
+    }).catch(function (e) {
+      if (pendingSet[t.id] === p) delete pendingSet[t.id];
+      renderNest();
+      setProblem("thermostat", e.message);
+    });
+  }
+
   // ------------------------------------------------------------- settings modal
 
   function openSettings() {
@@ -497,6 +613,13 @@
     };
   }
 
+  function demoThermostats() {
+    return [
+      { id: "demo-up", name: "Upstairs", online: true, ambientC: 21.1, humidity: 44, mode: "HEAT", hvac: "HEATING", eco: false, heatC: 22.2 },
+      { id: "demo-down", name: "Downstairs", online: true, ambientC: 21.7, humidity: 41, mode: "HEAT", hvac: "OFF", eco: false, heatC: 20.6 },
+    ];
+  }
+
   function demoLists() {
     var today = ymd(new Date()), yesterday = ymd(addDays(new Date(), -1));
     return {
@@ -518,7 +641,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadCalendar(), loadLists()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest()]).then(function () {
       lastSync = new Date();
       renderStatus();
     });
@@ -530,6 +653,7 @@
 
   setInterval(tickClock, 1000 * 10);
   setInterval(loadLists, 60 * 1000);
+  setInterval(function () { if (!Object.keys(pendingSet).length) loadNest(); }, 2 * 60 * 1000);
   setInterval(loadCalendar, 5 * 60 * 1000);
   setInterval(loadWeather, 15 * 60 * 1000);
   setInterval(function () { renderAgenda(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current

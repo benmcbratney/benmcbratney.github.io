@@ -67,7 +67,27 @@ button, input { font: inherit; color: inherit; }
   padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
+/* With thermostats: a compact row above chores in the right column. */
+#hub.has-nest {
+  grid-template-rows: auto auto 1fr 1fr auto;
+  grid-template-areas:
+    "top top"
+    "agenda nest"
+    "agenda chores"
+    "agenda grocery"
+    "status status";
+}
+
 @media (orientation: portrait) {
+  #hub.has-nest {
+    grid-template-rows: auto 1.2fr auto 1fr auto;
+    grid-template-areas:
+      "top top"
+      "agenda agenda"
+      "nest nest"
+      "chores grocery"
+      "status status";
+  }
   .time { font-size: 68px; }
   .wx-temp { font-size: 50px; }
   .wx-icon { font-size: 44px; }
@@ -124,6 +144,31 @@ button, input { font: inherit; color: inherit; }
 .agenda { grid-area: agenda; }
 .chores { grid-area: chores; }
 .grocery { grid-area: grocery; }
+.nest { grid-area: nest; }
+.nest[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- thermostats */
+
+.tstat { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); }
+.tstat:first-child { border-top: 0; padding-top: 0; }
+.t-info { flex: 1; min-width: 0; }
+.t-name { font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-status { font-size: 14px; color: var(--muted); white-space: nowrap; }
+.tstat.heating .t-status { color: #d0652a; }
+.tstat.cooling .t-status { color: #2f7bd6; }
+.t-now { font-size: 36px; font-weight: 300; font-variant-numeric: tabular-nums; }
+.t-ctrl { display: flex; align-items: center; gap: 6px; }
+.t-ctrl button {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.75); font-size: 22px; line-height: 1; padding: 0;
+}
+.t-ctrl button:active { background: var(--accent-soft); }
+.t-ctrl button:disabled { opacity: 0.35; }
+.t-target { min-width: 58px; text-align: center; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.t-target.range { font-size: 17px; }
+.tstat.heating .t-target { color: #d0652a; }
+.tstat.cooling .t-target { color: #2f7bd6; }
+.t-target.pending { opacity: 0.6; }
 
 .agenda-list, .tasks { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; }
 

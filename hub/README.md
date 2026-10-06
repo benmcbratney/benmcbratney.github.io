@@ -58,9 +58,38 @@ With no backend configured the hub runs on demo data, so you can try it right aw
 screen isn't lifting before mounting, and consider a smart plug that cuts power
 overnight so the battery cycles a bit.
 
+## 3. Optional: Nest thermostats (~20 min, one-time $5)
+
+Adds a thermostat card with the current temperature, what it's doing, and −/+ to
+change the target. Uses Google's official Device Access program. Your Nest needs to
+be in the Google Home app (not an old Nest account), on a personal Gmail account.
+
+1. **Device Access:** go to console.nest.google.com/device-access, accept the terms
+   and pay the one-time $5 fee. Don't create the project yet.
+2. **Google Cloud** (console.cloud.google.com), in a new project:
+   - *APIs & Services → Library:* enable **Smart Device Management API**.
+   - *OAuth consent screen:* choose **External**, fill in the app name and your email.
+     Then **Publish app** so it's "In production". If you leave it in "Testing",
+     Google signs you out every 7 days.
+   - *Credentials → Create credentials → OAuth client ID:* type **Web application**,
+     with Authorized redirect URI `https://home-hub.YOURNAME.workers.dev/nest/callback`.
+     Copy the **client ID** and **client secret**.
+3. **Back in Device Access:** create a project, paste the OAuth client ID, and say no
+   to events. Copy the **Project ID**.
+4. **Worker → Settings → Variables and Secrets**, add `NEST_PROJECT_ID` (Text),
+   `NEST_CLIENT_ID` (Text), `NEST_CLIENT_SECRET` (Secret). Deploy.
+5. Open `https://home-hub.YOURNAME.workers.dev/nest/connect` in a browser and sign in.
+   Google will warn that it "hasn't verified this app". That's expected, because it's
+   your own app: tap Advanced → Continue. **Turn on access for your thermostats**
+   on the permissions screen. The last page shows a token; add it as a Secret named
+   `NEST_REFRESH_TOKEN` and deploy.
+6. Reopen Home Hub. The thermostat card appears on its own.
+
 ## How it behaves
 
-- Refreshes chores/groceries every minute, calendar every 5 min, weather every 15 min.
+- Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min.
+- Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
+  Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Night mode (default 11pm–6am): just a big clock and your next event over the dimmed night skyline. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check and pick up code changes.
 - Weather comes from Open-Meteo (free, no key).
