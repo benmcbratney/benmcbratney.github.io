@@ -10,7 +10,7 @@
     placeName: "Lake Forest",
     lat: "42.2586",
     lon: "-87.8406",
-    nightStart: "23",
+    nightStart: "22",
     nightEnd: "6",
     days: "5",
     photoUrl: "",
@@ -141,6 +141,7 @@
     if (night) {
       $("night-time").textContent = timeText;
       $("night-next").textContent = nextEventLine(now);
+      $("night-wx").textContent = nightForecastLine(now);
     }
 
     // Reload once a night to keep an old iPad's memory tidy and pick up code updates.
@@ -443,6 +444,7 @@
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
+        dailyWx = day;
         currentWx = { code: c.weather_code, isDay: !!c.is_day, tempF: c.temperature_2m };
         updateBackdrop();
         storePrecip(d);
@@ -614,6 +616,19 @@
       });
       box.appendChild(wrap);
     }
+  }
+
+  // Before midnight the next day is "tomorrow" (daily[1]); after midnight it's today (daily[0]).
+  var dailyWx = null;
+  function nightForecastLine(now) {
+    if (!dailyWx || !dailyWx.time) return "";
+    var target = now.getHours() < 12 ? now : addDays(now, 1);
+    var i = dailyWx.time.indexOf(ymd(target));
+    if (i < 0) return "";
+    var label = now.getHours() < 12 ? "Today" : "Tomorrow";
+    return label + ": " + wmo(dailyWx.weather_code[i], 1)[0] + " " + wmo(dailyWx.weather_code[i], 1)[1] + " · " +
+      Math.round(dailyWx.temperature_2m_max[i]) + "° / " + Math.round(dailyWx.temperature_2m_min[i]) + "° · " +
+      dailyWx.precipitation_probability_max[i] + "% precip";
   }
 
   function nextEventLine(now) {
