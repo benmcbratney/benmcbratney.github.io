@@ -132,7 +132,8 @@
     t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
     $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
     $("greeting").textContent = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-    updateBackdrop(now);
+    renderPrecipAlert(now);
+    updateBackdrop();
 
     var night = isNightHour(h) && Date.now() > wakeUntil && $("settings").hidden;
     $("night").hidden = !night;
@@ -152,36 +153,45 @@
   });
 
   // ------------------------------------------------------------- photo backdrop
-  // Freely licensed Chicago photos from Wikimedia Commons, loaded by the iPad at
-  // runtime. Daytime shots between sunrise and sunset, night shots otherwise,
-  // rotating every hour.
+  // A freely licensed Wikimedia Commons photo that matches the current weather,
+  // loaded by the iPad at runtime. At night the photo is dimmed (or swapped for a
+  // starry sky when it's clear).
 
   var PHOTOS = {
-    day: [
-      { file: "2010-02-19 3000x2000 chicago skyline.jpg", credit: "J. Crocker" },
-      { file: "2004-07-14 2600x1500 chicago lake skyline.jpg", credit: "J. Crocker" },
-      { file: "Chicago Skyline Hi-Res.jpg", credit: "Buphoff, CC BY-SA 3.0" },
-    ],
-    night: [
-      { file: "Chicago Lakefront Night Skyline.jpg", credit: "Tony Webster" },
-      { file: "Chicago River and downtown skyline at night (49768092838).jpg", credit: "Matt Kieffer" },
-      { file: "Chicago skyline at night from 360 Chicago observation deck (49713365311).jpg", credit: "Matt Kieffer" },
-    ],
+    clear: { file: "Gfp-illinois-chicago-lake-michigan-horizon.jpg", credit: "Yinan Chen, public domain" },
+    partly: { file: "Blue-skies-cumulus-clouds.jpg", credit: "Cbuske46" },
+    night: { file: "Starry night sky.jpg", credit: "Eddie Basler" },
+    cloudy: { file: "Grey cloudy sky.jpg", credit: "Gnu-Bricoleur, CC BY 4.0" },
+    fog: { file: "Early morning fog.jpg", credit: "public domain" },
+    rain: { file: "Raindrops on a window.jpg", credit: "Andromeda2064" },
+    snow: { file: "Winter forest after snow storm (45643768335).jpg", credit: "Tom Ek" },
+    storm: { file: "Lightning cloud to cloud (aka).jpg", credit: "André Karwath, CC BY-SA 2.5" },
   };
   var sun = null; // { rise: Date, set: Date } from the weather feed
+  var currentWx = null; // { code, isDay } from the weather feed
   var shownPhoto = null;
   var frontLayer = "bg-a";
+  var failedPhotos = {}; // url -> time to try again
 
   function commonsUrl(file, width) {
     return "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(file.replace(/ /g, "_")) + "?width=" + width;
   }
 
-  function currentPhoto(now) {
+  // WMO weather code → photo.
+  function photoKind(code, isDay) {
+    if (code >= 95) return "storm";
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "snow";
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "rain";
+    if (code === 45 || code === 48) return "fog";
+    if (code === 3) return "cloudy";
+    if (!isDay) return code === 2 ? "cloudy" : "night";
+    return code === 2 ? "partly" : "clear";
+  }
+
+  function currentPhoto() {
     if (settings.photoUrl) return { url: settings.photoUrl, credit: "", link: "" };
-    var h = now.getHours();
-    var dark = sun ? now < sun.rise || now >= sun.set : h < 7 || h >= 19;
-    var set = dark ? PHOTOS.night : PHOTOS.day;
-    var p = set[Math.floor(now.getTime() / 3600000) % set.length];
+    if (!currentWx) return null; // keep the plain gradient until the first forecast arrives
+    var p = PHOTOS[photoKind(currentWx.code, currentWx.isDay)];
     return {
       url: commonsUrl(p.file, 1920),
       credit: "📷 " + p.credit + " · Wikimedia Commons",
@@ -189,9 +199,14 @@
     };
   }
 
-  function updateBackdrop(now) {
-    var photo = currentPhoto(now);
-    if (shownPhoto === photo.url) return;
+  function updateBackdrop() {
+    // Dim photos after dark, except the starry sky, which is already dark.
+    var dim = !!currentWx && !currentWx.isDay && !settings.photoUrl &&
+      photoKind(currentWx.code, currentWx.isDay) !== "night";
+    document.querySelector(".backdrop").classList.toggle("dim", dim);
+    var photo = currentPhoto();
+    if (!photo || shownPhoto === photo.url) return;
+    if (failedPhotos[photo.url] > Date.now()) return;
     shownPhoto = photo.url;
     // Preload, then crossfade, so the wall never flashes blank.
     var img = new Image();
@@ -206,7 +221,10 @@
       c.textContent = photo.credit;
       if (photo.link) c.href = photo.link; else c.removeAttribute("href");
     };
-    img.onerror = function () { if (shownPhoto === photo.url) shownPhoto = null; }; // retry next tick
+    img.onerror = function () {
+      failedPhotos[photo.url] = Date.now() + 10 * 60 * 1000; // try again in 10 minutes
+      if (shownPhoto === photo.url) shownPhoto = null;
+    };
     img.src = photo.url;
   }
 
@@ -235,14 +253,18 @@
       "&longitude=" + encodeURIComponent(settings.lon) +
       "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
       "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
+      "&hourly=precipitation_probability&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
       "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=2";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
+        currentWx = { code: c.weather_code, isDay: !!c.is_day };
+        updateBackdrop();
+        storePrecip(d);
         if (day.sunrise && day.sunset) {
           sun = { rise: parseWall(day.sunrise[0]), set: parseWall(day.sunset[0]) };
-          updateBackdrop(new Date());
+          updateBackdrop();
         }
         var now = wmo(c.weather_code, c.is_day);
         var box = $("weather");
@@ -278,6 +300,74 @@
         setProblem("weather", null);
       })
       .catch(function (e) { setProblem("weather", e.message); });
+  }
+
+  // ------------------------------------------------------------- rain / snow in the next hour
+  // Open-Meteo's 15-minute data (NOAA HRRR in the US). Each value is the total for
+  // the 15 minutes *ending* at its timestamp.
+
+  var precip = null;
+
+  function storePrecip(d) {
+    var m = d.minutely_15, hr = d.hourly;
+    precip = {
+      tempF: d.current ? d.current.temperature_2m : null,
+      slots: m && m.time ? m.time.map(function (t, i) {
+        return { end: parseWall(t), mm: m.precipitation[i] || 0, snowCm: m.snowfall ? m.snowfall[i] || 0 : 0 };
+      }) : [],
+      hours: hr && hr.time ? hr.time.map(function (t, i) {
+        return { start: parseWall(t), prob: hr.precipitation_probability[i] };
+      }) : [],
+    };
+    renderPrecipAlert(new Date());
+  }
+
+  function precipMessage(now) {
+    if (!precip) return null;
+    var Q = 15 * 60 * 1000, H = 60 * 60 * 1000;
+    var horizon = new Date(now.getTime() + H);
+    var slots = precip.slots.filter(function (s) { return s.end > now && s.end - Q < horizon; });
+    var wet = function (s) { return s.mm >= 0.1 || s.snowCm >= 0.05; };
+    var firstWet = -1;
+    for (var i = 0; i < slots.length; i++) if (wet(slots[i])) { firstWet = i; break; }
+
+    if (firstWet >= 0) {
+      var run = slots.slice(firstWet);
+      var snow = run.some(function (s) { return wet(s) && s.snowCm >= 0.05; });
+      var word = snow ? "Snow" : "Rain";
+      var icon = snow ? "🌨" : "☔";
+      var start = new Date(slots[firstWet].end - Q);
+      if (start <= now) {
+        // Already falling: say when it lets up, if that's within the hour.
+        for (var j = 0; j < run.length; j++) {
+          if (!wet(run[j])) return { text: icon + " " + word + " now · letting up around " + fmtTime(run[j - 1].end), snow: snow };
+        }
+        return { text: icon + " " + word + " now · grab an umbrella", snow: snow };
+      }
+      return { text: icon + " " + word + " starting around " + fmtTime(start), snow: snow };
+    }
+
+    // Nothing in the 15-minute data: fall back to the hourly chance of precipitation.
+    var best = 0;
+    precip.hours.forEach(function (hr) {
+      if (hr.start < horizon && hr.start.getTime() + H > now.getTime()) best = Math.max(best, hr.prob || 0);
+    });
+    if (best >= 50) {
+      var cold = precip.tempF != null && precip.tempF <= 34;
+      return { text: (cold ? "🌨 " : "☔ ") + best + "% chance of " + (cold ? "snow" : "rain") + " this hour", snow: cold };
+    }
+    return null;
+  }
+
+  function renderPrecipAlert(now) {
+    var msg = precipMessage(now);
+    var box = $("precip-alert");
+    box.hidden = !msg;
+    $("greeting").hidden = !!msg;
+    if (msg) {
+      box.textContent = msg.text;
+      box.className = "precip-alert" + (msg.snow ? " snow" : "");
+    }
   }
 
   // ------------------------------------------------------------- calendar
@@ -458,6 +548,122 @@
     });
   });
 
+  // ------------------------------------------------------------- Nest thermostats
+
+  var thermostats = [];
+  var pendingSet = {}; // id -> { heatF, coolF, timer }
+  var demoThermostatList = null;
+
+  function cToF(c) { return Math.round(c * 9 / 5 + 32); }
+  function fToC(f) { return Math.round((f - 32) * 5 / 9 * 100) / 100; }
+
+  function loadNest() {
+    if (demo && !demoThermostatList) demoThermostatList = demoThermostats(); // keep demo taps
+    var p = demo ? Promise.resolve({ thermostats: demoThermostatList }) : api("/nest");
+    return p.then(function (data) {
+      thermostats = data.thermostats || [];
+      renderNest();
+      setProblem("thermostat", null);
+    }).catch(function (e) {
+      // An older Worker without Nest support answers 404: just hide the card.
+      if (/HTTP 404/.test(e.message)) { thermostats = []; renderNest(); return; }
+      setProblem("thermostat", e.message);
+    });
+  }
+
+  function targets(t) {
+    var p = pendingSet[t.id];
+    return {
+      heatF: p && p.heatF != null ? p.heatF : t.heatC != null ? cToF(t.heatC) : null,
+      coolF: p && p.coolF != null ? p.coolF : t.coolC != null ? cToF(t.coolC) : null,
+      pending: !!p,
+    };
+  }
+
+  function renderNest() {
+    var card = $("nest-card");
+    var show = thermostats.length > 0;
+    card.hidden = !show;
+    $("hub").classList.toggle("has-nest", show);
+    if (!show) return;
+    $("nest-title").textContent = thermostats.length > 1 ? "Thermostats" : "Thermostat";
+
+    var box = $("nest");
+    box.innerHTML = "";
+    thermostats.forEach(function (t) {
+      var tg = targets(t);
+      var adjustable = t.online && !t.eco && t.mode !== "OFF";
+      var row = el("div", "tstat" + (t.hvac === "HEATING" ? " heating" : t.hvac === "COOLING" ? " cooling" : ""));
+
+      var info = el("div", "t-info");
+      info.appendChild(el("div", "t-name", t.name));
+      var status = !t.online ? "Offline"
+        : t.hvac === "HEATING" ? "🔥 Heating"
+        : t.hvac === "COOLING" ? "❄️ Cooling"
+        : t.mode === "OFF" ? "Off"
+        : t.eco ? "Eco"
+        : "Holding";
+      if (t.humidity != null) status += " · " + Math.round(t.humidity) + "% humidity";
+      info.appendChild(el("div", "t-status", status));
+      row.appendChild(info);
+
+      row.appendChild(el("div", "t-now", t.ambientC != null ? cToF(t.ambientC) + "°" : "--"));
+
+      var ctrl = el("div", "t-ctrl");
+      var minus = el("button", null, "−");
+      var plus = el("button", null, "+");
+      minus.setAttribute("aria-label", "Lower " + t.name);
+      plus.setAttribute("aria-label", "Raise " + t.name);
+      var label;
+      if (t.mode === "OFF") label = "Off";
+      else if (t.eco) label = "Eco";
+      else if (t.mode === "HEATCOOL") label = tg.heatF + "–" + tg.coolF + "°";
+      else if (t.mode === "COOL") label = tg.coolF + "°";
+      else label = tg.heatF + "°";
+      var target = el("span", "t-target" + (t.mode === "HEATCOOL" ? " range" : "") + (tg.pending ? " pending" : ""), label);
+      minus.disabled = plus.disabled = !adjustable;
+      minus.addEventListener("click", function () { nudge(t, -1); });
+      plus.addEventListener("click", function () { nudge(t, 1); });
+      ctrl.appendChild(minus);
+      ctrl.appendChild(target);
+      ctrl.appendChild(plus);
+      row.appendChild(ctrl);
+
+      box.appendChild(row);
+    });
+  }
+
+  function nudge(t, delta) {
+    var tg = targets(t);
+    var clamp = function (f) { return Math.max(50, Math.min(90, f)); };
+    var p = pendingSet[t.id] || {};
+    if (t.mode === "HEAT" || t.mode === "HEATCOOL") p.heatF = clamp(tg.heatF + delta);
+    if (t.mode === "COOL" || t.mode === "HEATCOOL") p.coolF = clamp(tg.coolF + delta);
+    clearTimeout(p.timer);
+    // Wait for the taps to stop, then send one change (Google rate-limits commands).
+    p.timer = setTimeout(function () { sendSetpoint(t, p); }, 1200);
+    pendingSet[t.id] = p;
+    renderNest();
+  }
+
+  function sendSetpoint(t, p) {
+    var body = { id: t.id };
+    if (p.heatF != null) body.heatC = fToC(p.heatF);
+    if (p.coolF != null) body.coolC = fToC(p.coolF);
+    var send = demo ? Promise.resolve().then(function () {
+      if (body.heatC != null) t.heatC = body.heatC;
+      if (body.coolC != null) t.coolC = body.coolC;
+    }) : api("/nest/set", { method: "POST", body: body });
+    send.then(function () {
+      if (pendingSet[t.id] === p) delete pendingSet[t.id];
+      if (demo) renderNest(); else setTimeout(loadNest, 3000);
+    }).catch(function (e) {
+      if (pendingSet[t.id] === p) delete pendingSet[t.id];
+      renderNest();
+      setProblem("thermostat", e.message);
+    });
+  }
+
   // ------------------------------------------------------------- settings modal
 
   function openSettings() {
@@ -497,6 +703,13 @@
     };
   }
 
+  function demoThermostats() {
+    return [
+      { id: "demo-up", name: "Upstairs", online: true, ambientC: 21.1, humidity: 44, mode: "HEAT", hvac: "HEATING", eco: false, heatC: 22.2 },
+      { id: "demo-down", name: "Downstairs", online: true, ambientC: 21.7, humidity: 41, mode: "HEAT", hvac: "OFF", eco: false, heatC: 20.6 },
+    ];
+  }
+
   function demoLists() {
     var today = ymd(new Date()), yesterday = ymd(addDays(new Date(), -1));
     return {
@@ -518,7 +731,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadCalendar(), loadLists()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest()]).then(function () {
       lastSync = new Date();
       renderStatus();
     });
@@ -530,6 +743,7 @@
 
   setInterval(tickClock, 1000 * 10);
   setInterval(loadLists, 60 * 1000);
+  setInterval(function () { if (!Object.keys(pendingSet).length) loadNest(); }, 2 * 60 * 1000);
   setInterval(loadCalendar, 5 * 60 * 1000);
   setInterval(loadWeather, 15 * 60 * 1000);
   setInterval(function () { renderAgenda(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current

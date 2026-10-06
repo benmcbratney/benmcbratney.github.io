@@ -13,17 +13,34 @@
 //   CHORES_PROJECT   plain   Todoist project name for chores   (default "Chores")
 //   GROCERY_PROJECT  plain   Todoist project name for groceries (default "Groceries")
 //
-// Routes (all require header  X-Hub-Key: <HUB_KEY>):
+// Optional Nest thermostats (Google Device Access — see hub/README.md):
+//   NEST_PROJECT_ID     plain   Device Access project ID
+//   NEST_CLIENT_ID      plain   Google Cloud OAuth client ID
+//   NEST_CLIENT_SECRET  secret  Google Cloud OAuth client secret
+//   NEST_REFRESH_TOKEN  secret  from visiting /nest/connect once (it shows you the token)
+//
+// Routes (all require header  X-Hub-Key: <HUB_KEY>, except the two Nest setup pages):
 //   GET  /calendar?days=7
 //   GET  /todoist/lists
 //   POST /todoist/close   {"id": "..."}
 //   POST /todoist/add     {"list": "chores"|"grocery", "content": "..."}
+//   GET  /nest                         thermostats (null when Nest isn't configured)
+//   POST /nest/set        {"id": "...", "heatC": 20.5, "coolC": 24}   (either or both)
+//   GET  /nest/connect    (browser, no key) start Google sign-in
+//   GET  /nest/callback   (browser, no key) shows the refresh token to save
 
 const TODOIST = "https://api.todoist.com/api/v1";
+const SDM = "https://smartdevicemanagement.googleapis.com/v1";
 
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors() });
+
+    // One-time Nest sign-in pages. They're opened in a normal browser (which can't
+    // send the hub key) and only ever reveal a token to the person who just signed in.
+    const path = new URL(request.url).pathname;
+    if (path === "/nest/connect") return nestConnect(request, env);
+    if (path === "/nest/callback") return nestCallback(request, env);
 
     if (!env.HUB_KEY || request.headers.get("X-Hub-Key") !== env.HUB_KEY) {
       return json({ error: "unauthorized" }, 401);
@@ -55,6 +72,14 @@ export default {
           body: JSON.stringify({ content: String(content).trim(), project_id }),
         });
         return json(trimTask(task));
+      }
+      if (url.pathname === "/nest" && request.method === "GET") {
+        return json({ thermostats: await nestThermostats(env) });
+      }
+      if (url.pathname === "/nest/set" && request.method === "POST") {
+        const { id, heatC, coolC } = await request.json();
+        await nestSetpoint(env, id, heatC, coolC);
+        return json({ ok: true });
       }
       return json({ error: "not found" }, 404);
     } catch (err) {
@@ -140,6 +165,149 @@ async function todoistLists(env) {
   };
   const [chores, grocery] = await Promise.all([load(ids.chores), load(ids.grocery)]);
   return { chores, grocery };
+}
+
+// ---------------------------------------------------------------- Nest (Google Smart Device Management)
+
+function nestConfigured(env) {
+  return !!(env.NEST_PROJECT_ID && env.NEST_CLIENT_ID && env.NEST_CLIENT_SECRET && env.NEST_REFRESH_TOKEN);
+}
+
+function html(body, status = 200) {
+  return new Response(
+    `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">` +
+      `<body style="font:17px -apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;line-height:1.5">${body}`,
+    { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } }
+  );
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function nestConnect(request, env) {
+  if (!env.NEST_PROJECT_ID || !env.NEST_CLIENT_ID) {
+    return html("<h2>Almost there</h2><p>Add <code>NEST_PROJECT_ID</code> and <code>NEST_CLIENT_ID</code> to the Worker first.</p>", 400);
+  }
+  const redirect = new URL("/nest/callback", request.url).toString();
+  const auth = new URL(`https://nestservices.google.com/partnerconnections/${encodeURIComponent(env.NEST_PROJECT_ID)}/auth`);
+  auth.search = new URLSearchParams({
+    redirect_uri: redirect,
+    access_type: "offline",
+    prompt: "consent",
+    client_id: env.NEST_CLIENT_ID,
+    response_type: "code",
+    scope: "https://www.googleapis.com/auth/sdm.service",
+  }).toString();
+  return Response.redirect(auth.toString(), 302);
+}
+
+async function nestCallback(request, env) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  if (!code) return html(`<h2>Sign-in didn't finish</h2><p>${escapeHtml(url.searchParams.get("error") || "No code returned.")}</p>`, 400);
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.NEST_CLIENT_ID,
+      client_secret: env.NEST_CLIENT_SECRET || "",
+      code,
+      grant_type: "authorization_code",
+      redirect_uri: new URL("/nest/callback", request.url).toString(),
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.refresh_token) {
+    return html(`<h2>Couldn't get a token</h2><pre style="white-space:pre-wrap">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`, 502);
+  }
+  return html(
+    `<h2>Connected ✅</h2><p>Copy this into the Worker as a <b>Secret</b> named <code>NEST_REFRESH_TOKEN</code>, then deploy. ` +
+      `Treat it like a password and close this tab when you're done.</p>` +
+      `<textarea readonly style="width:100%;height:120px;font:14px monospace" onclick="this.select()">${escapeHtml(data.refresh_token)}</textarea>`
+  );
+}
+
+// Access tokens last an hour; keep one per Worker instance.
+let nestToken = null;
+async function nestAccessToken(env) {
+  if (nestToken && nestToken.expires > Date.now() + 60e3) return nestToken.value;
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.NEST_CLIENT_ID,
+      client_secret: env.NEST_CLIENT_SECRET,
+      refresh_token: env.NEST_REFRESH_TOKEN,
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!res.ok) throw new Error(`Google sign-in ${res.status} (re-run /nest/connect if this persists)`);
+  const data = await res.json();
+  nestToken = { value: data.access_token, expires: Date.now() + data.expires_in * 1000 };
+  return nestToken.value;
+}
+
+async function sdm(env, path, init = {}) {
+  const res = await fetch(SDM + path, {
+    ...init,
+    headers: { Authorization: `Bearer ${await nestAccessToken(env)}`, ...(init.headers || {}) },
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    throw new Error(`Nest ${res.status}: ${(detail && detail.error && detail.error.message) || path}`);
+  }
+  return res.json();
+}
+
+async function nestThermostats(env) {
+  if (!nestConfigured(env)) return null;
+  const { devices = [] } = await sdm(env, `/enterprises/${encodeURIComponent(env.NEST_PROJECT_ID)}/devices`);
+  return devices
+    .filter((d) => d.type === "sdm.devices.types.THERMOSTAT")
+    .map((d) => {
+      const t = d.traits || {};
+      const get = (trait, key) => (t["sdm.devices.traits." + trait] || {})[key];
+      const room = (d.parentRelations && d.parentRelations[0] && d.parentRelations[0].displayName) || "";
+      const eco = get("ThermostatEco", "mode") === "MANUAL_ECO";
+      return {
+        id: d.name,
+        name: get("Info", "customName") || room || "Thermostat",
+        online: get("Connectivity", "status") !== "OFFLINE",
+        ambientC: get("Temperature", "ambientTemperatureCelsius"),
+        humidity: get("Humidity", "ambientHumidityPercent"),
+        mode: get("ThermostatMode", "mode") || "OFF", // HEAT, COOL, HEATCOOL, OFF
+        hvac: get("ThermostatHvac", "status") || "OFF", // HEATING, COOLING, OFF
+        eco,
+        heatC: eco ? get("ThermostatEco", "heatCelsius") : get("ThermostatTemperatureSetpoint", "heatCelsius"),
+        coolC: eco ? get("ThermostatEco", "coolCelsius") : get("ThermostatTemperatureSetpoint", "coolCelsius"),
+      };
+    });
+}
+
+async function nestSetpoint(env, id, heatC, coolC) {
+  if (!nestConfigured(env)) throw new Error("Nest isn't configured");
+  const prefix = `enterprises/${env.NEST_PROJECT_ID}/devices/`;
+  if (typeof id !== "string" || !id.startsWith(prefix) || id.includes("..")) throw new Error("bad thermostat id");
+  const ok = (v) => typeof v === "number" && v >= 5 && v <= 35; // °C — Nest's own range is about 9–32
+  let command, params;
+  if (ok(heatC) && ok(coolC)) {
+    command = "SetRange";
+    params = { heatCelsius: heatC, coolCelsius: coolC };
+  } else if (ok(heatC)) {
+    command = "SetHeat";
+    params = { heatCelsius: heatC };
+  } else if (ok(coolC)) {
+    command = "SetCool";
+    params = { coolCelsius: coolC };
+  } else {
+    throw new Error("bad temperature");
+  }
+  await sdm(env, `/${id}:executeCommand`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ command: "sdm.devices.commands.ThermostatTemperatureSetpoint." + command, params }),
+  });
 }
 
 // ---------------------------------------------------------------- Calendar

@@ -58,21 +58,60 @@ With no backend configured the hub runs on demo data, so you can try it right aw
 screen isn't lifting before mounting, and consider a smart plug that cuts power
 overnight so the battery cycles a bit.
 
+## 3. Optional: Nest thermostats (~20 min, one-time $5)
+
+Adds a thermostat card with the current temperature, what it's doing, and −/+ to
+change the target. Uses Google's official Device Access program. Your Nest needs to
+be in the Google Home app (not an old Nest account), on a personal Gmail account.
+
+1. **Device Access:** go to console.nest.google.com/device-access, accept the terms
+   and pay the one-time $5 fee. Don't create the project yet.
+2. **Google Cloud** (console.cloud.google.com), in a new project:
+   - *APIs & Services → Library:* enable **Smart Device Management API**.
+   - *OAuth consent screen:* choose **External**, fill in the app name and your email.
+     Then **Publish app** so it's "In production". If you leave it in "Testing",
+     Google signs you out every 7 days.
+   - *Credentials → Create credentials → OAuth client ID:* type **Web application**,
+     with Authorized redirect URI `https://home-hub.YOURNAME.workers.dev/nest/callback`.
+     Copy the **client ID** and **client secret**.
+3. **Back in Device Access:** create a project, paste the OAuth client ID, and say no
+   to events. Copy the **Project ID**.
+4. **Worker → Settings → Variables and Secrets**, add `NEST_PROJECT_ID` (Text),
+   `NEST_CLIENT_ID` (Text), `NEST_CLIENT_SECRET` (Secret). Deploy.
+5. Open `https://home-hub.YOURNAME.workers.dev/nest/connect` in a browser and sign in.
+   Google will warn that it "hasn't verified this app". That's expected, because it's
+   your own app: tap Advanced → Continue. **Turn on access for your thermostats**
+   on the permissions screen. The last page shows a token; add it as a Secret named
+   `NEST_REFRESH_TOKEN` and deploy.
+6. Reopen Home Hub. The thermostat card appears on its own.
+
 ## How it behaves
 
-- Refreshes chores/groceries every minute, calendar every 5 min, weather every 15 min.
+- Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min.
+- Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
+  Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Night mode (default 11pm–6am): just a big clock and your next event over the dimmed night skyline. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check and pick up code changes.
 - Weather comes from Open-Meteo (free, no key).
+- Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill replaces the
+  greeting under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
+  "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
 
 ## Background photos
 
-The backdrop rotates hourly through freely licensed Chicago skyline photos from
-Wikimedia Commons (daytime shots between sunrise and sunset, night shots after
-dark). The photographer is credited in the bottom-right corner. To use your own
-photo instead, paste its URL into ⚙︎ → Background photo URL.
+The backdrop matches the current weather, using freely licensed photos from
+Wikimedia Commons that the iPad loads directly. After dark the photo is dimmed,
+and clear nights get a starry sky. The photographer is credited in the
+bottom-right corner. To use your own photo instead, paste its URL into
+⚙︎ → Background photo URL.
 
-- J. Crocker — *2010-02-19 3000x2000 chicago skyline.jpg*, *2004-07-14 2600x1500 chicago lake skyline.jpg*
-- Buphoff — *Chicago Skyline Hi-Res.jpg* (CC BY-SA 3.0)
-- Tony Webster — *Chicago Lakefront Night Skyline.jpg*
-- Matt Kieffer — *Chicago River and downtown skyline at night (49768092838).jpg*, *Chicago skyline at night from 360 Chicago observation deck (49713365311).jpg*
+| Weather | Photo | Photographer |
+|---|---|---|
+| Clear (day) | *Gfp-illinois-chicago-lake-michigan-horizon.jpg* | Yinan Chen, public domain |
+| Partly cloudy (day) | *Blue-skies-cumulus-clouds.jpg* | Cbuske46 |
+| Clear (night) | *Starry night sky.jpg* | Eddie Basler |
+| Cloudy / overcast | *Grey cloudy sky.jpg* | Gnu-Bricoleur, CC BY 4.0 |
+| Fog | *Early morning fog.jpg* | public domain |
+| Rain / drizzle / showers | *Raindrops on a window.jpg* | Andromeda2064 |
+| Snow | *Winter forest after snow storm (45643768335).jpg* | Tom Ek |
+| Thunderstorm | *Lightning cloud to cloud (aka).jpg* | André Karwath, CC BY-SA 2.5 |
