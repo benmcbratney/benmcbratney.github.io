@@ -13,6 +13,7 @@
     nightStart: "22",
     nightEnd: "6",
     days: "5",
+    photoUrl: "",
   };
   var STORE = "homehub.settings";
 
@@ -24,6 +25,7 @@
     // Allow saved-but-blank backend fields (demo mode).
     s.workerUrl = saved.workerUrl || "";
     s.hubKey = saved.hubKey || "";
+    s.photoUrl = saved.photoUrl || "";
     return s;
   }
 
@@ -129,9 +131,12 @@
     t.textContent = timeText;
     t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
     $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
+    $("greeting").textContent = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    updateBackdrop(now);
 
     var night = isNightHour(h) && Date.now() > wakeUntil && $("settings").hidden;
     $("night").hidden = !night;
+    document.body.classList.toggle("is-night", night);
     if (night) {
       $("night-time").textContent = timeText;
       $("night-next").textContent = nextEventLine(now);
@@ -145,6 +150,65 @@
     wakeUntil = Date.now() + 2 * 60 * 1000;
     tickClock();
   });
+
+  // ------------------------------------------------------------- photo backdrop
+  // Freely licensed Chicago photos from Wikimedia Commons, loaded by the iPad at
+  // runtime. Daytime shots between sunrise and sunset, night shots otherwise,
+  // rotating every hour.
+
+  var PHOTOS = {
+    day: [
+      { file: "2010-02-19 3000x2000 chicago skyline.jpg", credit: "J. Crocker" },
+      { file: "2004-07-14 2600x1500 chicago lake skyline.jpg", credit: "J. Crocker" },
+      { file: "Chicago Skyline Hi-Res.jpg", credit: "Buphoff, CC BY-SA 3.0" },
+    ],
+    night: [
+      { file: "Chicago Lakefront Night Skyline.jpg", credit: "Tony Webster" },
+      { file: "Chicago River and downtown skyline at night (49768092838).jpg", credit: "Matt Kieffer" },
+      { file: "Chicago skyline at night from 360 Chicago observation deck (49713365311).jpg", credit: "Matt Kieffer" },
+    ],
+  };
+  var sun = null; // { rise: Date, set: Date } from the weather feed
+  var shownPhoto = null;
+  var frontLayer = "bg-a";
+
+  function commonsUrl(file, width) {
+    return "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(file.replace(/ /g, "_")) + "?width=" + width;
+  }
+
+  function currentPhoto(now) {
+    if (settings.photoUrl) return { url: settings.photoUrl, credit: "", link: "" };
+    var h = now.getHours();
+    var dark = sun ? now < sun.rise || now >= sun.set : h < 7 || h >= 19;
+    var set = dark ? PHOTOS.night : PHOTOS.day;
+    var p = set[Math.floor(now.getTime() / 3600000) % set.length];
+    return {
+      url: commonsUrl(p.file, 1920),
+      credit: "📷 " + p.credit + " · Wikimedia Commons",
+      link: "https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(p.file.replace(/ /g, "_")),
+    };
+  }
+
+  function updateBackdrop(now) {
+    var photo = currentPhoto(now);
+    if (shownPhoto === photo.url) return;
+    shownPhoto = photo.url;
+    // Preload, then crossfade, so the wall never flashes blank.
+    var img = new Image();
+    img.onload = function () {
+      if (shownPhoto !== photo.url) return;
+      var back = frontLayer === "bg-a" ? "bg-b" : "bg-a";
+      $(back).style.backgroundImage = "url(\"" + photo.url + "\")";
+      $(back).classList.add("show");
+      $(frontLayer).classList.remove("show");
+      frontLayer = back;
+      var c = $("credit");
+      c.textContent = photo.credit;
+      if (photo.link) c.href = photo.link; else c.removeAttribute("href");
+    };
+    img.onerror = function () { if (shownPhoto === photo.url) shownPhoto = null; }; // retry next tick
+    img.src = photo.url;
+  }
 
   // ------------------------------------------------------------- weather (Open-Meteo, no key)
 
@@ -170,12 +234,16 @@
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(settings.lat) +
       "&longitude=" + encodeURIComponent(settings.lon) +
       "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
-      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
       "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=2";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
+        if (day.sunrise && day.sunset) {
+          sun = { rise: parseWall(day.sunrise[0]), set: parseWall(day.sunset[0]) };
+          updateBackdrop(new Date());
+        }
         var now = wmo(c.weather_code, c.is_day);
         var box = $("weather");
         box.innerHTML = "";
@@ -193,7 +261,12 @@
         detail.appendChild(line1);
         detail.appendChild(el("div", null, "H " + Math.round(day.temperature_2m_max[0]) + "°  L " +
           Math.round(day.temperature_2m_min[0]) + "° · " + day.precipitation_probability_max[0] + "% precip"));
-        detail.appendChild(el("div", null, settings.placeName + " · wind " + Math.round(c.wind_speed_10m) + " mph"));
+        var sunLine = "";
+        if (sun) {
+          var t = new Date();
+          sunLine = t < sun.rise ? " · sunrise " + fmtTime(sun.rise) : t < sun.set ? " · sunset " + fmtTime(sun.set) : "";
+        }
+        detail.appendChild(el("div", null, settings.placeName + " · wind " + Math.round(c.wind_speed_10m) + " mph" + sunLine));
 
         var nowBox = el("div", "wx-now");
         nowBox.appendChild(el("span", "wx-icon", now[0]));
@@ -251,13 +324,18 @@
         var row = el("div", "event");
         if (!e.allDay && e.end <= now) row.className += " past";
         if (!e.allDay && e.start <= now && e.end > now) row.className += " now";
-        var dot = el("span", "dot");
-        if (e.color) dot.style.background = e.color;
-        row.appendChild(dot);
+        var bar = el("span", "bar");
+        if (e.color) bar.style.background = e.color;
+        row.appendChild(bar);
         row.appendChild(el("span", "when", e.allDay ? "All day" : fmtTime(e.start)));
         var what = el("span", "what", e.title);
         if (e.location) what.appendChild(el("span", "where", e.location));
         row.appendChild(what);
+        if (!e.allDay && e.start <= now && e.end > now) {
+          row.appendChild(el("span", "pill", "Now"));
+        } else if (!e.allDay && e.start > now && e.start - now <= 60 * 60 * 1000) {
+          row.appendChild(el("span", "pill", "in " + Math.max(1, Math.round((e.start - now) / 60000)) + " min"));
+        }
         wrap.appendChild(row);
       });
       box.appendChild(wrap);
@@ -332,6 +410,7 @@
         if (demo || !task.recurring) {
           lists[name] = lists[name].filter(function (t) { return t !== task; });
           renderList(name);
+          if (name === "chores" && !visibleChores().length) celebrate();
         } else {
           loadLists(); // recurring chore: fetch its new due date
         }
@@ -341,6 +420,23 @@
       li.querySelector(".box").textContent = "";
       setProblem("todoist", e.message);
     });
+  }
+
+  function celebrate() {
+    var card = document.querySelector(".chores");
+    var colors = ["#c8553d", "#f2b134", "#4f8cff", "#7a9e7e", "#b07cc6", "#ffffff"];
+    for (var i = 0; i < 36; i++) {
+      var c = el("span", "confetti");
+      c.style.left = Math.random() * 100 + "%";
+      c.style.background = colors[i % colors.length];
+      c.style.animationDelay = Math.random() * 0.5 + "s";
+      c.style.setProperty("--drift", (Math.random() * 120 - 60) + "px");
+      card.appendChild(c);
+    }
+    setTimeout(function () {
+      var bits = card.querySelectorAll(".confetti");
+      for (var j = 0; j < bits.length; j++) bits[j].remove();
+    }, 3200);
   }
 
   $("grocery-add").addEventListener("submit", function (ev) {

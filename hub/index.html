@@ -8,33 +8,39 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Home Hub">
-  <meta name="theme-color" content="#f6f1ea">
+  <meta name="theme-color" content="#1d2733">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="stylesheet" href="hub.css">
 </head>
 <body>
+  <div class="backdrop" aria-hidden="true">
+    <div id="bg-a" class="bg-layer"></div>
+    <div id="bg-b" class="bg-layer"></div>
+  </div>
+
   <main id="hub">
     <header class="top">
       <div class="clock">
         <div id="time" class="time">--:--</div>
         <div id="date" class="date"></div>
+        <div id="greeting" class="greeting"></div>
       </div>
       <div id="weather" class="weather"></div>
     </header>
 
     <section class="card agenda">
-      <h2>Coming up</h2>
+      <h2><span class="icon">📅</span>Coming up</h2>
       <div id="agenda" class="agenda-list"></div>
     </section>
 
     <section class="card chores">
-      <h2>Chores <span id="chores-count" class="count"></span></h2>
+      <h2><span class="icon">🧹</span>Chores <span id="chores-count" class="count"></span></h2>
       <ul id="chores" class="tasks"></ul>
     </section>
 
     <section class="card grocery">
-      <h2>Groceries <span id="grocery-count" class="count"></span></h2>
+      <h2><span class="icon">🛒</span>Groceries <span id="grocery-count" class="count"></span></h2>
       <form id="grocery-add" class="add" autocomplete="off">
         <input id="grocery-input" type="text" placeholder="Add an item…" enterkeyhint="done">
         <button type="submit" aria-label="Add">+</button>
@@ -44,6 +50,7 @@
 
     <footer class="status">
       <span id="status-text"></span>
+      <a id="credit" class="credit" target="_blank" rel="noopener"></a>
       <button id="open-settings" class="gear" aria-label="Settings">⚙︎</button>
     </footer>
   </main>
@@ -64,6 +71,7 @@
         <label>Latitude <input name="lat" inputmode="decimal"></label>
         <label>Longitude <input name="lon" inputmode="decimal"></label>
       </div>
+      <label>Background photo URL <input name="photoUrl" type="url" placeholder="Leave blank for rotating Chicago skyline photos"></label>
       <div class="row">
         <label>Night starts <input name="nightStart" type="number" min="0" max="23"></label>
         <label>Night ends <input name="nightEnd" type="number" min="0" max="23"></label>

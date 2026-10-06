@@ -61,6 +61,18 @@ overnight so the battery cycles a bit.
 ## How it behaves
 
 - Refreshes chores/groceries every minute, calendar every 5 min, weather every 15 min.
-- Night mode (default 10pm–6am): black screen, dim clock, next event. Tap to wake for 2 min.
+- Night mode (default 10pm–6am): just a big clock and your next event over the dimmed night skyline. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check and pick up code changes.
 - Weather comes from Open-Meteo (free, no key).
+
+## Background photos
+
+The backdrop rotates hourly through freely licensed Chicago skyline photos from
+Wikimedia Commons (daytime shots between sunrise and sunset, night shots after
+dark). The photographer is credited in the bottom-right corner. To use your own
+photo instead, paste its URL into ⚙︎ → Background photo URL.
+
+- J. Crocker — *2010-02-19 3000x2000 chicago skyline.jpg*, *2004-07-14 2600x1500 chicago lake skyline.jpg*
+- Buphoff — *Chicago Skyline Hi-Res.jpg* (CC BY-SA 3.0)
+- Tony Webster — *Chicago Lakefront Night Skyline.jpg*
+- Matt Kieffer — *Chicago River and downtown skyline at night (49768092838).jpg*, *Chicago skyline at night from 360 Chicago observation deck (49713365311).jpg*
