@@ -132,6 +132,7 @@
     t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
     $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
     $("greeting").textContent = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    renderPrecipAlert(now);
     updateBackdrop(now);
 
     var night = isNightHour(h) && Date.now() > wakeUntil && $("settings").hidden;
@@ -235,11 +236,13 @@
       "&longitude=" + encodeURIComponent(settings.lon) +
       "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
       "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
+      "&hourly=precipitation_probability&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
       "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=2";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
+        storePrecip(d);
         if (day.sunrise && day.sunset) {
           sun = { rise: parseWall(day.sunrise[0]), set: parseWall(day.sunset[0]) };
           updateBackdrop(new Date());
@@ -278,6 +281,74 @@
         setProblem("weather", null);
       })
       .catch(function (e) { setProblem("weather", e.message); });
+  }
+
+  // ------------------------------------------------------------- rain / snow in the next hour
+  // Open-Meteo's 15-minute data (NOAA HRRR in the US). Each value is the total for
+  // the 15 minutes *ending* at its timestamp.
+
+  var precip = null;
+
+  function storePrecip(d) {
+    var m = d.minutely_15, hr = d.hourly;
+    precip = {
+      tempF: d.current ? d.current.temperature_2m : null,
+      slots: m && m.time ? m.time.map(function (t, i) {
+        return { end: parseWall(t), mm: m.precipitation[i] || 0, snowCm: m.snowfall ? m.snowfall[i] || 0 : 0 };
+      }) : [],
+      hours: hr && hr.time ? hr.time.map(function (t, i) {
+        return { start: parseWall(t), prob: hr.precipitation_probability[i] };
+      }) : [],
+    };
+    renderPrecipAlert(new Date());
+  }
+
+  function precipMessage(now) {
+    if (!precip) return null;
+    var Q = 15 * 60 * 1000, H = 60 * 60 * 1000;
+    var horizon = new Date(now.getTime() + H);
+    var slots = precip.slots.filter(function (s) { return s.end > now && s.end - Q < horizon; });
+    var wet = function (s) { return s.mm >= 0.1 || s.snowCm >= 0.05; };
+    var firstWet = -1;
+    for (var i = 0; i < slots.length; i++) if (wet(slots[i])) { firstWet = i; break; }
+
+    if (firstWet >= 0) {
+      var run = slots.slice(firstWet);
+      var snow = run.some(function (s) { return wet(s) && s.snowCm >= 0.05; });
+      var word = snow ? "Snow" : "Rain";
+      var icon = snow ? "🌨" : "☔";
+      var start = new Date(slots[firstWet].end - Q);
+      if (start <= now) {
+        // Already falling: say when it lets up, if that's within the hour.
+        for (var j = 0; j < run.length; j++) {
+          if (!wet(run[j])) return { text: icon + " " + word + " now · letting up around " + fmtTime(run[j - 1].end), snow: snow };
+        }
+        return { text: icon + " " + word + " now · grab an umbrella", snow: snow };
+      }
+      return { text: icon + " " + word + " starting around " + fmtTime(start), snow: snow };
+    }
+
+    // Nothing in the 15-minute data: fall back to the hourly chance of precipitation.
+    var best = 0;
+    precip.hours.forEach(function (hr) {
+      if (hr.start < horizon && hr.start.getTime() + H > now.getTime()) best = Math.max(best, hr.prob || 0);
+    });
+    if (best >= 50) {
+      var cold = precip.tempF != null && precip.tempF <= 34;
+      return { text: (cold ? "🌨 " : "☔ ") + best + "% chance of " + (cold ? "snow" : "rain") + " this hour", snow: cold };
+    }
+    return null;
+  }
+
+  function renderPrecipAlert(now) {
+    var msg = precipMessage(now);
+    var box = $("precip-alert");
+    box.hidden = !msg;
+    $("greeting").hidden = !!msg;
+    if (msg) {
+      box.textContent = msg.text;
+      box.className = "precip-alert" + (msg.snow ? " snow" : "");
+    }
   }
 
   // ------------------------------------------------------------- calendar

@@ -93,6 +93,9 @@ be in the Google Home app (not an old Nest account), on a personal Gmail account
 - Night mode (default 11pm–6am): just a big clock and your next event over the dimmed night skyline. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check and pick up code changes.
 - Weather comes from Open-Meteo (free, no key).
+- Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill replaces the
+  greeting under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
+  "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
 
 ## Background photos
 
