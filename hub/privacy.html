@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home Hub privacy</title>
+  <style>
+    :root { --bg: #f6f1ea; --ink: #2b2620; --muted: #6b625a; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #161a21; --ink: #f2eee8; --muted: #a8a097; } }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 40px 16px 64px; }
+    h1 { font-size: 28px; margin: 0 0 4px; }
+    p.meta { color: var(--muted); margin: 0 0 28px; }
+    h2 { font-size: 19px; margin: 28px 0 6px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Home Hub privacy policy</h1>
+  <p class="meta">Last updated October 7, 2026</p>
+
+  <p>Home Hub is a personal wall display for one household. It isn't offered to the
+  public, has no accounts, and has no other users.</p>
+
+  <h2>What it accesses</h2>
+  <p>With the household's permission, Home Hub reads its own Google Calendar feeds,
+  Todoist lists, and Google Nest thermostat status (temperature, humidity, mode and
+  setpoints), and can change thermostat setpoints when someone taps the controls on
+  the display.</p>
+
+  <h2>Where the data goes</h2>
+  <p>Credentials and access tokens are stored only as encrypted secrets in the
+  household's own Cloudflare Worker. Data is fetched on demand to draw the display and
+  is not stored, logged, sold or shared with anyone. Nothing is used for advertising or
+  analytics.</p>
+
+  <h2>Turning it off</h2>
+  <p>Access to Nest devices can be revoked at any time from the Google account's
+  third-party connections settings, or by deleting the Worker's secrets.</p>
+</main>
+</body>
+</html>
