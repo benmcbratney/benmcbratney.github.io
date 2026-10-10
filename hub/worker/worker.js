@@ -14,6 +14,8 @@
 //   GROCERY_PROJECT  plain   Todoist project name for groceries (default "Groceries")
 //   FAMILY           secret  optional JSON for personal greetings, e.g.
 //                            {"parents":["Mom","Dad"],"kids":["A","B"],"nicknames":["Ace"],"dog":"Rex"}
+//   KIDS_QUICK_ADD   plain   optional JSON array of one-tap buttons for the Kids card's +,
+//                            e.g. ["A school clothes","B school clothes"]
 //
 // Optional Nest thermostats (Google Device Access — see hub/README.md):
 //   NEST_PROJECT_ID     plain   Device Access project ID
@@ -28,10 +30,12 @@
 //
 // Routes (all require header  X-Hub-Key: <HUB_KEY>, except the two Nest setup pages):
 //   GET  /calendar?days=7
+//   GET  /countdowns                   next year of "⏳"-tagged events and birthdays
 //   GET  /todoist/lists
 //   POST /todoist/close   {"id": "..."}
 //   POST /todoist/add     {"list": "chores"|"grocery", "content": "..."}
 //   GET  /family                       personal greeting names (null when FAMILY isn't set)
+//                                      and the Kids quick-add buttons
 //   GET  /nest                         thermostats (null when Nest isn't configured)
 //   POST /nest/set        {"id": "...", "heatC": 20.5, "coolC": 24}   (either or both)
 //   GET  /nest/connect    (browser, no key) start Google sign-in
@@ -65,6 +69,9 @@ export default {
         const days = clamp(parseInt(url.searchParams.get("days") || "7", 10), 1, 31);
         return json(await calendar(env, days));
       }
+      if (url.pathname === "/countdowns" && request.method === "GET") {
+        return json(await countdowns(env));
+      }
       if (url.pathname === "/todoist/lists" && request.method === "GET") {
         return json(await todoistLists(env));
       }
@@ -87,7 +94,7 @@ export default {
         return json(trimTask(task));
       }
       if (url.pathname === "/family" && request.method === "GET") {
-        return json({ family: family(env) });
+        return json({ family: family(env), kidsQuickAdd: kidsQuickAdd(env) });
       }
       if (url.pathname === "/spotify" && request.method === "GET") {
         return json({ spotify: await spotifyNow(env) });
@@ -322,6 +329,18 @@ function family(env) {
   return { parents: names(f.parents), kids: names(f.kids), nicknames: names(f.nicknames), dog: names(f.dog)[0] || null };
 }
 
+// One-tap buttons for the Kids card's + (they name the kids, so they live here too).
+function kidsQuickAdd(env) {
+  if (!env.KIDS_QUICK_ADD) return [];
+  let list;
+  try {
+    list = JSON.parse(env.KIDS_QUICK_ADD);
+  } catch {
+    throw new Error("KIDS_QUICK_ADD isn't valid JSON");
+  }
+  return (Array.isArray(list) ? list : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 24);
+}
+
 // ---------------------------------------------------------------- Nest (Google Smart Device Management)
 
 function nestConfigured(env) {
@@ -467,7 +486,8 @@ async function nestSetpoint(env, id, heatC, coolC) {
 
 // ---------------------------------------------------------------- Calendar
 
-async function calendar(env, days) {
+// `keep` optionally narrows which VEVENTs get expanded (see countdowns).
+async function calendar(env, days, keep) {
   const tz = env.HOME_TZ || "America/Chicago";
   const cals = JSON.parse(env.CALENDARS || "[]");
 
@@ -479,7 +499,7 @@ async function calendar(env, days) {
       try {
         const res = await fetch(cal.url, { cf: { cacheTtl: 120 } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const events = expandCalendar(await res.text(), start, days, tz);
+        const events = expandCalendar(await res.text(), start, days, tz, keep);
         return events.map((e) => ({ ...e, calendar: cal.name, color: cal.color || null }));
       } catch (err) {
         return [{ error: `${cal.name}: ${err.message}` }];
@@ -497,11 +517,31 @@ async function calendar(env, days) {
   };
 }
 
+// Countdowns: anything with ⏳ or the word "countdown" in its title, plus all-day
+// birthdays, looking a year ahead. Only matching events are expanded, so the long
+// window stays cheap. The iPad decides which birthdays are family.
+const COUNTDOWN_RE = /⏳|\bcountdown\b/i;
+const BIRTHDAY_RE = /birthday|\bb-?day\b/i;
+
+async function countdowns(env) {
+  const data = await calendar(env, 366, (ev) =>
+    COUNTDOWN_RE.test(ev.summary || "") || (ev.start.allDay && BIRTHDAY_RE.test(ev.summary || ""))
+  );
+  // Just the next occurrence of each (a weekly tagged event shouldn't fill the list).
+  const seen = new Set();
+  const events = data.events.filter((e) => {
+    if (seen.has(e.title)) return false;
+    seen.add(e.title);
+    return true;
+  }).map((e) => ({ title: e.title, allDay: e.allDay, start: e.start, end: e.end }));
+  return { errors: data.errors, events };
+}
+
 // Expand one ICS document into event instances overlapping the `days` days
 // starting at wall-clock date `startDay` in `tz`. Output times are wall-clock
 // strings in `tz` ("2026-10-06T09:00"), or dates ("2026-10-06") for all-day
 // events, so the iPad never has to do tz math.
-function expandCalendar(text, startDay, days, tz) {
+function expandCalendar(text, startDay, days, tz, keep) {
   const endDay = addDays(startDay, days);
   // Timed events are compared as real instants; all-day events as floating dates.
   const timedWin = [toInstant(startDay, tz), toInstant(endDay, tz)];
@@ -517,7 +557,7 @@ function expandCalendar(text, startDay, days, tz) {
 
   const out = [];
   for (const ev of vevents) {
-    if (!ev.start) continue;
+    if (!ev.start || (keep && !keep(ev))) continue;
     const durMs = ev.end ? ev.end.instant - ev.start.instant : ev.start.allDay ? 864e5 : 0;
     const skip = overrides.get(ev.uid);
     const [winStart, winEnd] = ev.start.allDay ? dayWin : timedWin;

@@ -27,6 +27,7 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `CHORES_PROJECT` | Text | Todoist project name, default `Chores` |
    | `GROCERY_PROJECT` | Text | Todoist project name, default `Groceries` |
    | `FAMILY` | Secret | optional, for personal greetings (see below) |
+   | `KIDS_QUICK_ADD` | Text | optional JSON list of one-tap buttons for the Kids card's **+**, e.g. `["Kid One school clothes","More pull-ups"]` |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
    ⚙ Settings → pick the calendar → *Integrate calendar* → **Secret address in iCal format**.
@@ -138,6 +139,23 @@ Then add it to `CALENDARS` like your other calendars. It's a public calendar, so
 its *Public address in iCal format*. On game days the greeting counts down to kickoff
 and says when the Bears are on.
 
+## Countdowns
+
+Up to four "days until" tiles sit under the agenda, picked in this order:
+
+1. **Anything you tag in Google Calendar.** Put ⏳ or the word "countdown" in the
+   title, like "🏖️ Florida trip ⏳" or "Countdown: last day of school". The Worker
+   looks a full year ahead for these. A leading emoji becomes the tile's icon, and
+   the ⏳/"countdown" part is hidden.
+2. **Family birthdays** in the next 60 days: all-day "birthday" events naming
+   someone in `FAMILY`. Other people's birthdays stay off the board unless you tag them.
+3. **Holidays** in the next 60 days: New Year's, Valentine's, St. Patrick's, Easter,
+   Mother's Day, Father's Day, the Fourth, Halloween, Thanksgiving and Christmas.
+
+The closest one within a month also turns up in the rotating greeting ("Only 3 more
+sleeps till Christmas 🎄"). Tagged events refresh hourly. With an older Worker that
+doesn't have `/countdowns` yet, the holidays still show.
+
 ## How it behaves
 
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
@@ -151,6 +169,8 @@ and says when the Bears are on.
 - Groceries: tap **+** for one-tap buttons (the household staples, then anything else that's been on
   the list, most frequent first). Items already on the list show a ✓. "Type something else…" opens the
   system prompt, for when the iPad's keyboard cooperates. Edit the staples in `GROCERY_STAPLES` in hub.js.
+- Kids: the **+** works the same way, with buttons from the `KIDS_QUICK_ADD` Worker variable (kept there
+  because they name the kids). Edit that variable in Cloudflare to change them; no re-paste needed.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
