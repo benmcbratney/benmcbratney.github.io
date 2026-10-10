@@ -143,10 +143,14 @@ and says when the Bears are on.
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
   Spotify every 10 s while playing (30 s otherwise).
 - Header shows current conditions plus a 5-day forecast strip (rain chance shown when it's 20% or more).
-- Kitchen timers: tap **⏲️ Timer** for presets (1 min–1 hour) or Custom. Running timers sit in the
-  bottom bar; a finished one turns red, pulses and chimes every 3 s (for up to 10 min) until tapped.
-  Timers survive reloads, and the hub holds off self-updates while one is running. The chime needs the
-  iPad's volume up and the side switch not on mute.
+- Kitchen timers: tap **⏲️ Timer** for presets (1 min–1 hour) or Custom. Running timers show as big
+  countdowns across the top of the screen. When one finishes, a flashing red full-screen "TIME'S UP!"
+  covers everything (even the night clock) and an urgent beep-beep-beep-beep alarm sounds every second
+  (for up to 10 min) until you tap Dismiss. Timers survive reloads, and the hub holds off self-updates
+  while one is running. The alarm needs the iPad's volume up and the side switch not on mute.
+- Groceries: tap **+** for one-tap buttons (the household staples, then anything else that's been on
+  the list, most frequent first). Items already on the list show a ✓. "Type something else…" opens the
+  system prompt, for when the iPad's keyboard cooperates. Edit the staples in `GROCERY_STAPLES` in hub.js.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.

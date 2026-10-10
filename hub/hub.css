@@ -37,7 +37,7 @@ button, input { font: inherit; color: inherit; }
 /* Stop long-presses from selecting text on the display, but keep this off every
    ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
    to show the keyboard for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card {
+.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -397,30 +397,45 @@ body.is-night #hub { visibility: hidden; }
 }
 .timer-btn:active { transform: scale(0.96); }
 
-/* Running timers: compact pills in the empty middle of the bottom bar (also shown
-   over the night screen). A finished timer grows, turns red and pulses. */
+/* Running timers: big pills across the top center of the screen (also shown over the
+   night clock). A finished timer becomes the full-screen alert below. */
 .timers {
-  position: fixed; left: 50%; bottom: max(6px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 15;
-  display: flex; flex-direction: row; align-items: flex-end; gap: 8px; pointer-events: none;
+  position: fixed; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 15;
+  display: flex; flex-direction: row; align-items: center; gap: 12px; pointer-events: none;
 }
 .timer {
-  pointer-events: auto; display: flex; align-items: center; gap: 8px; white-space: nowrap;
-  padding: 4px 5px 4px 14px; border-radius: 999px;
-  background: rgba(20, 24, 32, 0.78); color: #fff; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  pointer-events: auto; display: flex; align-items: center; gap: 12px; white-space: nowrap;
+  padding: 8px 8px 8px 24px; border-radius: 999px;
+  background: rgba(20, 24, 32, 0.82); color: #fff; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.18);
   -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   animation: fade-in 0.3s ease both;
 }
-.timer .t-left { font-size: 22px; font-weight: 400; font-variant-numeric: tabular-nums; }
-.timer .t-label { font-size: 13px; opacity: 0.75; }
+.timer .t-left { font-size: 46px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -1px; line-height: 1.1; }
+.timer .t-label { font-size: 17px; opacity: 0.8; }
 .timer .t-x {
-  width: 28px; height: 28px; border-radius: 50%; border: 0; padding: 0;
-  background: rgba(255, 255, 255, 0.16); color: #fff; font-size: 14px;
+  width: 44px; height: 44px; border-radius: 50%; border: 0; padding: 0;
+  background: rgba(255, 255, 255, 0.18); color: #fff; font-size: 20px;
 }
-.timer.done { background: var(--accent); padding: 10px 10px 10px 22px; gap: 12px; animation: ring 1s ease-in-out infinite; }
-.timer.done .t-left { font-size: 30px; }
-.timer.done .t-label { opacity: 1; font-weight: 600; font-size: 18px; }
-.timer.done .t-x { width: 38px; height: 38px; font-size: 18px; }
-@keyframes ring { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+
+/* Time's up: flashing red, over everything. Tap anywhere (or Dismiss) to stop. */
+.timer-alert {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  color: #fff; text-align: center; -webkit-user-select: none; user-select: none;
+  animation: alarm-flash 1s steps(1, end) infinite;
+}
+.timer-alert[hidden] { display: none; }
+.ta-icon { font-size: 160px; line-height: 1; animation: alarm-shake 0.5s ease-in-out infinite; }
+.ta-title { font-size: 110px; font-weight: 800; letter-spacing: 2px; line-height: 1.05; text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35); }
+.ta-label { font-size: 32px; font-weight: 600; opacity: 0.95; }
+.ta-dismiss {
+  margin-top: 36px; border: 0; border-radius: 999px; padding: 22px 80px;
+  background: #fff; color: #b3261e; font-size: 34px; font-weight: 800; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.ta-dismiss:active { transform: scale(0.97); }
+@keyframes alarm-flash { 0% { background: #d32f1f; } 50% { background: #8e1408; } }
+@keyframes alarm-shake { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
 
 .timer-card { width: 520px; }
 .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 16px; }
@@ -429,3 +444,16 @@ body.is-night #hub { visibility: hidden; }
   padding: 16px 0; font-size: 20px; font-weight: 600;
 }
 .presets button:active { background: var(--accent-soft); }
+
+/* ---------------------------------------------------------------- one-tap groceries */
+
+.grocery-card { width: 720px; }
+.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 16px; }
+.chip {
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 14px;
+  padding: 16px 8px; font-size: 19px; font-weight: 600; line-height: 1.2;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.chip:active { transform: scale(0.96); background: var(--accent-soft); }
+.chip.busy { opacity: 0.55; }
+.chip.on { background: var(--done); border-color: var(--done); color: #fff; }

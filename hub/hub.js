@@ -654,6 +654,8 @@
     return p.then(function (data) {
       lists.chores = data.chores || [];
       lists.grocery = data.grocery || [];
+      learnGroceries(lists.grocery);
+      if (!$("grocery-picker").hidden) renderGroceryChips();
       renderList("chores");
       renderList("grocery");
       var missing = [];
@@ -730,20 +732,98 @@
     }, 3200);
   }
 
-  // Adding uses the system prompt rather than a text box: iPadOS home-screen apps
-  // sometimes won't show the keyboard for in-page text boxes, and it saves space.
-  $("grocery-add").addEventListener("click", function () {
-    var content = (window.prompt("Add to Groceries") || "").trim();
+  // ------------------------------------------------------------- one-tap groceries
+  // The wall iPad's keyboard is unreliable (an iPadOS home-screen app bug), so + opens
+  // a grid of one-tap items: the household staples first, then anything else that's
+  // shown up on the list before, most frequent first. "Type something else…" uses the
+  // system prompt for when the keyboard cooperates.
+
+  var GROCERY_STAPLES = [
+    "Milk", "Sandy bread", "Kids yogurt", "Dad yogurt", "Bagels", "Mofns",
+    "Bananas", "Strawberries", "Blueberries", "Turkey", "Cheese",
+  ];
+  var HISTORY_KEY = "homehub.groceryHistory";
+  var groceryHistory = { counts: {}, seen: [] };
+  try { groceryHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || groceryHistory; } catch (e) {}
+  var pendingAdds = {}; // lowercased name -> true while the add is in flight
+
+  function norm(name) { return String(name).trim().toLowerCase(); }
+
+  // Learn items as they appear on the list (including ones added from a phone).
+  function learnGroceries(items) {
+    var seen = groceryHistory.seen || [];
+    var changed = false;
+    items.forEach(function (t) {
+      if (!t.id || seen.indexOf(t.id) >= 0) return;
+      seen.push(t.id);
+      var key = (t.content || "").trim();
+      if (!key) return;
+      groceryHistory.counts[key] = (groceryHistory.counts[key] || 0) + 1;
+      changed = true;
+    });
+    if (!changed) return;
+    groceryHistory.seen = seen.slice(-500);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(groceryHistory)); } catch (e) {}
+  }
+
+  function groceryChoices() {
+    var staples = {};
+    GROCERY_STAPLES.forEach(function (n) { staples[norm(n)] = true; });
+    var learned = Object.keys(groceryHistory.counts)
+      .filter(function (n) { return !staples[norm(n)]; })
+      .sort(function (a, b) { return groceryHistory.counts[b] - groceryHistory.counts[a]; })
+      .slice(0, 9);
+    return GROCERY_STAPLES.concat(learned);
+  }
+
+  function onGroceryList(name) {
+    var n = norm(name);
+    return lists.grocery.some(function (t) { return norm(t.content) === n; });
+  }
+
+  function renderGroceryChips() {
+    var box = $("grocery-chips");
+    box.innerHTML = "";
+    groceryChoices().forEach(function (name) {
+      var on = onGroceryList(name), busy = pendingAdds[norm(name)];
+      var chip = el("button", "chip" + (on ? " on" : "") + (busy ? " busy" : ""), (on ? "✓ " : "") + name);
+      chip.type = "button";
+      chip.addEventListener("click", function () {
+        if (onGroceryList(name) || pendingAdds[norm(name)]) return;
+        addGrocery(name);
+      });
+      box.appendChild(chip);
+    });
+  }
+
+  function addGrocery(content) {
+    content = String(content).trim();
     if (!content) return;
+    pendingAdds[norm(content)] = true;
+    renderGroceryChips();
     var p = demo
       ? Promise.resolve({ id: "demo-" + Date.now(), content: content })
       : api("/todoist/add", { method: "POST", body: { list: "grocery", content: content } });
     p.then(function (task) {
       lists.grocery.push(task);
+      learnGroceries([task]);
       renderList("grocery");
     }).catch(function (e) {
       setProblem("todoist", "couldn't add \"" + content + "\": " + e.message);
+    }).then(function () {
+      delete pendingAdds[norm(content)];
+      if (!$("grocery-picker").hidden) renderGroceryChips();
     });
+  }
+
+  $("grocery-add").addEventListener("click", function () {
+    renderGroceryChips();
+    $("grocery-picker").hidden = false;
+  });
+  $("grocery-done").addEventListener("click", function () { $("grocery-picker").hidden = true; });
+  $("grocery-type").addEventListener("click", function () {
+    var content = (window.prompt("Add to Groceries") || "").trim();
+    if (content) addGrocery(content);
   });
 
   // ------------------------------------------------------------- Nest thermostats
@@ -886,19 +966,24 @@
   document.addEventListener("touchend", unlockAudio);
   document.addEventListener("click", unlockAudio);
 
-  function chime() {
+  // Urgent alarm: four fast, piercing square-wave beeps (like a kitchen timer's piezo
+  // buzzer), alternating pitch. Square waves sit in the range small tablet speakers
+  // reproduce loudest, so this cuts through a noisy kitchen far better than a chime.
+  function alarm() {
     if (!audio || audio.state !== "running") return;
-    var t0 = audio.currentTime;
-    [0, 0.22, 0.44].forEach(function (offset, i) {
+    var t0 = audio.currentTime + 0.01;
+    for (var i = 0; i < 4; i++) {
+      var start = t0 + i * 0.15;
       var osc = audio.createOscillator(), gain = audio.createGain();
-      osc.type = "sine";
-      osc.frequency.value = i === 2 ? 1175 : 880;
-      gain.gain.setValueAtTime(0.0001, t0 + offset);
-      gain.gain.exponentialRampToValueAtTime(0.5, t0 + offset + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + offset + 0.2);
+      osc.type = "square";
+      osc.frequency.value = i % 2 ? 2637 : 2093;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(0.5, start + 0.005);
+      gain.gain.setValueAtTime(0.5, start + 0.095);
+      gain.gain.linearRampToValueAtTime(0.0001, start + 0.1);
       osc.connect(gain); gain.connect(audio.destination);
-      osc.start(t0 + offset); osc.stop(t0 + offset + 0.22);
-    });
+      osc.start(start); osc.stop(start + 0.11);
+    }
   }
 
   function fmtLeft(ms) {
@@ -935,7 +1020,6 @@
       var x = el("button", "t-x", "✕");
       x.type = "button";
       x.addEventListener("click", function (ev) { ev.stopPropagation(); removeTimer(t.id); });
-      row.addEventListener("click", function () { if (row.classList.contains("done")) removeTimer(t.id); });
       row.appendChild(left); row.appendChild(label); row.appendChild(x);
       box.appendChild(row);
       timerRows[t.id] = { row: row, left: left, label: label, x: x, t: t, done: null };
@@ -944,27 +1028,48 @@
   }
 
   function updateTimerText() {
-    var now = Date.now();
+    var now = Date.now(), doneLabels = [];
     Object.keys(timerRows).forEach(function (id) {
       var r = timerRows[id], done = now >= r.t.ends;
+      if (done) doneLabels.push(r.t.label);
       if (r.done !== done) {
         r.done = done;
-        r.row.className = "timer" + (done ? " done" : "");
-        r.label.textContent = done ? r.t.label + " — time's up!" : r.t.label;
-        r.x.setAttribute("aria-label", done ? "Dismiss timer" : "Cancel timer");
+        r.row.style.display = done ? "none" : ""; // finished timers move to the full-screen alert
+        r.label.textContent = r.t.label;
+        r.x.setAttribute("aria-label", "Cancel timer");
       }
-      var text = done ? "⏰" : fmtLeft(r.t.ends - now);
-      if (r.left.textContent !== text) r.left.textContent = text;
+      if (!done) {
+        var text = fmtLeft(r.t.ends - now);
+        if (r.left.textContent !== text) r.left.textContent = text;
+      }
     });
+    // Full-screen "time's up" over everything (including the night clock).
+    var alertBox = $("timer-alert");
+    var wasHidden = alertBox.hidden;
+    alertBox.hidden = !doneLabels.length;
+    if (doneLabels.length) {
+      var text = doneLabels.join(" · ") + (doneLabels.length > 1 ? " timers" : " timer");
+      if ($("ta-label").textContent !== text) $("ta-label").textContent = text;
+      if (wasHidden) lastChime = 0; // ring immediately
+    }
   }
+
+  function dismissDoneTimers() {
+    var now = Date.now();
+    timers = timers.filter(function (t) { return now < t.ends; });
+    saveTimers();
+    renderTimers();
+  }
+  $("ta-dismiss").addEventListener("click", function (ev) { ev.stopPropagation(); dismissDoneTimers(); });
+  $("timer-alert").addEventListener("click", dismissDoneTimers);
 
   function tickTimers() {
     if (!timers.length) return;
     updateTimerText();
     var now = Date.now();
-    // Ring every 3 seconds while a finished timer is up, for up to 10 minutes.
+    // Beep-beep-beep-beep every second while a finished timer is up, for up to 10 minutes.
     var ringing = timers.some(function (t) { return now >= t.ends && now - t.ends < 10 * 60000; });
-    if (ringing && now - lastChime >= 3000) { lastChime = now; chime(); }
+    if (ringing && now - lastChime >= 950) { lastChime = now; alarm(); }
   }
 
   function openTimerPicker() { unlockAudio(); $("timer-picker").hidden = false; }
