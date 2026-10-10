@@ -187,7 +187,24 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .score-chip.win { background: rgba(46, 125, 70, 0.88); }
 @keyframes blink { 50% { opacity: 0.25; } }
 
-.weather { display: flex; align-items: flex-end; gap: 16px; text-align: right; }
+.weather { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
+.wx-main { display: flex; align-items: flex-end; gap: 16px; }
+
+/* What to wear: big emoji, tiny labels, readable by pre-readers. */
+.wx-wear {
+  display: flex; align-items: center; gap: 4px; padding: 4px 12px 4px 14px; border-radius: 16px;
+  background: rgba(20, 30, 50, 0.45); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.wear-when { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--on-photo-muted); margin-right: 6px; }
+.wear-item { display: flex; flex-direction: column; align-items: center; min-width: 54px; }
+.wear-icon { font-size: 28px; line-height: 1.15; }
+.wear-label { font-size: 11px; font-weight: 600; color: var(--on-photo); white-space: nowrap; }
+.wear-big { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin-bottom: 12px; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); }
+.wear-big .wear-when { color: var(--muted); font-size: 15px; }
+.wear-big .wear-item { min-width: 76px; }
+.wear-big .wear-icon { font-size: 44px; }
+.wear-big .wear-label { font-size: 14px; color: var(--ink); }
+.wear-feels { margin-left: auto; color: var(--muted); font-size: 15px; font-weight: 600; }
 .wx-now { display: flex; align-items: center; gap: 10px; }
 .wx-icon { font-size: 48px; line-height: 1; }
 .wx-temp { font-size: 60px; font-weight: 200; line-height: 1; }

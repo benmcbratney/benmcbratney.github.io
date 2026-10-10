@@ -444,8 +444,8 @@
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(settings.lat) +
       "&longitude=" + encodeURIComponent(settings.lon) +
       "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
-      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
-      "&hourly=precipitation_probability,temperature_2m,weather_code,is_day,wind_speed_10m&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max" +
+      "&hourly=precipitation_probability,temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
       "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
@@ -493,13 +493,73 @@
         nowBox.appendChild(el("span", "wx-icon", now[0]));
         nowBox.appendChild(el("span", "wx-temp", Math.round(c.temperature_2m) + "°"));
 
-        box.appendChild(detail);
-        box.appendChild(nowBox);
-        box.appendChild(strip);
+        var main = el("div", "wx-main");
+        main.appendChild(detail);
+        main.appendChild(nowBox);
+        main.appendChild(strip);
+        box.appendChild(main);
+        var wear = outfit(new Date());
+        if (wear) box.appendChild(outfitRow(wear, "wx-wear"));
         if (!$("hourly").hidden) renderHourly();
         setProblem("weather", null);
       })
       .catch(function (e) { setProblem("weather", e.message); });
+  }
+
+  // ------------------------------------------------------------- what to wear
+  // Picture-first clothing tips for the kids, from the "feels like" temperatures,
+  // rain/snow chances, wind and UV across the daytime (7am–7pm). After 3pm it
+  // looks ahead to tomorrow, so it's ready for getting dressed in the morning.
+
+  function outfit(now) {
+    if (!hourlyWx || !hourlyWx.time || !dailyWx) return null;
+    var tomorrow = now.getHours() >= 15;
+    var day = tomorrow ? addDays(now, 1) : now;
+    var key = ymd(day), from = 7, to = 19;
+    var feels = [], pop = 0, wind = 0, snowy = false, rainy = false;
+    hourlyWx.time.forEach(function (t, i) {
+      var at = parseWall(t);
+      if (ymd(at) !== key || at.getHours() < from || at.getHours() >= to) return;
+      if (!tomorrow && at.getTime() + 3600e3 < now.getTime()) return; // rest of today only
+      var feel = hourlyWx.apparent_temperature ? hourlyWx.apparent_temperature[i] : hourlyWx.temperature_2m[i];
+      feels.push(feel);
+      var p = hourlyWx.precipitation_probability[i] || 0, c = hourlyWx.weather_code[i];
+      pop = Math.max(pop, p);
+      wind = Math.max(wind, hourlyWx.wind_speed_10m[i] || 0);
+      var snowCode = (c >= 71 && c <= 77) || c === 85 || c === 86;
+      if (p >= 40 && snowCode) snowy = true;
+      if (p >= 40 && !snowCode && ((c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95)) rainy = true;
+    });
+    if (!feels.length) return null;
+    var lo = Math.min.apply(null, feels), hi = Math.max.apply(null, feels);
+    var di = dailyWx.time.indexOf(key);
+    var uv = di >= 0 && dailyWx.uv_index_max ? dailyWx.uv_index_max[di] : 0;
+
+    var items = [];
+    if (lo < 33) items.push(["🧥", "Big coat"], ["🧣", "Hat & scarf"], ["🧤", "Mittens"]);
+    else if (lo < 50) items.push(["🧥", "Coat"]);
+    else if (lo < 60) items.push(["🧥", "Light jacket"]);
+    if (hi >= 75) items.push(["🩳", "Shorts"], ["👕", "T-shirt"]);
+    else if (hi >= 65) items.push(["👕", "T-shirt"]);
+    else if (!snowy) items.push(["👖", "Pants"]);
+    if (snowy) items.push(["👖", "Snow pants"], ["🥾", "Snow boots"]);
+    else if (rainy) items.push(["☂️", "Umbrella"], ["🥾", "Rain boots"]);
+    else if (pop >= 40) items.push(["☂️", "Umbrella"]);
+    if (uv >= 6 && hi >= 60) items.push(["🧴", "Sunscreen"]);
+    if (wind >= 20) items.push(["💨", "Windy!"]);
+    return { when: tomorrow ? "Tomorrow" : "Today", items: items.slice(0, 6), lo: Math.round(lo), hi: Math.round(hi) };
+  }
+
+  function outfitRow(wear, cls) {
+    var row = el("div", cls);
+    row.appendChild(el("span", "wear-when", wear.when + ", wear"));
+    wear.items.forEach(function (it) {
+      var item = el("span", "wear-item");
+      item.appendChild(el("span", "wear-icon", it[0]));
+      item.appendChild(el("span", "wear-label", it[1]));
+      row.appendChild(item);
+    });
+    return row;
   }
 
   // ------------------------------------------------------------- hourly forecast pop-up
@@ -569,6 +629,14 @@
         }
       });
     });
+
+    var wearBox = $("hourly-wear");
+    wearBox.innerHTML = "";
+    var wear = outfit(now);
+    if (wear) {
+      wearBox.appendChild(outfitRow(wear, "wear-big"));
+      wearBox.lastChild.appendChild(el("span", "wear-feels", "Feels like " + wear.lo + "°–" + wear.hi + "°"));
+    }
 
     var summary = settings.placeName + " · next 24 hours: high " + Math.round(hi) + "°, low " + Math.round(lo) + "°";
     var maxPop = Math.max.apply(null, hours.map(function (h) { return hourlyWx.precipitation_probability[h.i] || 0; }));
