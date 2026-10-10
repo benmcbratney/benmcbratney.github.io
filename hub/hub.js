@@ -654,6 +654,8 @@
     return p.then(function (data) {
       lists.chores = data.chores || [];
       lists.grocery = data.grocery || [];
+      learnGroceries(lists.grocery);
+      if (!$("grocery-picker").hidden) renderGroceryChips();
       renderList("chores");
       renderList("grocery");
       var missing = [];
@@ -730,20 +732,98 @@
     }, 3200);
   }
 
-  // Adding uses the system prompt rather than a text box: iPadOS home-screen apps
-  // sometimes won't show the keyboard for in-page text boxes, and it saves space.
-  $("grocery-add").addEventListener("click", function () {
-    var content = (window.prompt("Add to Groceries") || "").trim();
+  // ------------------------------------------------------------- one-tap groceries
+  // The wall iPad's keyboard is unreliable (an iPadOS home-screen app bug), so + opens
+  // a grid of one-tap items: the household staples first, then anything else that's
+  // shown up on the list before, most frequent first. "Type something else…" uses the
+  // system prompt for when the keyboard cooperates.
+
+  var GROCERY_STAPLES = [
+    "Milk", "Sandy bread", "Kids yogurt", "Dad yogurt", "Bagels", "Mofns",
+    "Bananas", "Strawberries", "Blueberries", "Turkey", "Cheese",
+  ];
+  var HISTORY_KEY = "homehub.groceryHistory";
+  var groceryHistory = { counts: {}, seen: [] };
+  try { groceryHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || groceryHistory; } catch (e) {}
+  var pendingAdds = {}; // lowercased name -> true while the add is in flight
+
+  function norm(name) { return String(name).trim().toLowerCase(); }
+
+  // Learn items as they appear on the list (including ones added from a phone).
+  function learnGroceries(items) {
+    var seen = groceryHistory.seen || [];
+    var changed = false;
+    items.forEach(function (t) {
+      if (!t.id || seen.indexOf(t.id) >= 0) return;
+      seen.push(t.id);
+      var key = (t.content || "").trim();
+      if (!key) return;
+      groceryHistory.counts[key] = (groceryHistory.counts[key] || 0) + 1;
+      changed = true;
+    });
+    if (!changed) return;
+    groceryHistory.seen = seen.slice(-500);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(groceryHistory)); } catch (e) {}
+  }
+
+  function groceryChoices() {
+    var staples = {};
+    GROCERY_STAPLES.forEach(function (n) { staples[norm(n)] = true; });
+    var learned = Object.keys(groceryHistory.counts)
+      .filter(function (n) { return !staples[norm(n)]; })
+      .sort(function (a, b) { return groceryHistory.counts[b] - groceryHistory.counts[a]; })
+      .slice(0, 9);
+    return GROCERY_STAPLES.concat(learned);
+  }
+
+  function onGroceryList(name) {
+    var n = norm(name);
+    return lists.grocery.some(function (t) { return norm(t.content) === n; });
+  }
+
+  function renderGroceryChips() {
+    var box = $("grocery-chips");
+    box.innerHTML = "";
+    groceryChoices().forEach(function (name) {
+      var on = onGroceryList(name), busy = pendingAdds[norm(name)];
+      var chip = el("button", "chip" + (on ? " on" : "") + (busy ? " busy" : ""), (on ? "✓ " : "") + name);
+      chip.type = "button";
+      chip.addEventListener("click", function () {
+        if (onGroceryList(name) || pendingAdds[norm(name)]) return;
+        addGrocery(name);
+      });
+      box.appendChild(chip);
+    });
+  }
+
+  function addGrocery(content) {
+    content = String(content).trim();
     if (!content) return;
+    pendingAdds[norm(content)] = true;
+    renderGroceryChips();
     var p = demo
       ? Promise.resolve({ id: "demo-" + Date.now(), content: content })
       : api("/todoist/add", { method: "POST", body: { list: "grocery", content: content } });
     p.then(function (task) {
       lists.grocery.push(task);
+      learnGroceries([task]);
       renderList("grocery");
     }).catch(function (e) {
       setProblem("todoist", "couldn't add \"" + content + "\": " + e.message);
+    }).then(function () {
+      delete pendingAdds[norm(content)];
+      if (!$("grocery-picker").hidden) renderGroceryChips();
     });
+  }
+
+  $("grocery-add").addEventListener("click", function () {
+    renderGroceryChips();
+    $("grocery-picker").hidden = false;
+  });
+  $("grocery-done").addEventListener("click", function () { $("grocery-picker").hidden = true; });
+  $("grocery-type").addEventListener("click", function () {
+    var content = (window.prompt("Add to Groceries") || "").trim();
+    if (content) addGrocery(content);
   });
 
   // ------------------------------------------------------------- Nest thermostats

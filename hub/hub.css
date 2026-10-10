@@ -37,7 +37,7 @@ button, input { font: inherit; color: inherit; }
 /* Stop long-presses from selecting text on the display, but keep this off every
    ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
    to show the keyboard for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card {
+.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -444,3 +444,16 @@ body.is-night #hub { visibility: hidden; }
   padding: 16px 0; font-size: 20px; font-weight: 600;
 }
 .presets button:active { background: var(--accent-soft); }
+
+/* ---------------------------------------------------------------- one-tap groceries */
+
+.grocery-card { width: 720px; }
+.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 16px; }
+.chip {
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 14px;
+  padding: 16px 8px; font-size: 19px; font-weight: 600; line-height: 1.2;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.chip:active { transform: scale(0.96); background: var(--accent-soft); }
+.chip.busy { opacity: 0.55; }
+.chip.on { background: var(--done); border-color: var(--done); color: #fff; }

@@ -148,6 +148,9 @@ and says when the Bears are on.
   covers everything (even the night clock) and an urgent beep-beep-beep-beep alarm sounds every second
   (for up to 10 min) until you tap Dismiss. Timers survive reloads, and the hub holds off self-updates
   while one is running. The alarm needs the iPad's volume up and the side switch not on mute.
+- Groceries: tap **+** for one-tap buttons (the household staples, then anything else that's been on
+  the list, most frequent first). Items already on the list show a ✓. "Type something else…" opens the
+  system prompt, for when the iPad's keyboard cooperates. Edit the staples in `GROCERY_STAPLES` in hub.js.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
