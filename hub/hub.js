@@ -508,12 +508,12 @@
 
   // ------------------------------------------------------------- what to wear
   // Picture-first clothing tips for the kids, from the "feels like" temperatures,
-  // rain/snow chances, wind and UV across the daytime (7am–7pm). After 3pm it
+  // rain/snow chances, wind and UV across the daytime (7am–7pm). From 5pm it
   // looks ahead to tomorrow, so it's ready for getting dressed in the morning.
 
   function outfit(now) {
     if (!hourlyWx || !hourlyWx.time || !dailyWx) return null;
-    var tomorrow = now.getHours() >= 15;
+    var tomorrow = now.getHours() >= 17;
     var day = tomorrow ? addDays(now, 1) : now;
     var key = ymd(day), from = 7, to = 19;
     var feels = [], pop = 0, wind = 0, snowy = false, rainy = false;

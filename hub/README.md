@@ -175,7 +175,7 @@ doesn't have `/countdowns` yet, the holidays still show.
   (see the top of worker.js).
 - What to wear: under the weather, picture icons with one-word labels (🧥 coat, 🧤 mittens, 🩳 shorts, ☂️ umbrella,
   🥾 snow/rain boots, 🧴 sunscreen, 💨 windy) from the daytime (7am–7pm) "feels like" temperatures, rain/snow
-  chances, wind and UV. After 3pm it switches to tomorrow, so it's ready for getting dressed in the morning.
+  chances, wind and UV. From 5pm it switches to tomorrow, so it's ready for getting dressed in the morning.
 - Tap the weather for the next 24 hours: temperature (the numbers ride higher when it's warmer), conditions,
   chance of precipitation and wind, with sunrise/sunset marked. Swipe sideways for later hours.
 - Kitchen timers: tap **⏲️ Timer** for presets (1 min–1 hour) or Custom. Running timers show as big
