@@ -390,7 +390,7 @@
     }
     var start = new Date(now.getFullYear(), now.getMonth(), now.getDate()), end = addDays(start, 1);
     var todayCount = events.filter(function (e) { return e.start < end && e.end > start; }).length;
-    lines = lines.concat(countdownLines(now));
+    lines = lines.concat(countdownLines(now), sportsLines(now));
     if (todayCount >= 4) lines.push("Busy day — " + todayCount + " things on the calendar");
     else if (todayCount === 0 && h < 17) lines.push("Nothing on the calendar today 😌");
     return lines;
@@ -649,6 +649,160 @@
       box.textContent = msg.text;
       box.className = "precip-alert" + (msg.snow ? " snow" : "");
     }
+  }
+
+  // ------------------------------------------------------------- sports scores
+  // From the Worker's /sports (ESPN). Game days get a chip under the greeting: the
+  // live score, today's matchup, or last night's final. Tap a chip (or 🏆 Scores
+  // in the footer) for every team's last and next game.
+
+  var sports = null;
+  var DAY_MS = 864e5;
+
+  function loadSports() {
+    var p = demo ? Promise.resolve(demoSports()) : api("/sports");
+    return p.then(function (data) {
+      sports = data.teams || [];
+      renderScoreChips();
+      if (!$("scores-modal").hidden) renderScores();
+      setProblem("scores", null);
+    }).catch(function (e) {
+      if (/HTTP 404/.test(e.message)) { sports = null; renderScoreChips(); return; } // older Worker
+      setProblem("scores", e.message);
+    });
+  }
+
+  function sportsLive() {
+    return !!sports && sports.some(function (t) { return t.live; });
+  }
+
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  function gameWhen(ms, now) {
+    var d = new Date(ms);
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var days = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - today) / DAY_MS);
+    var day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : days === -1 ? "Yesterday"
+      : days > 1 && days < 7 ? DAY_NAMES[d.getDay()].slice(0, 3) : MONTHS[d.getMonth()].slice(0, 3) + " " + d.getDate();
+    return days < 0 ? day : day + " " + fmtTime(d);
+  }
+
+  function scoreLine(t, g) {
+    return t.name + " " + g.usScore + ", " + g.them + " " + g.themScore;
+  }
+
+  function vsLine(g) { return (g.home ? "vs " : "@ ") + g.them; }
+
+  // What's worth a chip right now, most urgent first.
+  function scoreChips(now) {
+    if (!sports) return [];
+    var chips = [];
+    sports.forEach(function (t) {
+      if (t.error) return;
+      if (t.live) chips.push({ rank: 0, cls: "live", text: t.emoji + " " + scoreLine(t, t.live) + " · " + t.live.detail });
+      else if (t.next && t.next.start && sameDay(new Date(t.next.start), now))
+        chips.push({ rank: 1, cls: "", text: t.emoji + " " + t.name + " " + vsLine(t.next) + " · " + fmtTime(new Date(t.next.start)) });
+      else if (t.last && t.last.start && now - t.last.start < 18 * 3600e3)
+        chips.push({ rank: 2, cls: t.last.won ? "win" : t.last.won === false ? "loss" : "",
+          text: t.emoji + " " + scoreLine(t, t.last) + " · " + (t.last.won ? "W" : t.last.won === false ? "L" : "Final") });
+    });
+    return chips.sort(function (a, b) { return a.rank - b.rank; }).slice(0, 2);
+  }
+
+  function renderScoreChips() {
+    var box = $("score-chips");
+    box.innerHTML = "";
+    var chips = scoreChips(new Date());
+    box.hidden = !chips.length;
+    chips.forEach(function (c) {
+      var b = el("button", "score-chip " + c.cls, c.text);
+      b.type = "button";
+      b.addEventListener("click", openScores);
+      box.appendChild(b);
+    });
+  }
+
+  function renderScores() {
+    var box = $("scores-list");
+    box.innerHTML = "";
+    if (!sports) { box.appendChild(el("div", "music-note", "Loading scores…")); return; }
+    var now = new Date();
+    sports.forEach(function (t) {
+      var row = el("div", "sc-row" + (t.live ? " live" : ""));
+      var who = el("div", "sc-team");
+      who.appendChild(el("span", "sc-emoji", t.emoji));
+      var nm = el("div", "sc-name", t.name);
+      if (t.record) nm.appendChild(el("span", "sc-record", t.record));
+      who.appendChild(nm);
+      row.appendChild(who);
+
+      if (t.error) { row.appendChild(el("div", "sc-cell sc-muted", "Couldn't load (" + t.error + ")")); box.appendChild(row); return; }
+
+      var lastCell = el("div", "sc-cell");
+      if (t.live) {
+        lastCell.appendChild(el("span", "sc-badge live", "LIVE"));
+        lastCell.appendChild(el("b", null, " " + t.live.usScore + "–" + t.live.themScore + " "));
+        lastCell.appendChild(document.createTextNode(vsLine(t.live) + " · " + t.live.detail));
+      } else if (t.last) {
+        var res = t.last.won ? "W" : t.last.won === false ? "L" : "T";
+        lastCell.appendChild(el("span", "sc-badge " + (t.last.won ? "win" : t.last.won === false ? "loss" : ""), res));
+        lastCell.appendChild(el("b", null, " " + t.last.usScore + "–" + t.last.themScore + " "));
+        lastCell.appendChild(document.createTextNode(vsLine(t.last) + " · " + gameWhen(t.last.start, now)));
+      } else lastCell.appendChild(el("span", "sc-muted", "No games yet"));
+      row.appendChild(lastCell);
+
+      var nextCell = el("div", "sc-cell");
+      if (t.next) {
+        nextCell.appendChild(el("span", "sc-label", "Next "));
+        nextCell.appendChild(document.createTextNode(vsLine(t.next) + " · " + gameWhen(t.next.start, now) + (t.next.tv ? " · " + t.next.tv : "")));
+      } else nextCell.appendChild(el("span", "sc-muted", t.live ? "" : "Off-season"));
+      row.appendChild(nextCell);
+      box.appendChild(row);
+    });
+  }
+
+  function openScores() {
+    renderScores();
+    $("scores-modal").hidden = false;
+    loadSports();
+  }
+  $("open-scores").addEventListener("click", openScores);
+  $("scores-done").addEventListener("click", function () { $("scores-modal").hidden = true; });
+
+  // Greeting: last night's result.
+  function sportsLines(now) {
+    if (!sports) return [];
+    var lines = [];
+    sports.forEach(function (t) {
+      var g = t.last;
+      if (t.error || !g || !g.start || now - g.start > 18 * 3600e3 || g.won == null) return;
+      lines.push(g.won ? t.name + " win! " + g.usScore + "–" + g.themScore + " " + t.emoji
+        : "Tough one — " + t.name + " fell " + g.usScore + "–" + g.themScore + " " + t.emoji);
+    });
+    return lines;
+  }
+
+  function demoSports() {
+    var now = Date.now(), H = 3600e3;
+    var g = function (o) { return Object.assign({ id: String(Math.random()), tv: null, won: null, usScore: null, themScore: null, detail: "" }, o); };
+    return { teams: [
+      { key: "bears", name: "Bears", emoji: "🐻", record: "3-2", live: g({ state: "in", start: now - 2 * H, home: true, them: "Packers", usScore: "17", themScore: "10", detail: "3rd 8:12", tv: "FOX" }),
+        last: g({ state: "post", start: now - 7 * DAY_MS, home: false, them: "Lions", usScore: "24", themScore: "20", won: true }), next: null },
+      { key: "cubs", name: "Cubs", emoji: "⚾", record: "92-70", live: null,
+        last: g({ state: "post", start: now - 14 * H, home: true, them: "Brewers", usScore: "5", themScore: "3", won: true }),
+        next: g({ state: "pre", start: now + 26 * H, home: false, them: "Brewers", tv: "TBS" }) },
+      { key: "bulls", name: "Bulls", emoji: "🐂", record: null, live: null, last: null,
+        next: g({ state: "pre", start: now + 11 * DAY_MS, home: true, them: "Pistons", tv: "CHSN" }) },
+      { key: "blackhawks", name: "Blackhawks", emoji: "🏒", record: "1-1-0", live: null,
+        last: g({ state: "post", start: now - 2 * DAY_MS, home: true, them: "Blues", usScore: "2", themScore: "4", won: false }),
+        next: g({ state: "pre", start: now + 4 * H, home: false, them: "Wild" }) },
+      { key: "nu-football", name: "Northwestern", emoji: "🏈", record: "3-2", live: null,
+        last: g({ state: "post", start: now - 7 * DAY_MS, home: true, them: "Purdue", usScore: "31", themScore: "17", won: true }),
+        next: g({ state: "pre", start: now + DAY_MS, home: false, them: "Iowa", tv: "BTN" }) },
+      { key: "nu-hoops", name: "Northwestern", emoji: "🏀", record: null, live: null, last: null, next: null },
+    ] };
   }
 
   // ------------------------------------------------------------- calendar
@@ -1763,7 +1917,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily(), loadSpotify(), loadCountdowns()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily(), loadSpotify(), loadCountdowns(), loadSports()]).then(function () {
       lastSync = new Date();
       renderStatus();
     });
@@ -1779,7 +1933,10 @@
   setInterval(loadCalendar, 5 * 60 * 1000);
   setInterval(loadWeather, 15 * 60 * 1000);
   setInterval(loadCountdowns, 60 * 60 * 1000);
-  setInterval(function () { renderAgenda(); renderCountdowns(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
+  // Scores: every minute during a game, every 5 minutes otherwise.
+  var sportsTicks = 0;
+  setInterval(function () { sportsTicks++; if (sportsLive() || sportsTicks % 5 === 0) loadSports(); }, 60 * 1000);
+  setInterval(function () { renderAgenda(); renderCountdowns(); renderScoreChips(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
   setInterval(checkForUpdate, 10 * 60 * 1000);
   setInterval(function () { tickTimers(); renderSpotifyProgress(); }, 1000);
   // Spotify: every 10s while something's playing, every 30s otherwise.

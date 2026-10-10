@@ -168,6 +168,11 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
   Spotify every 10 s while playing (30 s otherwise).
 - Header shows current conditions plus a 5-day forecast strip (rain chance shown when it's 20% or more).
+- Sports: on game days a chip under the greeting shows the live score (red, updating every minute), tonight's
+  matchup, or last night's final for the Bears, Cubs, Bulls, Blackhawks and Northwestern football/basketball.
+  Tap it, or **🏆 Scores** in the footer, for every team's last result, next game and TV channel. Data comes
+  from ESPN's free (unofficial) feeds through the Worker; change teams with an optional `SPORTS_TEAMS` variable
+  (see the top of worker.js).
 - Tap the weather for the next 24 hours: temperature (the numbers ride higher when it's warmer), conditions,
   chance of precipitation and wind, with sunrise/sunset marked. Swipe sideways for later hours.
 - Kitchen timers: tap **⏲️ Timer** for presets (1 min–1 hour) or Custom. Running timers show as big
