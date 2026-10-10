@@ -445,13 +445,14 @@
       "&longitude=" + encodeURIComponent(settings.lon) +
       "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
       "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
-      "&hourly=precipitation_probability&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
+      "&hourly=precipitation_probability,temperature_2m,weather_code,is_day,wind_speed_10m&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
       "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
         dailyWx = day;
+        hourlyWx = d.hourly;
         currentWx = { code: c.weather_code, isDay: !!c.is_day, tempF: c.temperature_2m };
         updateBackdrop();
         storePrecip(d);
@@ -495,10 +496,92 @@
         box.appendChild(detail);
         box.appendChild(nowBox);
         box.appendChild(strip);
+        if (!$("hourly").hidden) renderHourly();
         setProblem("weather", null);
       })
       .catch(function (e) { setProblem("weather", e.message); });
   }
+
+  // ------------------------------------------------------------- hourly forecast pop-up
+  // Tap the weather in the header: the next 24 hours as columns, with each hour's
+  // temperature riding higher or lower so the day's curve is easy to see.
+
+  var hourlyWx = null;
+  var HOURS_SHOWN = 24;
+
+  function renderHourly() {
+    var box = $("hourly-list");
+    box.innerHTML = "";
+    if (!hourlyWx || !hourlyWx.time) { box.appendChild(el("div", "music-note", "Forecast is still loading…")); return; }
+    var now = new Date();
+    var thisHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
+    var hours = [];
+    hourlyWx.time.forEach(function (t, i) {
+      var at = parseWall(t);
+      if (at >= thisHour && hours.length < HOURS_SHOWN) hours.push({ at: at, i: i });
+    });
+    if (!hours.length) return;
+    var temps = hours.map(function (h) { return hourlyWx.temperature_2m[h.i]; });
+    var hi = Math.max.apply(null, temps), lo = Math.min.apply(null, temps);
+
+    // Sunrise/sunset markers that fall inside the window.
+    var marks = [];
+    if (dailyWx && dailyWx.sunrise) {
+      dailyWx.sunrise.forEach(function (t) { marks.push({ at: parseWall(t), icon: "🌅", label: "Sunrise" }); });
+      dailyWx.sunset.forEach(function (t) { marks.push({ at: parseWall(t), icon: "🌇", label: "Sunset" }); });
+    }
+    var end = new Date(hours[hours.length - 1].at.getTime() + 3600e3);
+
+    var lastDay = thisHour.getDate();
+    hours.forEach(function (h, n) {
+      var i = h.i, temp = Math.round(hourlyWx.temperature_2m[i]);
+      var icon = wmo(hourlyWx.weather_code[i], hourlyWx.is_day[i])[0];
+      // "Now" matches the big current reading in the header.
+      if (n === 0 && currentWx) { temp = Math.round(currentWx.tempF); icon = wmo(currentWx.code, currentWx.isDay)[0]; }
+      var col = el("div", "hr-col" + (n === 0 ? " now" : ""));
+      var label = n === 0 ? "Now" : fmtTime(h.at);
+      if (h.at.getDate() !== lastDay) { col.className += " new-day"; label = DAY_NAMES[h.at.getDay()].slice(0, 3) + " " + label; lastDay = h.at.getDate(); }
+      col.appendChild(el("div", "hr-time", label));
+      col.appendChild(el("div", "hr-icon", icon));
+      // Higher temperature = sits higher in its 60px lane.
+      var lane = el("div", "hr-lane");
+      var t = el("div", "hr-temp", temp + "°");
+      t.style.top = (hi === lo ? 30 : Math.round((hi - hourlyWx.temperature_2m[i]) / (hi - lo) * 60)) + "px";
+      lane.appendChild(t);
+      col.appendChild(lane);
+      var pop = hourlyWx.precipitation_probability[i] || 0;
+      var bar = el("div", "hr-bar");
+      var fill = el("div", "hr-fill");
+      fill.style.height = pop + "%";
+      bar.appendChild(fill);
+      col.appendChild(bar);
+      col.appendChild(el("div", "hr-pop", pop >= 10 ? pop + "%" : "\u00a0"));
+      col.appendChild(el("div", "hr-wind", Math.round(hourlyWx.wind_speed_10m[i]) + " mph"));
+      box.appendChild(col);
+
+      marks.forEach(function (m) {
+        if (m.at >= h.at && m.at < new Date(h.at.getTime() + 3600e3) && m.at > now && m.at < end) {
+          var mk = el("div", "hr-col hr-mark");
+          mk.appendChild(el("div", "hr-time", fmtTime(m.at)));
+          mk.appendChild(el("div", "hr-icon", m.icon));
+          mk.appendChild(el("div", "hr-mark-label", m.label));
+          box.appendChild(mk);
+        }
+      });
+    });
+
+    var summary = settings.placeName + " · next 24 hours: high " + Math.round(hi) + "°, low " + Math.round(lo) + "°";
+    var maxPop = Math.max.apply(null, hours.map(function (h) { return hourlyWx.precipitation_probability[h.i] || 0; }));
+    if (maxPop >= 30) summary += " · up to " + maxPop + "% chance of precipitation";
+    $("hourly-summary").textContent = summary;
+  }
+
+  $("weather").addEventListener("click", function () {
+    renderHourly();
+    $("hourly").hidden = false;
+    $("hourly-list").scrollLeft = 0;
+  });
+  $("hourly-done").addEventListener("click", function () { $("hourly").hidden = true; });
 
   // ------------------------------------------------------------- rain / snow in the next hour
   // Open-Meteo's 15-minute data (NOAA HRRR in the US). Each value is the total for

@@ -37,7 +37,7 @@ button, input { font: inherit; color: inherit; }
 /* Stop long-presses from selecting text on the display, but keep this off every
    ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
    to show the keyboard for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card, .tstat-card, .music-card {
+.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card, .tstat-card, .music-card, .hourly-card {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -190,6 +190,26 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .fc-temp { font-size: 15px; white-space: nowrap; color: var(--on-photo-muted); }
 .fc-temp b { color: var(--on-photo); font-weight: 600; }
 .fc-pop { font-size: 12px; color: #bfe0ff; white-space: nowrap; }
+.weather { cursor: pointer; }
+.weather:active { opacity: 0.8; }
+
+/* Hourly forecast pop-up */
+.modal-card.hourly-card { width: 940px; }
+.hourly-list { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -6px 14px; padding: 4px 0 8px; }
+.hr-col { flex: none; width: 66px; text-align: center; padding: 8px 2px; border-radius: 12px; }
+.hr-col.now { background: var(--accent-soft); }
+.hr-col.new-day { border-left: 2px solid var(--line); border-radius: 0 12px 12px 0; }
+.hr-time { font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.hr-col.now .hr-time { color: var(--accent); }
+.hr-icon { font-size: 28px; line-height: 1.5; }
+.hr-lane { height: 90px; }
+.hr-temp { position: relative; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hr-bar { width: 10px; height: 40px; margin: 6px auto 2px; border-radius: 5px; background: var(--line); display: flex; align-items: flex-end; overflow: hidden; }
+.hr-fill { width: 100%; background: #4a90d9; border-radius: 5px; }
+.hr-pop { font-size: 13px; color: #2f7bd6; font-weight: 600; }
+.hr-wind { font-size: 12px; color: var(--muted); white-space: nowrap; margin-top: 2px; }
+.hr-mark { width: 74px; background: rgba(240, 180, 60, 0.16); }
+.hr-mark-label { font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 52px; }
 
 /* ---------------------------------------------------------------- cards */
 
