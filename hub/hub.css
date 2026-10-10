@@ -35,9 +35,9 @@ html, body {
 button, input { font: inherit; color: inherit; }
 
 /* Stop long-presses from selecting text on the display, but keep this off every
-   ancestor of a text box: iPadOS home-screen apps can refuse to show the keyboard
-   for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .chores, .grocery h2, .grocery .tasks {
+   ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
+   to show the keyboard for inputs inside user-select: none. */
+.top, .status, .night, .agenda, .nest, .chores, .grocery {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -255,13 +255,14 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 .task.leaving { opacity: 0; transform: translateX(24px); }
 .empty { color: var(--muted); font-size: 16px; padding: 8px 2px; }
 
-.add { display: flex; gap: 8px; margin-bottom: 6px; }
-.add input {
-  flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px;
-  background: var(--control-bg); color: var(--ink); font-size: 17px; -webkit-user-select: text; user-select: text; outline: none;
+/* Round + in the Groceries header; opens the system "Add to Groceries" prompt. */
+.add-btn {
+  width: 36px; height: 36px; margin: -6px 0 -6px 10px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: 24px; font-weight: 400; line-height: 36px;
+  letter-spacing: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
-.add input:focus { border-color: var(--accent); }
-.add button { width: 44px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-size: 24px; }
+.add-btn:active { transform: scale(0.94); }
+.count:empty + .add-btn { margin-left: auto; }
 
 /* ---------------------------------------------------------------- status */
 

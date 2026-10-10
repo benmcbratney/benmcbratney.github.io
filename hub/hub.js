@@ -731,19 +731,11 @@
     }, 3200);
   }
 
-  $("grocery-add").addEventListener("submit", function (ev) {
-    ev.preventDefault();
-    var input = $("grocery-input");
-    var content = input.value.trim();
-    if (!content) {
-      // Fallback for an iPadOS bug where home-screen apps sometimes won't show the
-      // keyboard for a text box: tapping + on an empty box opens the system prompt.
-      input.blur();
-      content = (window.prompt("Add to Groceries") || "").trim();
-      if (!content) return;
-    }
-    input.value = "";
-    input.blur();
+  // Adding uses the system prompt rather than a text box: iPadOS home-screen apps
+  // sometimes won't show the keyboard for in-page text boxes, and it saves space.
+  $("grocery-add").addEventListener("click", function () {
+    var content = (window.prompt("Add to Groceries") || "").trim();
+    if (!content) return;
     var p = demo
       ? Promise.resolve({ id: "demo-" + Date.now(), content: content })
       : api("/todoist/add", { method: "POST", body: { list: "grocery", content: content } });
@@ -751,8 +743,7 @@
       lists.grocery.push(task);
       renderList("grocery");
     }).catch(function (e) {
-      input.value = content;
-      setProblem("todoist", e.message);
+      setProblem("todoist", "couldn't add \"" + content + "\": " + e.message);
     });
   });
 
