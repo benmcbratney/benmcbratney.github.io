@@ -168,6 +168,15 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
   Spotify every 10 s while playing (30 s otherwise).
 - Header shows current conditions plus a 5-day forecast strip (rain chance shown when it's 20% or more).
+- Sports: on game days a chip under the greeting shows the live score (red, updating every minute), tonight's
+  matchup, or last night's final for the Bears, Cubs, Bulls, Blackhawks and Northwestern football/basketball.
+  Tap it, or **🏆 Scores** in the footer, for every team's last result, next game and TV channel. Data comes
+  from ESPN's free (unofficial) feeds through the Worker; change teams with an optional `SPORTS_TEAMS` variable
+  (see the top of worker.js).
+- What to wear: under the weather, picture icons with one-word labels (👔 long sleeves + 👖 pants below 70°, 👕 T-shirt +
+  🩳 shorts at 70°+, 🧥 coats when it's cold, 🧤 mittens, ☂️ umbrella,
+  🥾 snow/rain boots, 🧴 sunscreen, 💨 windy) from the daytime (7am–7pm) "feels like" temperatures, rain/snow
+  chances, wind and UV. From 5pm it switches to tomorrow, so it's ready for getting dressed in the morning.
 - Tap the weather for the next 24 hours: temperature (the numbers ride higher when it's warmer), conditions,
   chance of precipitation and wind, with sunrise/sunset marked. Swipe sideways for later hours.
 - Kitchen timers: tap **⏲️ Timer** for presets (1 min–1 hour) or Custom. Running timers show as big
@@ -178,6 +187,10 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Groceries: tap **+** for one-tap buttons (the household staples, then anything else that's been on
   the list, most frequent first). Items already on the list show a ✓. "Type something else…" opens the
   system prompt, for when the iPad's keyboard cooperates. Edit the staples in `GROCERY_STAPLES` in hub.js.
+- Empty lists fold away: when Kids or Groceries has nothing on it, its card disappears (after the confetti, for
+  chores) and a **🧒 Kids +** / **🛒 Groceries +** pill appears in the footer; tap it to add something and the
+  card comes back. The other cards grow into the space. With both lists empty, the thermostats get bigger and a
+  Scores card (live game, last result, next game per team; tap for details) fills the rest of the right column.
 - Kids: the **+** works the same way, with buttons from the `KIDS_QUICK_ADD` Worker variable (kept there
   because they name the kids). Edit that variable in Cloudflare to change them; no re-paste needed.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.

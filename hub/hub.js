@@ -390,7 +390,7 @@
     }
     var start = new Date(now.getFullYear(), now.getMonth(), now.getDate()), end = addDays(start, 1);
     var todayCount = events.filter(function (e) { return e.start < end && e.end > start; }).length;
-    lines = lines.concat(countdownLines(now));
+    lines = lines.concat(countdownLines(now), sportsLines(now));
     if (todayCount >= 4) lines.push("Busy day — " + todayCount + " things on the calendar");
     else if (todayCount === 0 && h < 17) lines.push("Nothing on the calendar today 😌");
     return lines;
@@ -444,8 +444,8 @@
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(settings.lat) +
       "&longitude=" + encodeURIComponent(settings.lon) +
       "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
-      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
-      "&hourly=precipitation_probability,temperature_2m,weather_code,is_day,wind_speed_10m&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max" +
+      "&hourly=precipitation_probability,temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
       "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
@@ -493,13 +493,75 @@
         nowBox.appendChild(el("span", "wx-icon", now[0]));
         nowBox.appendChild(el("span", "wx-temp", Math.round(c.temperature_2m) + "°"));
 
-        box.appendChild(detail);
-        box.appendChild(nowBox);
-        box.appendChild(strip);
+        var main = el("div", "wx-main");
+        main.appendChild(detail);
+        main.appendChild(nowBox);
+        main.appendChild(strip);
+        box.appendChild(main);
+        var wear = outfit(new Date());
+        if (wear) box.appendChild(outfitRow(wear, "wx-wear"));
         if (!$("hourly").hidden) renderHourly();
         setProblem("weather", null);
       })
       .catch(function (e) { setProblem("weather", e.message); });
+  }
+
+  // ------------------------------------------------------------- what to wear
+  // Picture-first clothing tips for the kids, from the "feels like" temperatures,
+  // rain/snow chances, wind and UV across the daytime (7am–7pm). From 5pm it
+  // looks ahead to tomorrow, so it's ready for getting dressed in the morning.
+
+  function outfit(now) {
+    if (!hourlyWx || !hourlyWx.time || !dailyWx) return null;
+    var tomorrow = now.getHours() >= 17;
+    var day = tomorrow ? addDays(now, 1) : now;
+    var key = ymd(day), from = 7, to = 19;
+    var feels = [], pop = 0, wind = 0, snowy = false, rainy = false;
+    hourlyWx.time.forEach(function (t, i) {
+      var at = parseWall(t);
+      if (ymd(at) !== key || at.getHours() < from || at.getHours() >= to) return;
+      if (!tomorrow && at.getTime() + 3600e3 < now.getTime()) return; // rest of today only
+      var feel = hourlyWx.apparent_temperature ? hourlyWx.apparent_temperature[i] : hourlyWx.temperature_2m[i];
+      feels.push(feel);
+      var p = hourlyWx.precipitation_probability[i] || 0, c = hourlyWx.weather_code[i];
+      pop = Math.max(pop, p);
+      wind = Math.max(wind, hourlyWx.wind_speed_10m[i] || 0);
+      var snowCode = (c >= 71 && c <= 77) || c === 85 || c === 86;
+      if (p >= 40 && snowCode) snowy = true;
+      if (p >= 40 && !snowCode && ((c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95)) rainy = true;
+    });
+    if (!feels.length) return null;
+    var lo = Math.min.apply(null, feels), hi = Math.max.apply(null, feels);
+    var di = dailyWx.time.indexOf(key);
+    var uv = di >= 0 && dailyWx.uv_index_max ? dailyWx.uv_index_max[di] : 0;
+
+    var items = [];
+    if (lo < 33) items.push(["🧥", "Big coat"], ["🧣", "Hat & scarf"], ["🧤", "Mittens"]);
+    else if (lo < 50) items.push(["🧥", "Coat"]);
+    else if (lo < 60) items.push(["🧥", "Light jacket"]);
+    if (hi >= 70) items.push(["👕", "T-shirt"], ["🩳", "Shorts"]);
+    else {
+      items.push(["👔", "Long sleeves"]);
+      if (!snowy) items.push(["👖", "Pants"]);
+    }
+    if (snowy) items.push(["👖", "Snow pants"], ["🥾", "Snow boots"]);
+    else if (rainy) items.push(["☂️", "Umbrella"], ["🥾", "Rain boots"]);
+    else if (pop >= 40) items.push(["☂️", "Umbrella"]);
+    if (uv >= 6 && hi >= 60) items.push(["🧴", "Sunscreen"]);
+    if (wind >= 20) items.push(["💨", "Windy!"]);
+    return { when: tomorrow ? "Tomorrow" : "Today", items: items.slice(0, 7), lo: Math.round(lo), hi: Math.round(hi) };
+  }
+
+  function outfitRow(wear, cls) {
+    var row = el("div", cls);
+    row.appendChild(el("span", "wear-when", wear.when + ", wear"));
+    wear.items.forEach(function (it) {
+      var item = el("span", "wear-item");
+      item.appendChild(el("span", "wear-icon", it[0]));
+      item.appendChild(el("span", "wear-label", it[1]));
+      row.appendChild(item);
+    });
+    return row;
   }
 
   // ------------------------------------------------------------- hourly forecast pop-up
@@ -569,6 +631,14 @@
         }
       });
     });
+
+    var wearBox = $("hourly-wear");
+    wearBox.innerHTML = "";
+    var wear = outfit(now);
+    if (wear) {
+      wearBox.appendChild(outfitRow(wear, "wear-big"));
+      wearBox.lastChild.appendChild(el("span", "wear-feels", "Feels like " + wear.lo + "°–" + wear.hi + "°"));
+    }
 
     var summary = settings.placeName + " · next 24 hours: high " + Math.round(hi) + "°, low " + Math.round(lo) + "°";
     var maxPop = Math.max.apply(null, hours.map(function (h) { return hourlyWx.precipitation_probability[h.i] || 0; }));
@@ -649,6 +719,195 @@
       box.textContent = msg.text;
       box.className = "precip-alert" + (msg.snow ? " snow" : "");
     }
+  }
+
+  // ------------------------------------------------------------- sports scores
+  // From the Worker's /sports (ESPN). Game days get a chip under the greeting: the
+  // live score, today's matchup, or last night's final. Tap a chip (or 🏆 Scores
+  // in the footer) for every team's last and next game.
+
+  var sports = null;
+  var DAY_MS = 864e5;
+
+  function loadSports() {
+    var p = demo ? Promise.resolve(demoSports()) : api("/sports");
+    return p.then(function (data) {
+      sports = data.teams || [];
+      renderScoreChips();
+      layoutColumns();
+      if (!$("scores-modal").hidden) renderScores();
+      setProblem("scores", null);
+    }).catch(function (e) {
+      if (/HTTP 404/.test(e.message)) { sports = null; renderScoreChips(); return; } // older Worker
+      setProblem("scores", e.message);
+    });
+  }
+
+  function sportsLive() {
+    return !!sports && sports.some(function (t) { return t.live; });
+  }
+
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  function gameWhen(ms, now) {
+    var d = new Date(ms);
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var days = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - today) / DAY_MS);
+    var day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : days === -1 ? "Yesterday"
+      : days > 1 && days < 7 ? DAY_NAMES[d.getDay()].slice(0, 3) : MONTHS[d.getMonth()].slice(0, 3) + " " + d.getDate();
+    return days < 0 ? day : day + " " + fmtTime(d);
+  }
+
+  function scoreLine(t, g) {
+    return t.name + " " + g.usScore + ", " + g.them + " " + g.themScore;
+  }
+
+  function vsLine(g) { return (g.home ? "vs " : "@ ") + g.them; }
+
+  // What's worth a chip right now, most urgent first.
+  function scoreChips(now) {
+    if (!sports) return [];
+    var chips = [];
+    sports.forEach(function (t) {
+      if (t.error) return;
+      if (t.live) chips.push({ rank: 0, cls: "live", text: t.emoji + " " + scoreLine(t, t.live) + " · " + t.live.detail });
+      else if (t.next && t.next.start && sameDay(new Date(t.next.start), now))
+        chips.push({ rank: 1, cls: "", text: t.emoji + " " + t.name + " " + vsLine(t.next) + " · " + fmtTime(new Date(t.next.start)) });
+      else if (t.last && t.last.start && now - t.last.start < 18 * 3600e3)
+        chips.push({ rank: 2, cls: t.last.won ? "win" : t.last.won === false ? "loss" : "",
+          text: t.emoji + " " + scoreLine(t, t.last) + " · " + (t.last.won ? "W" : t.last.won === false ? "L" : "Final") });
+    });
+    return chips.sort(function (a, b) { return a.rank - b.rank; }).slice(0, 2);
+  }
+
+  function renderScoreChips() {
+    var box = $("score-chips");
+    box.innerHTML = "";
+    var chips = scoreChips(new Date());
+    box.hidden = !chips.length;
+    chips.forEach(function (c) {
+      var b = el("button", "score-chip " + c.cls, c.text);
+      b.type = "button";
+      b.addEventListener("click", openScores);
+      box.appendChild(b);
+    });
+  }
+
+  // Compact version for the right column. Returns false when there's nothing worth showing.
+  function renderScoreCard() {
+    var box = $("scores-mini");
+    box.innerHTML = "";
+    if (!sports) return false;
+    var now = new Date();
+    var shown = sports.filter(function (t) {
+      if (t.error) return false;
+      if (t.live || t.next) return true;
+      return !!(t.last && now - t.last.start < 45 * DAY_MS); // skip long-idle off-season teams
+    });
+    shown.forEach(function (t) {
+      var row = el("div", "sm-row" + (t.live ? " live" : ""));
+      row.appendChild(el("span", "sm-emoji", t.emoji));
+      var info = el("div", "sm-info");
+      info.appendChild(el("div", "sm-name", t.name));
+      var nextText = t.live ? vsLine(t.live) + " · " + t.live.detail
+        : t.next ? "Next " + vsLine(t.next) + " · " + gameWhen(t.next.start, now) : "";
+      if (nextText) info.appendChild(el("div", "sm-next", nextText));
+      row.appendChild(info);
+      var res = el("div", "sm-result");
+      var g = t.live || t.last;
+      if (g) {
+        var badge = t.live ? ["live", "LIVE"] : g.won ? ["win", "W"] : g.won === false ? ["loss", "L"] : ["", "T"];
+        res.appendChild(el("span", "sc-badge " + badge[0], badge[1]));
+        res.appendChild(el("b", null, " " + g.usScore + "–" + g.themScore));
+      }
+      row.appendChild(res);
+      box.appendChild(row);
+    });
+    return shown.length > 0;
+  }
+  $("scores-card").addEventListener("click", function () { openScores(); });
+
+  function renderScores() {
+    var box = $("scores-list");
+    box.innerHTML = "";
+    if (!sports) { box.appendChild(el("div", "music-note", "Loading scores…")); return; }
+    var now = new Date();
+    sports.forEach(function (t) {
+      var row = el("div", "sc-row" + (t.live ? " live" : ""));
+      var who = el("div", "sc-team");
+      who.appendChild(el("span", "sc-emoji", t.emoji));
+      var nm = el("div", "sc-name", t.name);
+      if (t.record) nm.appendChild(el("span", "sc-record", t.record));
+      who.appendChild(nm);
+      row.appendChild(who);
+
+      if (t.error) { row.appendChild(el("div", "sc-cell sc-muted", "Couldn't load (" + t.error + ")")); box.appendChild(row); return; }
+
+      var lastCell = el("div", "sc-cell");
+      if (t.live) {
+        lastCell.appendChild(el("span", "sc-badge live", "LIVE"));
+        lastCell.appendChild(el("b", null, " " + t.live.usScore + "–" + t.live.themScore + " "));
+        lastCell.appendChild(document.createTextNode(vsLine(t.live) + " · " + t.live.detail));
+      } else if (t.last) {
+        var res = t.last.won ? "W" : t.last.won === false ? "L" : "T";
+        lastCell.appendChild(el("span", "sc-badge " + (t.last.won ? "win" : t.last.won === false ? "loss" : ""), res));
+        lastCell.appendChild(el("b", null, " " + t.last.usScore + "–" + t.last.themScore + " "));
+        lastCell.appendChild(document.createTextNode(vsLine(t.last) + " · " + gameWhen(t.last.start, now)));
+      } else lastCell.appendChild(el("span", "sc-muted", "No games yet"));
+      row.appendChild(lastCell);
+
+      var nextCell = el("div", "sc-cell");
+      if (t.next) {
+        nextCell.appendChild(el("span", "sc-label", "Next "));
+        nextCell.appendChild(document.createTextNode(vsLine(t.next) + " · " + gameWhen(t.next.start, now) + (t.next.tv ? " · " + t.next.tv : "")));
+      } else nextCell.appendChild(el("span", "sc-muted", t.live ? "" : "Off-season"));
+      row.appendChild(nextCell);
+      box.appendChild(row);
+    });
+  }
+
+  function openScores() {
+    renderScores();
+    $("scores-modal").hidden = false;
+    loadSports();
+  }
+  $("open-scores").addEventListener("click", openScores);
+  $("scores-done").addEventListener("click", function () { $("scores-modal").hidden = true; });
+
+  // Greeting: last night's result.
+  function sportsLines(now) {
+    if (!sports) return [];
+    var lines = [];
+    sports.forEach(function (t) {
+      var g = t.last;
+      if (t.error || !g || !g.start || now - g.start > 18 * 3600e3 || g.won == null) return;
+      lines.push(g.won ? t.name + " win! " + g.usScore + "–" + g.themScore + " " + t.emoji
+        : "Tough one — " + t.name + " fell " + g.usScore + "–" + g.themScore + " " + t.emoji);
+    });
+    return lines;
+  }
+
+  function demoSports() {
+    var now = Date.now(), H = 3600e3;
+    var g = function (o) { return Object.assign({ id: String(Math.random()), tv: null, won: null, usScore: null, themScore: null, detail: "" }, o); };
+    return { teams: [
+      { key: "bears", name: "Bears", emoji: "🐻", record: "3-2", live: g({ state: "in", start: now - 2 * H, home: true, them: "Packers", usScore: "17", themScore: "10", detail: "3rd 8:12", tv: "FOX" }),
+        last: g({ state: "post", start: now - 7 * DAY_MS, home: false, them: "Lions", usScore: "24", themScore: "20", won: true }), next: null },
+      { key: "cubs", name: "Cubs", emoji: "⚾", record: "92-70", live: null,
+        last: g({ state: "post", start: now - 14 * H, home: true, them: "Brewers", usScore: "5", themScore: "3", won: true }),
+        next: g({ state: "pre", start: now + 26 * H, home: false, them: "Brewers", tv: "TBS" }) },
+      { key: "bulls", name: "Bulls", emoji: "🐂", record: null, live: null, last: null,
+        next: g({ state: "pre", start: now + 11 * DAY_MS, home: true, them: "Pistons", tv: "CHSN" }) },
+      { key: "blackhawks", name: "Blackhawks", emoji: "🏒", record: "1-1-0", live: null,
+        last: g({ state: "post", start: now - 2 * DAY_MS, home: true, them: "Blues", usScore: "2", themScore: "4", won: false }),
+        next: g({ state: "pre", start: now + 4 * H, home: false, them: "Wild" }) },
+      { key: "nu-football", name: "Northwestern", emoji: "🏈", record: "3-2", live: null,
+        last: g({ state: "post", start: now - 7 * DAY_MS, home: true, them: "Purdue", usScore: "31", themScore: "17", won: true }),
+        next: g({ state: "pre", start: now + DAY_MS, home: false, them: "Iowa", tv: "BTN" }) },
+      { key: "nu-hoops", name: "Northwestern", emoji: "🏀", record: null, live: null, last: null, next: null },
+    ] };
   }
 
   // ------------------------------------------------------------- calendar
@@ -889,11 +1148,19 @@
     return lists.chores.filter(function (t) { return !t.due || t.due.slice(0, 10) <= today; });
   }
 
+  // An empty list folds its card away into a footer pill ("🛒 Groceries +"), so the
+  // other cards get the room. Right after the last chore, the card waits for the confetti.
+  var celebrateUntil = 0;
+
   function renderList(name) {
     var items = name === "chores" ? visibleChores() : lists.grocery;
     var ul = $(name);
     ul.innerHTML = "";
     $(name + "-count").textContent = items.length ? items.length : "";
+    var folded = !items.length && !(name === "chores" && Date.now() < celebrateUntil);
+    document.querySelector(".card." + name).hidden = folded;
+    $("pill-" + name).hidden = !folded;
+    layoutColumns();
     if (!items.length) {
       ul.appendChild(el("li", "empty", name === "chores" ? "All caught up 🎉" : "List is empty"));
       return;
@@ -909,6 +1176,18 @@
     });
   }
 
+  // If every card on the right is hidden, the agenda takes the full width.
+  function layoutColumns() {
+    // Both lists folded: thermostats spread out and the Scores card joins in.
+    var folded = document.querySelector(".card.chores").hidden && document.querySelector(".card.grocery").hidden;
+    document.querySelector(".col-right").classList.toggle("lists-folded", folded);
+    $("scores-card").hidden = !(folded && renderScoreCard());
+    var cards = document.querySelectorAll(".col-right > .card");
+    var any = false;
+    for (var i = 0; i < cards.length; i++) if (!cards[i].hidden) any = true;
+    $("hub").classList.toggle("right-empty", !any);
+  }
+
   function completeTask(name, task, li) {
     if (li.classList.contains("done")) return;
     li.classList.add("done");
@@ -919,6 +1198,10 @@
       setTimeout(function () {
         if (demo || !task.recurring) {
           lists[name] = lists[name].filter(function (t) { return t !== task; });
+          if (name === "chores" && !visibleChores().length) {
+            celebrateUntil = Date.now() + 3000;
+            setTimeout(function () { renderList("chores"); }, 3100);
+          }
           renderList(name);
           if (name === "chores" && !visibleChores().length) celebrate();
         } else {
@@ -1054,6 +1337,8 @@
 
   $("grocery-add").addEventListener("click", function () { openPicker("grocery"); });
   $("chores-add").addEventListener("click", function () { openPicker("chores"); });
+  $("pill-chores").addEventListener("click", function () { openPicker("chores"); });
+  $("pill-grocery").addEventListener("click", function () { openPicker("grocery"); });
   $("picker-done").addEventListener("click", function () { $("picker").hidden = true; });
   $("picker-type").addEventListener("click", function () {
     var list = pickerList;
@@ -1098,7 +1383,7 @@
     var card = $("nest-card");
     var show = thermostats.length > 0;
     card.hidden = !show;
-    $("hub").classList.toggle("has-nest", show);
+    layoutColumns();
     if (!show) return;
     $("nest-title").textContent = thermostats.length > 1 ? "Thermostats" : "Thermostat";
 
@@ -1117,7 +1402,7 @@
       var info = el("div", "t-info");
       info.appendChild(el("div", "t-name", t.name));
       var status = nestStatus(t);
-      if (t.humidity != null) status += " · " + Math.round(t.humidity) + "% humidity";
+      if (t.humidity != null) status += " · 💧" + Math.round(t.humidity) + "%";
       info.appendChild(el("div", "t-status", status));
       row.appendChild(info);
 
@@ -1476,7 +1761,6 @@
   function renderSpotify() {
     var show = !!spotify;
     $("spotify-card").hidden = !show;
-    $("hub").classList.toggle("has-spotify", show);
     if (!show) return;
     var idle = !spotify.active;
     $("spotify-card").classList.toggle("idle", idle);
@@ -1763,7 +2047,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily(), loadSpotify(), loadCountdowns()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily(), loadSpotify(), loadCountdowns(), loadSports()]).then(function () {
       lastSync = new Date();
       renderStatus();
     });
@@ -1779,7 +2063,10 @@
   setInterval(loadCalendar, 5 * 60 * 1000);
   setInterval(loadWeather, 15 * 60 * 1000);
   setInterval(loadCountdowns, 60 * 60 * 1000);
-  setInterval(function () { renderAgenda(); renderCountdowns(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
+  // Scores: every minute during a game, every 5 minutes otherwise.
+  var sportsTicks = 0;
+  setInterval(function () { sportsTicks++; if (sportsLive() || sportsTicks % 5 === 0) loadSports(); }, 60 * 1000);
+  setInterval(function () { renderAgenda(); renderCountdowns(); renderScoreChips(); layoutColumns(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
   setInterval(checkForUpdate, 10 * 60 * 1000);
   setInterval(function () { tickTimers(); renderSpotifyProgress(); }, 1000);
   // Spotify: every 10s while something's playing, every 30s otherwise.

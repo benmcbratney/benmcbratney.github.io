@@ -37,7 +37,7 @@ button, input { font: inherit; color: inherit; }
 /* Stop long-presses from selecting text on the display, but keep this off every
    ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
    to show the keyboard for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card, .tstat-card, .music-card, .hourly-card {
+.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card, .tstat-card, .music-card, .hourly-card, .scores-card {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -68,93 +68,50 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
   height: 100%;
   animation: rise 0.8s ease both;
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
-  grid-template-rows: auto 1fr 1fr auto;
+  grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr); /* same split the old grid ended up with */
+  grid-template-rows: auto 1fr auto;
   grid-template-areas:
     "top top"
-    "agenda chores"
-    "agenda grocery"
+    "left right"
     "status status";
   gap: 14px;
   padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
-/* Optional cards: thermostats sit above Kids on the right; Spotify sits under the
-   agenda on the left, with Groceries stretching down beside it. */
-#hub.has-spotify {
-  grid-template-rows: auto 1fr 1fr auto auto;
-  grid-template-areas:
-    "top top"
-    "agenda chores"
-    "agenda grocery"
-    "spotify grocery"
-    "status status";
-}
-#hub.has-nest.has-spotify {
-  grid-template-rows: auto auto 1fr 1fr auto auto;
-  grid-template-areas:
-    "top top"
-    "agenda nest"
-    "agenda chores"
-    "agenda grocery"
-    "spotify grocery"
-    "status status";
-}
+/* Two columns of cards. Each grows into whatever its hidden neighbors leave:
+   agenda (+ Spotify) on the left; thermostats, Kids and Groceries on the right.
+   Kids/Groceries hide when empty (a footer pill takes their place). */
+.col { display: flex; flex-direction: column; gap: 14px; min-height: 0; min-width: 0; }
+.col-left { grid-area: left; }
+.col-right { grid-area: right; }
+.col > .card { flex: none; }
+.col > .agenda, .col > .chores, .col > .grocery { flex: 1 1 0; }
+/* Both lists folded away: the thermostats spread out and a Scores card fills the rest. */
+.col-right.lists-folded > .scores { flex: 1 1 0; }
+.col-right.lists-folded .tstat { padding: 8px 0; }
+.col-right.lists-folded .tstat:first-child { padding-top: 2px; }
 
-/* With thermostats: a compact row above chores in the right column. */
-#hub.has-nest {
-  grid-template-rows: auto auto 1fr 1fr auto;
-  grid-template-areas:
-    "top top"
-    "agenda nest"
-    "agenda chores"
-    "agenda grocery"
-    "status status";
-}
+.col-right.lists-folded .t-name { font-size: 22px; }
+.col-right.lists-folded .t-status { font-size: 16px; }
+.col-right.lists-folded .t-now { font-size: 42px; }
+.col-right.lists-folded .t-ctrl button { width: 44px; height: 44px; font-size: 24px; }
+.col-right.lists-folded .t-target { font-size: 24px; min-width: 58px; }
+#hub.right-empty { grid-template-columns: 1fr; grid-template-areas: "top" "left" "status"; }
+#hub.right-empty .col-right { display: none; }
 
 @media (orientation: portrait) {
-  #hub.has-spotify {
-    grid-template-rows: auto 1.2fr auto 1fr auto;
-    grid-template-areas:
-      "top top"
-      "agenda agenda"
-      "spotify spotify"
-      "chores grocery"
-      "status status";
-  }
-  #hub.has-nest.has-spotify {
-    grid-template-rows: auto 1.2fr auto auto 1fr auto;
-    grid-template-areas:
-      "top top"
-      "agenda agenda"
-      "spotify spotify"
-      "nest nest"
-      "chores grocery"
-      "status status";
-  }
-  #hub.has-nest {
-    grid-template-rows: auto 1.2fr auto 1fr auto;
-    grid-template-areas:
-      "top top"
-      "agenda agenda"
-      "nest nest"
-      "chores grocery"
-      "status status";
-  }
   .time { font-size: 68px; }
   .wx-temp { font-size: 50px; }
   .wx-icon { font-size: 44px; }
   .weather { gap: 14px; }
   .wx-detail { display: none; } /* the 5-day strip covers it; no room in portrait */
-  #hub {
-    grid-template-columns: 1fr 1fr;
+  #hub, #hub.right-empty {
+    grid-template-columns: 1fr;
     grid-template-rows: auto 1.2fr 1fr auto;
-    grid-template-areas:
-      "top top"
-      "agenda agenda"
-      "chores grocery"
-      "status status";
+    grid-template-areas: "top" "left" "right" "status";
   }
+  .col-right { flex-direction: row; flex-wrap: wrap; }
+  .col-right > .nest { flex-basis: 100%; }
 }
 
 /* ---------------------------------------------------------------- header */
@@ -175,8 +132,36 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
   white-space: nowrap; text-shadow: none; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 .precip-alert.snow { background: rgba(120, 150, 190, 0.92); }
+.score-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.score-chips[hidden] { display: none; }
+.score-chip {
+  border: 0; padding: 5px 14px; border-radius: 999px; font-size: 16px; font-weight: 600; white-space: nowrap;
+  background: rgba(20, 30, 50, 0.62); color: #fff; text-shadow: none; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.score-chip.live { background: rgba(200, 56, 40, 0.9); }
+.score-chip.live::before { content: "● "; animation: blink 1.6s ease-in-out infinite; }
+.score-chip.win { background: rgba(46, 125, 70, 0.88); }
+@keyframes blink { 50% { opacity: 0.25; } }
 
-.weather { display: flex; align-items: flex-end; gap: 16px; text-align: right; }
+.weather { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
+.wx-main { display: flex; align-items: flex-end; gap: 16px; }
+
+/* What to wear: big emoji, tiny labels, readable by pre-readers. */
+.wx-wear {
+  display: flex; align-items: center; gap: 4px; padding: 4px 12px 4px 14px; border-radius: 16px;
+  background: rgba(20, 30, 50, 0.45); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.wear-when { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--on-photo-muted); margin-right: 6px; }
+.wear-item { display: flex; flex-direction: column; align-items: center; min-width: 54px; }
+.wear-icon { font-size: 28px; line-height: 1.15; }
+.wear-label { font-size: 11px; font-weight: 600; color: var(--on-photo); white-space: nowrap; }
+.wear-big { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin-bottom: 12px; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); }
+.wear-big .wear-when { color: var(--muted); font-size: 15px; }
+.wear-big .wear-item { min-width: 76px; }
+.wear-big .wear-icon { font-size: 44px; }
+.wear-big .wear-label { font-size: 14px; color: var(--ink); }
+.wear-feels { margin-left: auto; color: var(--muted); font-size: 15px; font-weight: 600; }
 .wx-now { display: flex; align-items: center; gap: 10px; }
 .wx-icon { font-size: 48px; line-height: 1; }
 .wx-temp { font-size: 60px; font-weight: 200; line-height: 1; }
@@ -192,6 +177,35 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .fc-pop { font-size: 12px; color: #bfe0ff; white-space: nowrap; }
 .weather { cursor: pointer; }
 .weather:active { opacity: 0.8; }
+
+/* Scores card (shown when both lists are folded away) */
+.scores { cursor: pointer; }
+.scores-mini { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; }
+.sm-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-top: 1px solid var(--line); }
+.sm-row:first-child { border-top: 0; padding-top: 0; }
+.sm-emoji { font-size: 22px; width: 28px; text-align: center; flex: none; }
+.sm-info { flex: 1; min-width: 0; }
+.sm-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sm-next { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sm-result { flex: none; font-size: 16px; white-space: nowrap; }
+.sm-row.live { background: rgba(200, 56, 40, 0.10); border-radius: 10px; padding-left: 6px; padding-right: 6px; }
+
+/* Scores pop-up */
+.modal-card.scores-card { width: 860px; }
+.scores-list { margin: 10px 0 14px; }
+.sc-row { display: grid; grid-template-columns: 210px 1fr 1fr; gap: 14px; align-items: center; padding: 12px 8px; border-top: 1px solid var(--line); font-size: 16px; }
+.sc-row:first-child { border-top: 0; }
+.sc-row.live { background: rgba(200, 56, 40, 0.08); border-radius: 12px; }
+.sc-team { display: flex; align-items: center; gap: 10px; }
+.sc-emoji { font-size: 26px; }
+.sc-name { font-size: 18px; font-weight: 700; line-height: 1.2; }
+.sc-record { display: block; font-size: 13px; font-weight: 500; color: var(--muted); }
+.sc-badge { display: inline-block; min-width: 26px; text-align: center; padding: 1px 7px; border-radius: 6px; font-size: 13px; font-weight: 800; background: var(--line); }
+.sc-badge.win { background: #2e7d46; color: #fff; }
+.sc-badge.loss { background: #9a9087; color: #fff; }
+.sc-badge.live { background: #c83828; color: #fff; }
+.sc-label { font-weight: 700; color: var(--muted); }
+.sc-muted { color: var(--muted); }
 
 /* Hourly forecast pop-up */
 .modal-card.hourly-card { width: 940px; }
@@ -250,11 +264,6 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 .count { margin-left: auto; color: #fff; background: var(--accent); border-radius: 999px; font-size: 13px; letter-spacing: 0; padding: 1px 9px; }
 .count:empty { display: none; }
 
-.agenda { grid-area: agenda; }
-.chores { grid-area: chores; }
-.grocery { grid-area: grocery; }
-.nest { grid-area: nest; }
-.spotify { grid-area: spotify; }
 .card[hidden] { display: none; }
 .nest[hidden] { display: none; }
 
@@ -264,7 +273,7 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 .tstat:first-child { border-top: 0; padding-top: 0; }
 .t-info { flex: 1; min-width: 0; }
 .t-name { font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.t-status { font-size: 14px; color: var(--muted); white-space: nowrap; }
+.t-status { font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tstat.heating .t-status { color: #d0652a; }
 .tstat.cooling .t-status { color: #2f7bd6; }
 .t-now { font-size: 36px; font-weight: 300; font-variant-numeric: tabular-nums; }
@@ -372,7 +381,7 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 
 /* ---------------------------------------------------------------- status */
 
-.status { grid-area: status; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 13px; color: var(--on-photo-muted); text-shadow: var(--photo-shadow); padding: 0 4px; }
+.status { grid-area: status; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--on-photo-muted); text-shadow: var(--photo-shadow); padding: 0 4px; }
 .status .warn { color: #ffd2c6; }
 .gear { background: none; border: 0; font-size: 22px; color: var(--on-photo); padding: 2px 6px; text-shadow: var(--photo-shadow); }
 
@@ -489,11 +498,18 @@ body.is-night #hub { visibility: hidden; }
 /* ---------------------------------------------------------------- timers */
 
 .timer-btn {
-  flex: none; margin-left: auto; border: 0; border-radius: 999px; padding: 6px 14px; font-size: 15px; font-weight: 600;
+  flex: none; border: 0; border-radius: 999px; padding: 6px 14px; font-size: 15px; font-weight: 600;
   background: rgba(255, 255, 255, 0.18); color: var(--on-photo);
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
 }
 .timer-btn:active { transform: scale(0.96); }
+#status-text { margin-right: auto; }
+.timer-btn[hidden] { display: none; }
+.list-pill { display: flex; align-items: center; gap: 8px; padding-right: 5px; }
+.pill-plus {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 18px; line-height: 24px; text-align: center; text-shadow: none;
+}
 
 /* Running timers: big pills across the top center of the screen (also shown over the
    night clock). A finished timer becomes the full-screen alert below. */

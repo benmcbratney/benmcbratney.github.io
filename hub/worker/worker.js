@@ -46,6 +46,10 @@
 //   GET  /spotify/library              your playlists + Spotify Connect speakers
 //   POST /spotify/play    {"deviceId": "...", "uri": "spotify:playlist:…"}   (uri optional: just move playback)
 //   GET  /spotify/connect, /spotify/callback   (browser, no key) one-time sign-in
+//   GET  /sports                       last/live/next game for each team (ESPN's free feeds)
+//
+// Optional SPORTS_TEAMS (plain) overrides the default Chicago teams, e.g.
+//   [{"key":"bears","name":"Bears","emoji":"🐻","path":"football/nfl","id":"3"}]
 
 const TODOIST = "https://api.todoist.com/api/v1";
 const SDM = "https://smartdevicemanagement.googleapis.com/v1";
@@ -95,6 +99,9 @@ export default {
           body: JSON.stringify({ content: String(content).trim(), project_id }),
         });
         return json(trimTask(task));
+      }
+      if (url.pathname === "/sports" && request.method === "GET") {
+        return json(await sports(env));
       }
       if (url.pathname === "/family" && request.method === "GET") {
         return json({ family: family(env), kidsQuickAdd: kidsQuickAdd(env) });
@@ -377,6 +384,94 @@ async function spotifyPlay(env, deviceId, uri) {
       body: JSON.stringify({ device_ids: [deviceId], play: true }),
     });
   }
+}
+
+// ---------------------------------------------------------------- Sports (ESPN's public site API)
+// No key needed. It's unofficial, so everything is read defensively: a team that
+// fails just reports an error instead of breaking the rest.
+
+const ESPN = "https://site.api.espn.com/apis/site/v2/sports/";
+const DEFAULT_TEAMS = [
+  { key: "bears", name: "Bears", emoji: "🐻", path: "football/nfl", id: "3" },
+  { key: "cubs", name: "Cubs", emoji: "⚾", path: "baseball/mlb", id: "16" },
+  { key: "bulls", name: "Bulls", emoji: "🐂", path: "basketball/nba", id: "4" },
+  { key: "blackhawks", name: "Blackhawks", emoji: "🏒", path: "hockey/nhl", id: "4" },
+  { key: "nu-football", name: "Northwestern", emoji: "🏈", path: "football/college-football", id: "77" },
+  { key: "nu-hoops", name: "Northwestern", emoji: "🏀", path: "basketball/mens-college-basketball", id: "77" },
+];
+
+async function espn(path) {
+  const res = await fetch(ESPN + path, { cf: { cacheTtl: 60, cacheEverything: true } });
+  if (!res.ok) throw new Error(`ESPN ${res.status}`);
+  return res.json();
+}
+
+// Scores come as "24" on some endpoints and {value, displayValue} on others.
+function espnScore(s) {
+  if (s == null) return null;
+  if (typeof s === "object") return s.displayValue != null ? String(s.displayValue) : s.value != null ? String(s.value) : null;
+  return String(s);
+}
+
+function espnGame(ev, teamId) {
+  const comp = (ev && ev.competitions && ev.competitions[0]) || ev;
+  if (!comp || !comp.competitors) return null;
+  const us = comp.competitors.find((c) => String(c.id || (c.team && c.team.id)) === String(teamId));
+  const them = comp.competitors.find((c) => c !== us);
+  if (!us || !them) return null;
+  const status = (comp.status || ev.status || {}).type || {};
+  const tv = ((comp.broadcasts || [])[0] || {});
+  const t = them.team || {};
+  return {
+    id: String(ev.id || comp.id),
+    start: Date.parse(ev.date || comp.date) || null,
+    state: status.state || "pre", // pre | in | post
+    detail: status.shortDetail || status.detail || "",
+    home: us.homeAway === "home",
+    usScore: espnScore(us.score),
+    themScore: espnScore(them.score),
+    them: t.shortDisplayName || t.displayName || t.abbreviation || "?",
+    themAbbr: t.abbreviation || "",
+    won: status.state === "post" && us.winner != null ? !!us.winner : null,
+    tv: (tv.media && tv.media.shortName) || (tv.names && tv.names[0]) || null,
+  };
+}
+
+async function sportsTeam(t) {
+  const [info, sched] = await Promise.all([
+    espn(`${t.path}/teams/${t.id}`).catch(() => null),
+    espn(`${t.path}/teams/${t.id}/schedule`).catch(() => null),
+  ]);
+  if (!info && !sched) throw new Error("no data");
+  const games = ((sched && sched.events) || []).map((ev) => espnGame(ev, t.id)).filter(Boolean);
+  const nextEv = info && info.team && info.team.nextEvent && info.team.nextEvent[0];
+  const next = nextEv ? espnGame(nextEv, t.id) : null;
+  if (next && !games.some((g) => g.id === next.id)) games.push(next); // e.g. postseason games
+  if (next) games.forEach((g, i) => { if (g.id === next.id) games[i] = next; }); // fresher status
+
+  // A game in progress: ask for its live box score.
+  let live = games.find((g) => g.state === "in") || null;
+  if (live) {
+    const sum = await espn(`${t.path}/summary?event=${encodeURIComponent(live.id)}`).catch(() => null);
+    const fresh = sum && sum.header && espnGame({ ...sum.header, id: live.id, date: live.start && new Date(live.start).toISOString() }, t.id);
+    if (fresh) live = { ...live, ...fresh, start: live.start };
+  }
+  const now = Date.now();
+  const last = games.filter((g) => g.state === "post").sort((a, b) => b.start - a.start)[0] || null;
+  const upcoming = games.filter((g) => g.state === "pre" && g.start && g.start > now - 6 * 3600e3).sort((a, b) => a.start - b.start)[0] || null;
+  const rec = info && info.team && info.team.record && info.team.record.items && info.team.record.items[0];
+  return { key: t.key, name: t.name, emoji: t.emoji, record: rec ? rec.summary : null, live, last, next: upcoming };
+}
+
+async function sports(env) {
+  let teams = DEFAULT_TEAMS;
+  if (env.SPORTS_TEAMS) {
+    try { teams = JSON.parse(env.SPORTS_TEAMS); } catch { throw new Error("SPORTS_TEAMS isn't valid JSON"); }
+  }
+  const out = await Promise.all(teams.slice(0, 10).map((t) =>
+    sportsTeam(t).catch((err) => ({ key: t.key, name: t.name, emoji: t.emoji, error: err.message }))
+  ));
+  return { teams: out };
 }
 
 // ---------------------------------------------------------------- Family (personal greetings)
