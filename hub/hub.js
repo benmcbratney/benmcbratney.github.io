@@ -734,6 +734,7 @@
     return p.then(function (data) {
       sports = data.teams || [];
       renderScoreChips();
+      layoutColumns();
       if (!$("scores-modal").hidden) renderScores();
       setProblem("scores", null);
     }).catch(function (e) {
@@ -793,6 +794,40 @@
       box.appendChild(b);
     });
   }
+
+  // Compact version for the right column. Returns false when there's nothing worth showing.
+  function renderScoreCard() {
+    var box = $("scores-mini");
+    box.innerHTML = "";
+    if (!sports) return false;
+    var now = new Date();
+    var shown = sports.filter(function (t) {
+      if (t.error) return false;
+      if (t.live || t.next) return true;
+      return !!(t.last && now - t.last.start < 45 * DAY_MS); // skip long-idle off-season teams
+    });
+    shown.forEach(function (t) {
+      var row = el("div", "sm-row" + (t.live ? " live" : ""));
+      row.appendChild(el("span", "sm-emoji", t.emoji));
+      var info = el("div", "sm-info");
+      info.appendChild(el("div", "sm-name", t.name));
+      var nextText = t.live ? vsLine(t.live) + " · " + t.live.detail
+        : t.next ? "Next " + vsLine(t.next) + " · " + gameWhen(t.next.start, now) : "";
+      if (nextText) info.appendChild(el("div", "sm-next", nextText));
+      row.appendChild(info);
+      var res = el("div", "sm-result");
+      var g = t.live || t.last;
+      if (g) {
+        var badge = t.live ? ["live", "LIVE"] : g.won ? ["win", "W"] : g.won === false ? ["loss", "L"] : ["", "T"];
+        res.appendChild(el("span", "sc-badge " + badge[0], badge[1]));
+        res.appendChild(el("b", null, " " + g.usScore + "–" + g.themScore));
+      }
+      row.appendChild(res);
+      box.appendChild(row);
+    });
+    return shown.length > 0;
+  }
+  $("scores-card").addEventListener("click", function () { openScores(); });
 
   function renderScores() {
     var box = $("scores-list");
@@ -1143,6 +1178,10 @@
 
   // If every card on the right is hidden, the agenda takes the full width.
   function layoutColumns() {
+    // Both lists folded: thermostats spread out and the Scores card joins in.
+    var folded = document.querySelector(".card.chores").hidden && document.querySelector(".card.grocery").hidden;
+    document.querySelector(".col-right").classList.toggle("lists-folded", folded);
+    $("scores-card").hidden = !(folded && renderScoreCard());
     var cards = document.querySelectorAll(".col-right > .card");
     var any = false;
     for (var i = 0; i < cards.length; i++) if (!cards[i].hidden) any = true;
@@ -1363,7 +1402,7 @@
       var info = el("div", "t-info");
       info.appendChild(el("div", "t-name", t.name));
       var status = nestStatus(t);
-      if (t.humidity != null) status += " · " + Math.round(t.humidity) + "% humidity";
+      if (t.humidity != null) status += " · 💧" + Math.round(t.humidity) + "%";
       info.appendChild(el("div", "t-status", status));
       row.appendChild(info);
 
@@ -2027,7 +2066,7 @@
   // Scores: every minute during a game, every 5 minutes otherwise.
   var sportsTicks = 0;
   setInterval(function () { sportsTicks++; if (sportsLive() || sportsTicks % 5 === 0) loadSports(); }, 60 * 1000);
-  setInterval(function () { renderAgenda(); renderCountdowns(); renderScoreChips(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
+  setInterval(function () { renderAgenda(); renderCountdowns(); renderScoreChips(); layoutColumns(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
   setInterval(checkForUpdate, 10 * 60 * 1000);
   setInterval(function () { tickTimers(); renderSpotifyProgress(); }, 1000);
   // Spotify: every 10s while something's playing, every 30s otherwise.

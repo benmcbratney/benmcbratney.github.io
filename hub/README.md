@@ -189,7 +189,8 @@ doesn't have `/countdowns` yet, the holidays still show.
   system prompt, for when the iPad's keyboard cooperates. Edit the staples in `GROCERY_STAPLES` in hub.js.
 - Empty lists fold away: when Kids or Groceries has nothing on it, its card disappears (after the confetti, for
   chores) and a **🧒 Kids +** / **🛒 Groceries +** pill appears in the footer; tap it to add something and the
-  card comes back. The other cards grow into the space, and if nothing's left on the right the agenda goes full width.
+  card comes back. The other cards grow into the space. With both lists empty, the thermostats get bigger and a
+  Scores card (live game, last result, next game per team; tap for details) fills the rest of the right column.
 - Kids: the **+** works the same way, with buttons from the `KIDS_QUICK_ADD` Worker variable (kept there
   because they name the kids). Edit that variable in Cloudflare to change them; no re-paste needed.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.

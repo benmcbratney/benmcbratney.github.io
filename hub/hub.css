@@ -86,6 +86,16 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .col-right { grid-area: right; }
 .col > .card { flex: none; }
 .col > .agenda, .col > .chores, .col > .grocery { flex: 1 1 0; }
+/* Both lists folded away: the thermostats spread out and a Scores card fills the rest. */
+.col-right.lists-folded > .scores { flex: 1 1 0; }
+.col-right.lists-folded .tstat { padding: 8px 0; }
+.col-right.lists-folded .tstat:first-child { padding-top: 2px; }
+
+.col-right.lists-folded .t-name { font-size: 22px; }
+.col-right.lists-folded .t-status { font-size: 16px; }
+.col-right.lists-folded .t-now { font-size: 42px; }
+.col-right.lists-folded .t-ctrl button { width: 44px; height: 44px; font-size: 24px; }
+.col-right.lists-folded .t-target { font-size: 24px; min-width: 58px; }
 #hub.right-empty { grid-template-columns: 1fr; grid-template-areas: "top" "left" "status"; }
 #hub.right-empty .col-right { display: none; }
 
@@ -167,6 +177,18 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .fc-pop { font-size: 12px; color: #bfe0ff; white-space: nowrap; }
 .weather { cursor: pointer; }
 .weather:active { opacity: 0.8; }
+
+/* Scores card (shown when both lists are folded away) */
+.scores { cursor: pointer; }
+.scores-mini { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; }
+.sm-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-top: 1px solid var(--line); }
+.sm-row:first-child { border-top: 0; padding-top: 0; }
+.sm-emoji { font-size: 22px; width: 28px; text-align: center; flex: none; }
+.sm-info { flex: 1; min-width: 0; }
+.sm-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sm-next { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sm-result { flex: none; font-size: 16px; white-space: nowrap; }
+.sm-row.live { background: rgba(200, 56, 40, 0.10); border-radius: 10px; padding-left: 6px; padding-right: 6px; }
 
 /* Scores pop-up */
 .modal-card.scores-card { width: 860px; }
