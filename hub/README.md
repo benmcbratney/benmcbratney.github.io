@@ -26,8 +26,8 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `HOME_TZ` | Text | `America/Chicago` |
    | `CHORES_PROJECT` | Text | Todoist project name, default `Chores` |
    | `GROCERY_PROJECT` | Text | Todoist project name, default `Groceries` |
-   | `FAMILY` | Secret | optional, for personal greetings (see below) |
-   | `KIDS_QUICK_ADD` | Text | optional JSON list of one-tap buttons for the Kids card's **+**, e.g. `["Kid One school clothes","More pull-ups"]` |
+   | `FAMILY` | Secret | optional, picks out family birthdays for the countdowns (see below) |
+   | `KIDS_QUICK_ADD` | Text | optional JSON list of one-tap buttons for the Kids list, e.g. `["Kid One school clothes","More pull-ups"]` |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
    ⚙ Settings → pick the calendar → *Integrate calendar* → **Secret address in iCal format**.
@@ -126,41 +126,31 @@ Kasa, WiZ, iRobot and friends can only be reached from inside the house, so they
 through Home Assistant. See **[HOME-ASSISTANT.md](HOME-ASSISTANT.md)** for running it
 free on a Mac mini.
 
-## Personal greetings (optional)
+## Family names (optional)
 
-The greeting under the date changes every 15 minutes. Add a `FAMILY` **Secret** to
-the Worker and it'll mix in lines with your family's names and your dog's. The names
-stay in Cloudflare, not in this public repo:
+Add a `FAMILY` **Secret** to the Worker so the countdowns can tell family birthdays from
+everyone else's. The names stay in Cloudflare, not in this public repo:
 
 ```json
-{"parents": ["Mom", "Dad"], "kids": ["Kid One", "Kid Two"], "nicknames": ["Nickname"], "dog": "Dog's name"}
+{"parents": ["Mom", "Dad"], "kids": ["Kid One", "Kid Two"], "dog": "Dog's name"}
 ```
 
-Any field can be left out. A nickname with "stress" in it gets its own calm-down lines.
-An all-day calendar event with "birthday" and a family name in it ("Kid One's birthday")
-becomes "🎂 Happy birthday, Kid One!".
-
-**Bears game days:** add the Bears schedule to Google Calendar (Other calendars → +
-→ Browse calendars of interest → Sports → American Football → NFL → Chicago Bears).
-Then add it to `CALENDARS` like your other calendars. It's a public calendar, so use
-its *Public address in iCal format*. On game days the greeting counts down to kickoff
-and says when the Bears are on.
+Any field can be left out.
 
 ## Countdowns
 
-Up to four "days until" tiles sit under the agenda, picked in this order:
+"Days until" pills run along the bottom of the header (as many as fit on one line), picked in this order:
 
 1. **Anything you tag in Google Calendar.** Put ⏳ or the word "countdown" in the
    title, like "🏖️ Florida trip ⏳" or "Countdown: last day of school". The Worker
-   looks a full year ahead for these. A leading emoji becomes the tile's icon, and
+   looks a full year ahead for these. A leading emoji becomes the pill's icon, and
    the ⏳/"countdown" part is hidden.
 2. **Family birthdays** in the next 60 days: all-day "birthday" events naming
    someone in `FAMILY`. Other people's birthdays stay off the board unless you tag them.
 3. **Holidays** in the next 60 days: New Year's, Valentine's, St. Patrick's, Easter,
    Mother's Day, Father's Day, the Fourth, Halloween, Thanksgiving and Christmas.
 
-The closest one within a month also turns up in the rotating greeting ("Only 3 more
-sleeps till Christmas 🎄"). Tagged events refresh hourly. With an older Worker that
+Tagged events refresh hourly. With an older Worker that
 doesn't have `/countdowns` yet, the holidays still show.
 
 ## How it behaves
@@ -168,15 +158,17 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
   Spotify every 10 s while playing (30 s otherwise).
 - Header shows current conditions plus a 5-day forecast strip (rain chance shown when it's 20% or more).
-- Sports: on game days a chip under the greeting shows the live score (red, updating every minute), tonight's
-  matchup, or last night's final for the Bears, Cubs, Bulls, Blackhawks and Northwestern football/basketball.
-  Tap it, or **🏆 Scores** in the footer, for every team's last result, next game and TV channel. Data comes
-  from ESPN's free (unofficial) feeds through the Worker; change teams with an optional `SPORTS_TEAMS` variable
-  (see the top of worker.js).
-- What to wear: under the weather, picture icons with one-word labels (👔 long sleeves + 👖 pants below 70°, 👕 T-shirt +
-  🩳 shorts at 70°+, 🧥 coats when it's cold, 🧤 mittens, ☂️ umbrella,
-  🥾 snow/rain boots, 🧴 sunscreen, 💨 windy) from the daytime (7am–7pm) "feels like" temperatures, rain/snow
-  chances, wind and UV. From 5pm it switches to tomorrow, so it's ready for getting dressed in the morning.
+- Layout: calendar, Scores and Spotify on the left; thermostats and a big "What to wear" card on the right;
+  Kids and Groceries as pills in the footer.
+- Sports: the Scores card has one tile per active team (Bears, Cubs, Bulls, Blackhawks, Northwestern
+  football/basketball): the live score (LIVE) or last result (W/L), then the next game. Live games refresh every
+  minute. Tap it for every team's record, last result, next game and TV channel. Data comes from ESPN's free
+  (unofficial) feeds through the Worker; change teams with an optional `SPORTS_TEAMS` variable (see the top of
+  worker.js).
+- What to wear: big picture icons with one-word labels so the kids can read it from across the room
+  (👔 long sleeves + 👖 pants below 70°, 👕 T-shirt + 🩳 shorts at 70°+, 🧥 coats when it's cold, 🧤 mittens,
+  ☂️ umbrella, 🥾 snow/rain boots, 🧴 sunscreen, 💨 windy), from the daytime (7am–7pm) "feels like" temperatures,
+  rain/snow chances, wind and UV. From 5pm it switches to tomorrow, so it's ready for getting dressed in the morning.
 - Tap the weather for the next 24 hours: temperature (the numbers ride higher when it's warmer), conditions,
   chance of precipitation and wind, with sunrise/sunset marked. Swipe sideways for later hours.
 - Kitchen timers: tap **⏲️ Timer** for presets (1 min–1 hour) or Custom. Running timers show as big
@@ -184,15 +176,12 @@ doesn't have `/countdowns` yet, the holidays still show.
   covers everything (even the night clock) and an urgent beep-beep-beep-beep alarm sounds every second
   (for up to 10 min) until you tap Dismiss. Timers survive reloads, and the hub holds off self-updates
   while one is running. The alarm needs the iPad's volume up and the side switch not on mute.
-- Groceries: tap **+** for one-tap buttons (the household staples, then anything else that's been on
-  the list, most frequent first). Items already on the list show a ✓. "Type something else…" opens the
-  system prompt, for when the iPad's keyboard cooperates. Edit the staples in `GROCERY_STAPLES` in hub.js.
-- Empty lists fold away: when Kids or Groceries has nothing on it, its card disappears (after the confetti, for
-  chores) and a **🧒 Kids +** / **🛒 Groceries +** pill appears in the footer; tap it to add something and the
-  card comes back. The other cards grow into the space. With both lists empty, the thermostats get bigger and a
-  Scores card (live game, last result, next game per team; tap for details) fills the rest of the right column.
-- Kids: the **+** works the same way, with buttons from the `KIDS_QUICK_ADD` Worker variable (kept there
-  because they name the kids). Edit that variable in Cloudflare to change them; no re-paste needed.
+- Kids and Groceries: footer pills show how many items are on each list. Tap one for a pop-up with the list
+  (tap an item to check it off; clearing the last chore gets confetti) and one-tap add buttons. For Groceries
+  those are the household staples (`GROCERY_STAPLES` in hub.js) plus anything that's been on the list before,
+  most frequent first; for Kids they come from the `KIDS_QUICK_ADD` Worker variable (kept there because they name
+  the kids). Items already on the list show a ✓. "Type something else…" opens the system prompt, for when the
+  iPad's keyboard cooperates.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Tap a thermostat's name or temperature for a pop-up: switch between Heat, Cool, Heat · Cool, Off and
@@ -205,8 +194,7 @@ doesn't have `/countdowns` yet, the holidays still show.
   **When changing the hub, bump the version** in `version.json` and in `index.html` (the
   `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`).
 - Weather comes from Open-Meteo (free, no key).
-- Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill replaces the
-  greeting under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
+- Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
   "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
 
 ## Background photos

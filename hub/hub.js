@@ -135,7 +135,6 @@
     t.textContent = timeText;
     t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
     $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
-    setGreeting(greetingFor(now));
     renderPrecipAlert(now);
     updateBackdrop();
 
@@ -229,74 +228,14 @@
     img.src = photo.url;
   }
 
-  // ------------------------------------------------------------- greeting
-  // A new line every 15 minutes, rotating between something special (holiday,
-  // birthday), something about right now (weather, chores, calendar, day of the
-  // week) and a time-of-day line. Stable within each 15-minute slot.
-
-  var TIME_LINES = [
-    [0, 5, ["Still up, night owl?", "Burning the midnight oil 🦉", "Bed's calling 😴"]],
-    [5, 8, ["Rise and shine ☀️", "Early bird gets the worm", "Coffee's calling ☕", "Up and at 'em"]],
-    [8, 11, ["Good morning", "Morning! Make it a good one", "Let's get after it", "Hope you slept well"]],
-    [11, 13, ["Lunchtime — what're we thinking?", "Halfway through the day", "Snack check 🥨"]],
-    [13, 17, ["Good afternoon", "Afternoon slump? Snack time", "Hang in there — dinner's coming", "Keep it rolling"]],
-    [17, 19, ["What's for dinner?", "Dinner time — who's cooking?", "Good evening", "Home stretch"]],
-    [19, 22, ["Good evening", "Time to unwind", "Couch o'clock 🛋️", "Feet up, you earned it"]],
-    [22, 24, ["Lights out soon", "Lock up and wind down 🔒", "Almost bedtime", "Sweet dreams soon 🌙"]],
-  ];
-
-  var AFFIRMATIONS = [
-    "Hey sexy 😏", "You look good today 😍", "Hey good lookin' 👀", "Looking sharp! 😎",
-    "Nice hair 😉", "Somebody's glowing today ✨", "Smile — it looks good on you 😊",
-    "You've got this 💪", "You're doing amazing 🌟", "You're crushing it 🔥", "Proud of you 🙌",
-    "Main character energy 💅", "Big things today 🚀", "Today's gonna be a good one 🌈",
-    "You're kind of a big deal 😌", "Certified awesome ✅",
-  ];
-
   function nthWeekday(year, month, weekday, n) {
     var first = new Date(year, month, 1).getDay();
     return 1 + ((weekday - first + 7) % 7) + (n - 1) * 7;
   }
 
-  function holidayLines(now) {
-    var m = now.getMonth() + 1, d = now.getDate();
-    if (m === 1 && d === 1) return ["Happy New Year! 🎆", "New year, fresh start ✨"];
-    if (m === 2 && d === 14) return ["Happy Valentine's Day ❤️", "Love you guys 💕"];
-    if (m === 3 && d === 17) return ["Happy St. Paddy's ☘️", "Wear green or get pinched ☘️"];
-    if (m === 7 && d === 4) return ["Happy Fourth! 🎆", "Fireworks tonight? 🎇"];
-    if (m === 10 && d === 31) return ["Happy Halloween 🎃", "Got the candy? 🍬", "Trick or treat 👻"];
-    if (m === 11 && d === nthWeekday(now.getFullYear(), 10, 4, 4)) return ["Happy Thanksgiving 🦃", "Save room for pie 🥧"];
-    if (m === 12 && d === 24) return ["Merry Christmas Eve 🎄", "Santa's on the way 🎅"];
-    if (m === 12 && d === 25) return ["Merry Christmas 🎄", "Ho ho ho 🎅"];
-    if (m === 12 && d === 31) return ["Happy New Year's Eve 🥂", "Last one of the year — make it count"];
-    return [];
-  }
-
-  function todaysEvents(now) {
-    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    var tomorrow = addDays(today, 1);
-    return events.filter(function (e) { return e.start < tomorrow && e.end > today; });
-  }
-
-  function specialLines(now) {
-    var lines = holidayLines(now);
-    var everyone = fam ? fam.parents.concat(fam.kids, fam.dog ? [fam.dog] : []) : [];
-    todaysEvents(now).forEach(function (e) {
-      if (e.allDay && /birthday|bday/i.test(e.title)) {
-        var who = everyone.filter(function (n) { return e.title.toLowerCase().indexOf(n.toLowerCase()) >= 0; })[0];
-        lines.push(who ? "🎂 Happy birthday, " + who + "! 🎉" : "🎂 " + e.title + " today!");
-      }
-      // Subscribe to a Bears schedule calendar and game days get their own lines.
-      if (!e.allDay && /\bbears\b/i.test(e.title)) {
-        if (now < e.start) lines.push("Bears game today — Bear Down! 🐻", "🐻 " + e.title + " · kickoff " + fmtTime(e.start));
-        else if (now < e.end) lines.push("Bears are on right now 🐻🏈");
-      }
-    });
-    return lines;
-  }
-
-  // ------------------------------------------------------------- family greetings
+  // ------------------------------------------------------------- family
   // Names come from the Worker's FAMILY secret, so they never live in this public repo.
+  // They pick out family birthdays for the countdowns.
 
   var fam = null;
 
@@ -309,115 +248,6 @@
       fam = data.family || null;
       kidsQuickAdd = data.kidsQuickAdd || [];
     }).catch(function () {});
-  }
-
-  function familyLines(now) {
-    if (!fam) return [];
-    var h = now.getHours(), lines = [];
-    var slot = Math.floor(now.getTime() / (15 * 60 * 1000));
-    var kid = fam.kids.length ? fam.kids[slot % fam.kids.length] : null;
-    var nick = fam.nicknames.length ? fam.nicknames[slot % fam.nicknames.length] : null;
-    var parent = fam.parents.length ? fam.parents[slot % fam.parents.length] : null;
-    var dog = fam.dog;
-
-    if (dog) {
-      if (h >= 6 && h < 9) lines.push("Did " + dog + " get breakfast? 🦴");
-      else if (h >= 17 && h < 20) lines.push("Did " + dog + " get dinner? 🦴");
-      else if (h >= 9 && h < 17) lines.push("Has anyone walked " + dog + "? 🐕");
-      lines.push(dog + " says hi 🐶", "Give " + dog + " a scratch 🐾", "Who's the goodest? " + dog + " is 🐶",
-        "Be the person " + dog + " thinks you are 🐶");
-    }
-    if (kid) {
-      if (h < 11) lines.push("Good morning, " + kid + "! ☀️");
-      else if (h >= 20) lines.push("Teeth brushed, " + kid + "? 🪥");
-      else lines.push("Hi " + kid + "! 👋");
-      lines.push(kid + ", you're awesome ⭐");
-    }
-    if (nick) {
-      if (/stress/i.test(nick)) lines.push("Deep breaths, " + nick + " 😌", "Chill vibes only, " + nick + " 🧘");
-      else lines.push("Hey " + nick + " 👋", "Looking good, " + nick + " ✨");
-    }
-    if (parent) lines.push("Hi " + parent + " 👋", parent + " is the best ⭐");
-    if (fam.kids.length > 1 && h >= 7 && h < 21) lines.push("Love you, " + listNames(fam.kids) + " ❤️");
-    return lines;
-  }
-
-  function listNames(names) {
-    if (names.length <= 2) return names.join(" & ");
-    return names.slice(0, -1).join(", ") + " & " + names[names.length - 1];
-  }
-
-  function contextLines(now) {
-    var lines = [], h = now.getHours(), dow = now.getDay();
-
-    // Weather
-    if (currentWx) {
-      var code = currentWx.code, t = currentWx.tempF;
-      if (t != null && t <= 0) lines.push("Chiberia out there 🥶 — bundle up");
-      else if (t != null && t <= 25) lines.push("Brr, it's a cold one — hats and gloves 🧤");
-      else if (t != null && t >= 88) lines.push("Hot one today — stay hydrated 💧");
-      if (code >= 95) lines.push("Stormy out — stay in, stay dry ⛈");
-      else if ((code >= 71 && code <= 77) || code === 85 || code === 86) lines.push("Snowy out there — boots on ❄️", "Snow day vibes ☃️");
-      else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) lines.push("Rainy day — good day for soup 🍲", "Don't forget an umbrella ☔");
-      else if (code === 45 || code === 48) lines.push("Foggy out — drive careful 🌫");
-      else if (currentWx.isDay && code <= 1 && t >= 62 && t <= 80) lines.push("Gorgeous out — get some fresh air 🌞", "Perfect day for a walk");
-    }
-
-    // Bears (regular season runs September into early January)
-    var month = now.getMonth() + 1;
-    if (month >= 9 || month === 1) {
-      lines.push("Bear Down 🐻");
-      if (dow === 0) lines.push("Bears Sunday? 🐻🏈");
-    } else if (month === 8) {
-      lines.push("Football's almost back — Bear Down 🐻");
-    }
-
-    // Day of the week
-    if (dow === 1 && h < 12) lines.push("Happy Monday. Coffee first ☕");
-    if (dow === 2) lines.push("Taco Tuesday? 🌮");
-    if (dow === 3) lines.push("Hump day — halfway there 🐪");
-    if (dow === 4) lines.push("Almost Friday 🙌");
-    if (dow === 5) lines.push(h >= 16 ? "Weekend starts now 🎉" : "Happy Friday! 🎉");
-    if (dow === 6) lines.push("Happy Saturday — no alarms ⏰");
-    if (dow === 0) lines.push(h >= 17 ? "Peek at the week ahead 📅" : "Lazy Sunday ☕");
-
-    // Chores and calendar
-    if (lists.chores.length) {
-      var todo = visibleChores();
-      var today = ymd(now);
-      if (!todo.length) lines.push("Chores all done — nice work! 🙌");
-      else if (todo.some(function (c) { return c.due && c.due.slice(0, 10) < today; })) lines.push("A few chores are waiting on you ✋");
-    }
-    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate()), end = addDays(start, 1);
-    var todayCount = events.filter(function (e) { return e.start < end && e.end > start; }).length;
-    lines = lines.concat(countdownLines(now), sportsLines(now));
-    if (todayCount >= 4) lines.push("Busy day — " + todayCount + " things on the calendar");
-    else if (todayCount === 0 && h < 17) lines.push("Nothing on the calendar today 😌");
-    return lines;
-  }
-
-  function greetingFor(now) {
-    var h = now.getHours();
-    var timeLines = ["Hello"];
-    TIME_LINES.forEach(function (r) { if (h >= r[0] && h < r[1]) timeLines = r[2]; });
-    var special = specialLines(now), context = contextLines(now), family = familyLines(now);
-    var slot = Math.floor(now.getTime() / (15 * 60 * 1000));
-    var pick = function (list) { return list[Math.floor(slot / 4) % list.length]; };
-    // An hour cycles: special (or family) → the moment → family or a pep talk → time of day.
-    var turn = slot % 4;
-    if (turn === 0) return special.length ? pick(special) : family.length ? pick(family) : pick(context.length ? context : timeLines);
-    if (turn === 1) return context.length ? pick(context) : pick(timeLines);
-    if (turn === 2) return pick(family.concat(AFFIRMATIONS));
-    return pick(timeLines);
-  }
-
-  function setGreeting(text) {
-    var g = $("greeting");
-    if (g.textContent === text) return;
-    g.textContent = text;
-    g.classList.remove("swap");
-    void g.offsetWidth; // restart the fade
-    g.classList.add("swap");
   }
 
   // ------------------------------------------------------------- weather (Open-Meteo, no key)
@@ -498,8 +328,7 @@
         main.appendChild(nowBox);
         main.appendChild(strip);
         box.appendChild(main);
-        var wear = outfit(new Date());
-        if (wear) box.appendChild(outfitRow(wear, "wx-wear"));
+        renderWearCard();
         if (!$("hourly").hidden) renderHourly();
         setProblem("weather", null);
       })
@@ -562,6 +391,25 @@
       row.appendChild(item);
     });
     return row;
+  }
+
+  // Big "What to wear" card in the right column, sized for kids across the room.
+  function renderWearCard() {
+    var wear = outfit(new Date());
+    $("wear-card").hidden = !wear;
+    layoutColumns();
+    if (!wear) return;
+    $("wear-title").textContent = "What to wear " + wear.when.toLowerCase();
+    var box = $("wear-items");
+    box.innerHTML = "";
+    box.className = "wear-grid" + (wear.items.length > 4 ? " many" : ""); // 5+ items: two rows of smaller tiles
+    wear.items.forEach(function (it) {
+      var item = el("div", "wear-tile");
+      item.appendChild(el("div", "wear-tile-icon", it[0]));
+      item.appendChild(el("div", "wear-tile-label", it[1]));
+      box.appendChild(item);
+    });
+    $("wear-sub").textContent = "Feels like " + wear.lo + "° to " + wear.hi + "°";
   }
 
   // ------------------------------------------------------------- hourly forecast pop-up
@@ -714,7 +562,6 @@
     var msg = precipMessage(now);
     var box = $("precip-alert");
     box.hidden = !msg;
-    $("greeting").hidden = !!msg;
     if (msg) {
       box.textContent = msg.text;
       box.className = "precip-alert" + (msg.snow ? " snow" : "");
@@ -722,9 +569,8 @@
   }
 
   // ------------------------------------------------------------- sports scores
-  // From the Worker's /sports (ESPN). Game days get a chip under the greeting: the
-  // live score, today's matchup, or last night's final. Tap a chip (or 🏆 Scores
-  // in the footer) for every team's last and next game.
+  // From the Worker's /sports (ESPN). A Scores card under the calendar shows each
+  // active team's live/last result and next game; tap it for the full pop-up.
 
   var sports = null;
   var DAY_MS = 864e5;
@@ -733,22 +579,17 @@
     var p = demo ? Promise.resolve(demoSports()) : api("/sports");
     return p.then(function (data) {
       sports = data.teams || [];
-      renderScoreChips();
       layoutColumns();
       if (!$("scores-modal").hidden) renderScores();
       setProblem("scores", null);
     }).catch(function (e) {
-      if (/HTTP 404/.test(e.message)) { sports = null; renderScoreChips(); return; } // older Worker
+      if (/HTTP 404/.test(e.message)) { sports = null; layoutColumns(); return; } // older Worker
       setProblem("scores", e.message);
     });
   }
 
   function sportsLive() {
     return !!sports && sports.some(function (t) { return t.live; });
-  }
-
-  function sameDay(a, b) {
-    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   }
 
   function gameWhen(ms, now) {
@@ -760,42 +601,17 @@
     return days < 0 ? day : day + " " + fmtTime(d);
   }
 
-  function scoreLine(t, g) {
-    return t.name + " " + g.usScore + ", " + g.them + " " + g.themScore;
-  }
-
   function vsLine(g) { return (g.home ? "vs " : "@ ") + g.them; }
 
-  // What's worth a chip right now, most urgent first.
-  function scoreChips(now) {
-    if (!sports) return [];
-    var chips = [];
-    sports.forEach(function (t) {
-      if (t.error) return;
-      if (t.live) chips.push({ rank: 0, cls: "live", text: t.emoji + " " + scoreLine(t, t.live) + " · " + t.live.detail });
-      else if (t.next && t.next.start && sameDay(new Date(t.next.start), now))
-        chips.push({ rank: 1, cls: "", text: t.emoji + " " + t.name + " " + vsLine(t.next) + " · " + fmtTime(new Date(t.next.start)) });
-      else if (t.last && t.last.start && now - t.last.start < 18 * 3600e3)
-        chips.push({ rank: 2, cls: t.last.won ? "win" : t.last.won === false ? "loss" : "",
-          text: t.emoji + " " + scoreLine(t, t.last) + " · " + (t.last.won ? "W" : t.last.won === false ? "L" : "Final") });
-    });
-    return chips.sort(function (a, b) { return a.rank - b.rank; }).slice(0, 2);
+  var SHORT_NAMES = { Blackhawks: "Hawks", Northwestern: "NU" };
+  // Today: just the time. Otherwise just the day ("Tmrw", "Sun", "Oct 21").
+  function shortWhen(ms, now) {
+    var d = new Date(ms);
+    if (d.toDateString() === now.toDateString()) return fmtTime(d);
+    return gameWhen(ms, now).replace(/ \S+$/, "").replace("Tomorrow", "Tmrw");
   }
 
-  function renderScoreChips() {
-    var box = $("score-chips");
-    box.innerHTML = "";
-    var chips = scoreChips(new Date());
-    box.hidden = !chips.length;
-    chips.forEach(function (c) {
-      var b = el("button", "score-chip " + c.cls, c.text);
-      b.type = "button";
-      b.addEventListener("click", openScores);
-      box.appendChild(b);
-    });
-  }
-
-  // Compact version for the right column. Returns false when there's nothing worth showing.
+  // Compact row of team tiles under the calendar. Returns false when there's nothing to show.
   function renderScoreCard() {
     var box = $("scores-mini");
     box.innerHTML = "";
@@ -806,24 +622,22 @@
       if (t.live || t.next) return true;
       return !!(t.last && now - t.last.start < 45 * DAY_MS); // skip long-idle off-season teams
     });
+    // One small tile per team: name, result (or LIVE), then what's next.
     shown.forEach(function (t) {
-      var row = el("div", "sm-row" + (t.live ? " live" : ""));
-      row.appendChild(el("span", "sm-emoji", t.emoji));
-      var info = el("div", "sm-info");
-      info.appendChild(el("div", "sm-name", t.name));
-      var nextText = t.live ? vsLine(t.live) + " · " + t.live.detail
-        : t.next ? "Next " + vsLine(t.next) + " · " + gameWhen(t.next.start, now) : "";
-      if (nextText) info.appendChild(el("div", "sm-next", nextText));
-      row.appendChild(info);
+      var tile = el("div", "sm-tile" + (t.live ? " live" : ""));
+      tile.appendChild(el("div", "sm-name", t.emoji + " " + (SHORT_NAMES[t.name] || t.name)));
       var res = el("div", "sm-result");
       var g = t.live || t.last;
       if (g) {
         var badge = t.live ? ["live", "LIVE"] : g.won ? ["win", "W"] : g.won === false ? ["loss", "L"] : ["", "T"];
         res.appendChild(el("span", "sc-badge " + badge[0], badge[1]));
         res.appendChild(el("b", null, " " + g.usScore + "–" + g.themScore));
-      }
-      row.appendChild(res);
-      box.appendChild(row);
+      } else res.appendChild(el("span", "sm-muted", "—"));
+      tile.appendChild(res);
+      var opp = function (x) { return (x.home ? "vs " : "@ ") + (x.themAbbr || x.them); };
+      var nextText = t.live ? t.live.detail : t.next ? shortWhen(t.next.start, now) + " " + opp(t.next) : "";
+      tile.appendChild(el("div", "sm-next", nextText || "\u00a0"));
+      box.appendChild(tile);
     });
     return shown.length > 0;
   }
@@ -873,21 +687,7 @@
     $("scores-modal").hidden = false;
     loadSports();
   }
-  $("open-scores").addEventListener("click", openScores);
   $("scores-done").addEventListener("click", function () { $("scores-modal").hidden = true; });
-
-  // Greeting: last night's result.
-  function sportsLines(now) {
-    if (!sports) return [];
-    var lines = [];
-    sports.forEach(function (t) {
-      var g = t.last;
-      if (t.error || !g || !g.start || now - g.start > 18 * 3600e3 || g.won == null) return;
-      lines.push(g.won ? t.name + " win! " + g.usScore + "–" + g.themScore + " " + t.emoji
-        : "Tough one — " + t.name + " fell " + g.usScore + "–" + g.themScore + " " + t.emoji);
-    });
-    return lines;
-  }
 
   function demoSports() {
     var now = Date.now(), H = 3600e3;
@@ -995,7 +795,7 @@
   }
 
   // ------------------------------------------------------------- countdowns
-  // Days-until tiles under the agenda. Three sources, in priority order:
+  // Days-until pills in a row along the bottom of the header. Three sources, in priority order:
   //   1. Calendar events tagged with ⏳ or "countdown" in the title (a year ahead)
   //   2. Family birthdays (all-day "birthday" events naming someone in FAMILY)
   //   3. Built-in holidays, once they're within HOLIDAY_WINDOW days
@@ -1096,26 +896,12 @@
     var items = countdownItems(new Date());
     box.innerHTML = "";
     box.hidden = !items.length;
+    // Header pills, soonest first; any that don't fit on one line are clipped.
     items.forEach(function (c) {
-      var tile = el("div", "cd" + (c.days === 0 ? " today" : ""));
-      tile.appendChild(el("div", "cd-icon", c.icon));
-      var num = el("div", "cd-num", c.days === 0 ? "Today!" : String(c.days));
-      if (c.days > 0) num.appendChild(el("span", "cd-unit", c.days === 1 ? " day" : " days"));
-      tile.appendChild(num);
-      tile.appendChild(el("div", "cd-label", c.label));
-      box.appendChild(tile);
+      var pill = el("span", "cd-pill" + (c.days === 0 ? " today" : ""), c.icon + " " + c.label + " · ");
+      pill.appendChild(el("b", null, c.days === 0 ? "Today!" : c.days === 1 ? "Tomorrow" : c.days + " days"));
+      box.appendChild(pill);
     });
-  }
-
-  // Greeting line for the nearest countdown in the next month (the day itself
-  // already has its own holiday/birthday lines).
-  function countdownLines(now) {
-    var c = countdownItems(now).filter(function (x) { return x.days > 0 && x.days <= 30; })[0];
-    if (!c) return [];
-    var what = c.short ? c.short + "'s birthday" : c.label;
-    if (c.days === 1) return [what + " is tomorrow! " + c.icon];
-    if (c.days <= 7) return ["Only " + c.days + " more sleeps till " + what + " " + c.icon];
-    return [c.days + " days till " + what + " " + c.icon];
   }
 
   // ------------------------------------------------------------- Todoist lists
@@ -1148,19 +934,15 @@
     return lists.chores.filter(function (t) { return !t.due || t.due.slice(0, 10) <= today; });
   }
 
-  // An empty list folds its card away into a footer pill ("🛒 Groceries +"), so the
-  // other cards get the room. Right after the last chore, the card waits for the confetti.
-  var celebrateUntil = 0;
-
+  // Kids and Groceries live in footer pills with a count; tapping one opens a pop-up
+  // with the list (tap to check off) and the one-tap add buttons.
   function renderList(name) {
     var items = name === "chores" ? visibleChores() : lists.grocery;
-    var ul = $(name);
+    $(name + "-count").textContent = items.length;
+    $("pill-" + name).classList.toggle("has-items", items.length > 0);
+    if ($("picker").hidden || pickerList !== name) return;
+    var ul = $("picker-tasks");
     ul.innerHTML = "";
-    $(name + "-count").textContent = items.length ? items.length : "";
-    var folded = !items.length && !(name === "chores" && Date.now() < celebrateUntil);
-    document.querySelector(".card." + name).hidden = folded;
-    $("pill-" + name).hidden = !folded;
-    layoutColumns();
     if (!items.length) {
       ul.appendChild(el("li", "empty", name === "chores" ? "All caught up 🎉" : "List is empty"));
       return;
@@ -1176,12 +958,10 @@
     });
   }
 
-  // If every card on the right is hidden, the agenda takes the full width.
+  // Left: calendar, Scores, Spotify. Right: thermostats and What to wear. If nothing's
+  // on the right, the left column takes the full width.
   function layoutColumns() {
-    // Both lists folded: thermostats spread out and the Scores card joins in.
-    var folded = document.querySelector(".card.chores").hidden && document.querySelector(".card.grocery").hidden;
-    document.querySelector(".col-right").classList.toggle("lists-folded", folded);
-    $("scores-card").hidden = !(folded && renderScoreCard());
+    $("scores-card").hidden = !renderScoreCard();
     var cards = document.querySelectorAll(".col-right > .card");
     var any = false;
     for (var i = 0; i < cards.length; i++) if (!cards[i].hidden) any = true;
@@ -1198,10 +978,6 @@
       setTimeout(function () {
         if (demo || !task.recurring) {
           lists[name] = lists[name].filter(function (t) { return t !== task; });
-          if (name === "chores" && !visibleChores().length) {
-            celebrateUntil = Date.now() + 3000;
-            setTimeout(function () { renderList("chores"); }, 3100);
-          }
           renderList(name);
           if (name === "chores" && !visibleChores().length) celebrate();
         } else {
@@ -1216,7 +992,7 @@
   }
 
   function celebrate() {
-    var card = document.querySelector(".chores");
+    var card = document.querySelector(".list-card");
     var colors = ["#c8553d", "#f2b134", "#4f8cff", "#7a9e7e", "#b07cc6", "#ffffff"];
     for (var i = 0; i < 36; i++) {
       var c = el("span", "confetti");
@@ -1280,8 +1056,8 @@
   // kids, so they stay out of this public repo).
   var kidsQuickAdd = [];
   var PICKERS = {
-    grocery: { title: "🛒 Add to Groceries", choices: groceryChoices },
-    chores: { title: "🧒 Add to Kids", choices: function () { return kidsQuickAdd; } },
+    grocery: { title: "🛒 Groceries", choices: groceryChoices },
+    chores: { title: "🧒 Kids", choices: function () { return kidsQuickAdd; } },
   };
   var pickerList = "grocery";
 
@@ -1331,18 +1107,17 @@
   function openPicker(list) {
     pickerList = list;
     $("picker-title").textContent = PICKERS[list].title;
-    renderChips();
     $("picker").hidden = false;
+    renderList(list);
+    renderChips();
   }
 
-  $("grocery-add").addEventListener("click", function () { openPicker("grocery"); });
-  $("chores-add").addEventListener("click", function () { openPicker("chores"); });
   $("pill-chores").addEventListener("click", function () { openPicker("chores"); });
   $("pill-grocery").addEventListener("click", function () { openPicker("grocery"); });
   $("picker-done").addEventListener("click", function () { $("picker").hidden = true; });
   $("picker-type").addEventListener("click", function () {
     var list = pickerList;
-    var content = (window.prompt(PICKERS[list].title.replace(/^\S+ /, "")) || "").trim();
+    var content = (window.prompt("Add to " + PICKERS[list].title.replace(/^\S+ /, "")) || "").trim();
     if (content) addTask(list, content);
   });
 
@@ -2066,7 +1841,7 @@
   // Scores: every minute during a game, every 5 minutes otherwise.
   var sportsTicks = 0;
   setInterval(function () { sportsTicks++; if (sportsLive() || sportsTicks % 5 === 0) loadSports(); }, 60 * 1000);
-  setInterval(function () { renderAgenda(); renderCountdowns(); renderScoreChips(); layoutColumns(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
+  setInterval(function () { renderAgenda(); renderCountdowns(); renderWearCard(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
   setInterval(checkForUpdate, 10 * 60 * 1000);
   setInterval(function () { tickTimers(); renderSpotifyProgress(); }, 1000);
   // Spotify: every 10s while something's playing, every 30s otherwise.
