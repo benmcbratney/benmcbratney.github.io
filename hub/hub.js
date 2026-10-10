@@ -155,7 +155,8 @@
   });
 
   // ------------------------------------------------------------- photo backdrop
-  // A freely licensed Wikimedia Commons photo that matches the current weather,
+  // A freely licensed Wikimedia Commons photo that matches the current weather
+  // (photographers are credited in README.md rather than on the wall),
   // loaded by the iPad at runtime. At night the photo is dimmed (or swapped for a
   // starry sky when it's clear).
 
@@ -191,14 +192,10 @@
   }
 
   function currentPhoto() {
-    if (settings.photoUrl) return { url: settings.photoUrl, credit: "", link: "" };
+    if (settings.photoUrl) return { url: settings.photoUrl };
     if (!currentWx) return null; // keep the plain gradient until the first forecast arrives
     var p = PHOTOS[photoKind(currentWx.code, currentWx.isDay)];
-    return {
-      url: commonsUrl(p.file, 1920),
-      credit: "📷 " + p.credit + " · Wikimedia Commons",
-      link: "https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(p.file.replace(/ /g, "_")),
-    };
+    return { url: commonsUrl(p.file, 1920) };
   }
 
   function updateBackdrop() {
@@ -221,9 +218,6 @@
       $(back).classList.add("show");
       $(frontLayer).classList.remove("show");
       frontLayer = back;
-      var c = $("credit");
-      c.textContent = photo.credit;
-      if (photo.link) c.href = photo.link; else c.removeAttribute("href");
     };
     img.onerror = function () {
       failedPhotos[photo.url] = Date.now() + 10 * 60 * 1000; // try again in 10 minutes
@@ -931,7 +925,6 @@
   var timerRows = {};
 
   function renderTimers() {
-    document.body.classList.toggle("has-timers", timers.length > 0); // frees the bottom bar
     var box = $("timers");
     box.innerHTML = "";
     timerRows = {};

@@ -164,8 +164,8 @@ and says when the Bears are on.
 
 The backdrop matches the current weather, using freely licensed photos from
 Wikimedia Commons that the iPad loads directly. After dark the photo is dimmed,
-and clear nights get a starry sky. The photographer is credited in the
-bottom-right corner. To use your own photo instead, paste its URL into
+and clear nights get a starry sky. Photographers are credited here (not on the
+wall), which their licenses allow. To use your own photo instead, paste its URL into
 ⚙︎ → Background photo URL.
 
 | Weather | Photo | Photographer |
