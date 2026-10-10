@@ -28,6 +28,7 @@
 //
 // Routes (all require header  X-Hub-Key: <HUB_KEY>, except the two Nest setup pages):
 //   GET  /calendar?days=7
+//   GET  /countdowns                   next year of "⏳"-tagged events and birthdays
 //   GET  /todoist/lists
 //   POST /todoist/close   {"id": "..."}
 //   POST /todoist/add     {"list": "chores"|"grocery", "content": "..."}
@@ -64,6 +65,9 @@ export default {
       if (url.pathname === "/calendar" && request.method === "GET") {
         const days = clamp(parseInt(url.searchParams.get("days") || "7", 10), 1, 31);
         return json(await calendar(env, days));
+      }
+      if (url.pathname === "/countdowns" && request.method === "GET") {
+        return json(await countdowns(env));
       }
       if (url.pathname === "/todoist/lists" && request.method === "GET") {
         return json(await todoistLists(env));
@@ -467,7 +471,8 @@ async function nestSetpoint(env, id, heatC, coolC) {
 
 // ---------------------------------------------------------------- Calendar
 
-async function calendar(env, days) {
+// `keep` optionally narrows which VEVENTs get expanded (see countdowns).
+async function calendar(env, days, keep) {
   const tz = env.HOME_TZ || "America/Chicago";
   const cals = JSON.parse(env.CALENDARS || "[]");
 
@@ -479,7 +484,7 @@ async function calendar(env, days) {
       try {
         const res = await fetch(cal.url, { cf: { cacheTtl: 120 } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const events = expandCalendar(await res.text(), start, days, tz);
+        const events = expandCalendar(await res.text(), start, days, tz, keep);
         return events.map((e) => ({ ...e, calendar: cal.name, color: cal.color || null }));
       } catch (err) {
         return [{ error: `${cal.name}: ${err.message}` }];
@@ -497,11 +502,31 @@ async function calendar(env, days) {
   };
 }
 
+// Countdowns: anything with ⏳ or the word "countdown" in its title, plus all-day
+// birthdays, looking a year ahead. Only matching events are expanded, so the long
+// window stays cheap. The iPad decides which birthdays are family.
+const COUNTDOWN_RE = /⏳|\bcountdown\b/i;
+const BIRTHDAY_RE = /birthday|\bb-?day\b/i;
+
+async function countdowns(env) {
+  const data = await calendar(env, 366, (ev) =>
+    COUNTDOWN_RE.test(ev.summary || "") || (ev.start.allDay && BIRTHDAY_RE.test(ev.summary || ""))
+  );
+  // Just the next occurrence of each (a weekly tagged event shouldn't fill the list).
+  const seen = new Set();
+  const events = data.events.filter((e) => {
+    if (seen.has(e.title)) return false;
+    seen.add(e.title);
+    return true;
+  }).map((e) => ({ title: e.title, allDay: e.allDay, start: e.start, end: e.end }));
+  return { errors: data.errors, events };
+}
+
 // Expand one ICS document into event instances overlapping the `days` days
 // starting at wall-clock date `startDay` in `tz`. Output times are wall-clock
 // strings in `tz` ("2026-10-06T09:00"), or dates ("2026-10-06") for all-day
 // events, so the iPad never has to do tz math.
-function expandCalendar(text, startDay, days, tz) {
+function expandCalendar(text, startDay, days, tz, keep) {
   const endDay = addDays(startDay, days);
   // Timed events are compared as real instants; all-day events as floating dates.
   const timedWin = [toInstant(startDay, tz), toInstant(endDay, tz)];
@@ -517,7 +542,7 @@ function expandCalendar(text, startDay, days, tz) {
 
   const out = [];
   for (const ev of vevents) {
-    if (!ev.start) continue;
+    if (!ev.start || (keep && !keep(ev))) continue;
     const durMs = ev.end ? ev.end.instant - ev.start.instant : ev.start.allDay ? 864e5 : 0;
     const skip = overrides.get(ev.uid);
     const [winStart, winEnd] = ev.start.allDay ? dayWin : timedWin;

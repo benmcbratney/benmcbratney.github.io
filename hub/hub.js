@@ -381,6 +381,7 @@
     }
     var start = new Date(now.getFullYear(), now.getMonth(), now.getDate()), end = addDays(start, 1);
     var todayCount = events.filter(function (e) { return e.start < end && e.end > start; }).length;
+    lines = lines.concat(countdownLines(now));
     if (todayCount >= 4) lines.push("Busy day — " + todayCount + " things on the calendar");
     else if (todayCount === 0 && h < 17) lines.push("Nothing on the calendar today 😌");
     return lines;
@@ -640,6 +641,130 @@
     if (!next) return "";
     var isToday = next.start.getDate() === now.getDate();
     return "Next: " + next.title + " · " + (isToday ? "" : "tomorrow ") + fmtTime(next.start);
+  }
+
+  // ------------------------------------------------------------- countdowns
+  // Days-until tiles under the agenda. Three sources, in priority order:
+  //   1. Calendar events tagged with ⏳ or "countdown" in the title (a year ahead)
+  //   2. Family birthdays (all-day "birthday" events naming someone in FAMILY)
+  //   3. Built-in holidays, once they're within HOLIDAY_WINDOW days
+  // Tag an event "🏖️ Florida trip ⏳" in Google Calendar and it shows up here.
+
+  var MAX_COUNTDOWNS = 4;
+  var HOLIDAY_WINDOW = 60;
+  var BIRTHDAY_WINDOW = 60;
+  var calCountdowns = [];
+
+  function easter(year) {
+    // Anonymous Gregorian algorithm.
+    var a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4;
+    var f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+    var h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+    var l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    var month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  function holidays(year) {
+    return [
+      ["🎆", "New Year's", new Date(year, 0, 1)],
+      ["❤️", "Valentine's Day", new Date(year, 1, 14)],
+      ["☘️", "St. Patrick's Day", new Date(year, 2, 17)],
+      ["🐣", "Easter", easter(year)],
+      ["💐", "Mother's Day", new Date(year, 4, nthWeekday(year, 4, 0, 2))],
+      ["👔", "Father's Day", new Date(year, 5, nthWeekday(year, 5, 0, 3))],
+      ["🎇", "Fourth of July", new Date(year, 6, 4)],
+      ["🎃", "Halloween", new Date(year, 9, 31)],
+      ["🦃", "Thanksgiving", new Date(year, 10, nthWeekday(year, 10, 4, 4))],
+      ["🎄", "Christmas", new Date(year, 11, 25)],
+    ];
+  }
+
+  // Leading emoji (with skin tones, flags and ZWJ sequences) becomes the tile icon.
+  var LEAD_EMOJI = /^((?:\p{Extended_Pictographic}|\p{Regional_Indicator})(?:️|‍|\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator})*)\s*/u;
+
+  function cleanCountdownTitle(title) {
+    var t = title.replace(/⏳️?/g, "").replace(/\bcountdown\b\s*:?/ig, "")
+      .replace(/\s{2,}/g, " ").replace(/^[\s:–—-]+|[\s:–—-]+$/g, "");
+    var m = LEAD_EMOJI.exec(t);
+    return m ? { icon: m[1], label: t.slice(m[0].length) || t } : { icon: "⏳", label: t || title };
+  }
+
+  function daysUntil(date, today) {
+    var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return Math.round((d - today) / 864e5); // round() absorbs DST's 23/25-hour days
+  }
+
+  function familyName(title) {
+    if (!fam) return null;
+    var everyone = fam.parents.concat(fam.kids, fam.dog ? [fam.dog] : []);
+    return everyone.filter(function (n) { return title.toLowerCase().indexOf(n.toLowerCase()) >= 0; })[0] || null;
+  }
+
+  function countdownItems(now) {
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var tagged = [], bdays = [], hols = [];
+    calCountdowns.forEach(function (e) {
+      if (!e.allDay && e.end <= now) return; // already over
+      var days = Math.max(0, daysUntil(e.start, today));
+      if (/⏳|\bcountdown\b/i.test(e.title)) {
+        var c = cleanCountdownTitle(e.title);
+        tagged.push({ icon: c.icon, label: c.label, days: days });
+      } else {
+        var who = familyName(e.title);
+        if (who && days <= BIRTHDAY_WINDOW) bdays.push({ icon: "🎂", label: who + "'s birthday", short: who, days: days });
+      }
+    });
+    [now.getFullYear(), now.getFullYear() + 1].forEach(function (y) {
+      holidays(y).forEach(function (h) {
+        var days = daysUntil(h[2], today);
+        if (days >= 0 && days <= HOLIDAY_WINDOW) hols.push({ icon: h[0], label: h[1], days: days });
+      });
+    });
+    var byDays = function (a, b) { return a.days - b.days; };
+    [tagged, bdays, hols].forEach(function (g) { g.sort(byDays); });
+    return tagged.concat(bdays, hols).slice(0, MAX_COUNTDOWNS).sort(byDays);
+  }
+
+  function loadCountdowns() {
+    var p = demo ? Promise.resolve(demoCountdowns()) : api("/countdowns");
+    return p.then(function (data) {
+      calCountdowns = data.events.map(function (e) {
+        return { title: e.title, allDay: e.allDay, start: parseWall(e.start), end: parseWall(e.end || e.start) };
+      });
+      renderCountdowns();
+    }).catch(function (e) {
+      // An older Worker without /countdowns still gets the built-in holidays.
+      if (!/HTTP 404/.test(e.message)) setProblem("countdowns", e.message);
+      renderCountdowns();
+    });
+  }
+
+  function renderCountdowns() {
+    var box = $("countdowns");
+    var items = countdownItems(new Date());
+    box.innerHTML = "";
+    box.hidden = !items.length;
+    items.forEach(function (c) {
+      var tile = el("div", "cd" + (c.days === 0 ? " today" : ""));
+      tile.appendChild(el("div", "cd-icon", c.icon));
+      var num = el("div", "cd-num", c.days === 0 ? "Today!" : String(c.days));
+      if (c.days > 0) num.appendChild(el("span", "cd-unit", c.days === 1 ? " day" : " days"));
+      tile.appendChild(num);
+      tile.appendChild(el("div", "cd-label", c.label));
+      box.appendChild(tile);
+    });
+  }
+
+  // Greeting line for the nearest countdown in the next month (the day itself
+  // already has its own holiday/birthday lines).
+  function countdownLines(now) {
+    var c = countdownItems(now).filter(function (x) { return x.days > 0 && x.days <= 30; })[0];
+    if (!c) return [];
+    var what = c.short ? c.short + "'s birthday" : c.label;
+    if (c.days === 1) return [what + " is tomorrow! " + c.icon];
+    if (c.days <= 7) return ["Only " + c.days + " more sleeps till " + what + " " + c.icon];
+    return [c.days + " days till " + what + " " + c.icon];
   }
 
   // ------------------------------------------------------------- Todoist lists
@@ -1197,6 +1322,16 @@
     };
   }
 
+  function demoCountdowns() {
+    var d = new Date();
+    return {
+      events: [
+        { title: "🏖️ Florida trip ⏳", allDay: true, start: ymd(addDays(d, 38)), end: ymd(addDays(d, 45)) },
+        { title: "Countdown: Last day of school", allDay: true, start: ymd(addDays(d, 12)), end: ymd(addDays(d, 13)) },
+      ],
+    };
+  }
+
   function demoThermostats() {
     return [
       { id: "demo-up", name: "Upstairs", online: true, ambientC: 21.1, humidity: 44, mode: "HEAT", hvac: "HEATING", eco: false, heatC: 22.2 },
@@ -1255,7 +1390,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily(), loadSpotify()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily(), loadSpotify(), loadCountdowns()]).then(function () {
       lastSync = new Date();
       renderStatus();
     });
@@ -1270,7 +1405,8 @@
   setInterval(function () { if (!Object.keys(pendingSet).length) loadNest(); }, 2 * 60 * 1000);
   setInterval(loadCalendar, 5 * 60 * 1000);
   setInterval(loadWeather, 15 * 60 * 1000);
-  setInterval(function () { renderAgenda(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
+  setInterval(loadCountdowns, 60 * 60 * 1000);
+  setInterval(function () { renderAgenda(); renderCountdowns(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
   setInterval(checkForUpdate, 10 * 60 * 1000);
   setInterval(function () { tickTimers(); renderSpotifyProgress(); }, 1000);
   // Spotify: every 10s while something's playing, every 30s otherwise.

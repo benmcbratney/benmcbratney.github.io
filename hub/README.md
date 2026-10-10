@@ -138,6 +138,23 @@ Then add it to `CALENDARS` like your other calendars. It's a public calendar, so
 its *Public address in iCal format*. On game days the greeting counts down to kickoff
 and says when the Bears are on.
 
+## Countdowns
+
+Up to four "days until" tiles sit under the agenda, picked in this order:
+
+1. **Anything you tag in Google Calendar.** Put ⏳ or the word "countdown" in the
+   title, like "🏖️ Florida trip ⏳" or "Countdown: last day of school". The Worker
+   looks a full year ahead for these. A leading emoji becomes the tile's icon, and
+   the ⏳/"countdown" part is hidden.
+2. **Family birthdays** in the next 60 days: all-day "birthday" events naming
+   someone in `FAMILY`. Other people's birthdays stay off the board unless you tag them.
+3. **Holidays** in the next 60 days: New Year's, Valentine's, St. Patrick's, Easter,
+   Mother's Day, Father's Day, the Fourth, Halloween, Thanksgiving and Christmas.
+
+The closest one within a month also turns up in the rotating greeting ("Only 3 more
+sleeps till Christmas 🎄"). Tagged events refresh hourly. With an older Worker that
+doesn't have `/countdowns` yet, the holidays still show.
+
 ## How it behaves
 
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
