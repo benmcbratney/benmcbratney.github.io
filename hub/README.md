@@ -168,6 +168,8 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
   Spotify every 10 s while playing (30 s otherwise).
 - Header shows current conditions plus a 5-day forecast strip (rain chance shown when it's 20% or more).
+- Tap the weather for the next 24 hours: temperature (the numbers ride higher when it's warmer), conditions,
+  chance of precipitation and wind, with sunrise/sunset marked. Swipe sideways for later hours.
 - Kitchen timers: tap **⏲️ Timer** for presets (1 min–1 hour) or Custom. Running timers show as big
   countdowns across the top of the screen. When one finishes, a flashing red full-screen "TIME'S UP!"
   covers everything (even the night clock) and an urgent beep-beep-beep-beep alarm sounds every second
