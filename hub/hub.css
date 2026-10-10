@@ -37,7 +37,7 @@ button, input { font: inherit; color: inherit; }
 /* Stop long-presses from selecting text on the display, but keep this off every
    ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
    to show the keyboard for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card, .tstat-card, .music-card, .hourly-card, .scores-card {
+.top, .status, .night, .agenda, .nest, .scores, .wear, .spotify, .timers, .timer-card, .grocery-card, .tstat-card, .music-card, .hourly-card, .scores-card {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -78,24 +78,13 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
   padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
-/* Two columns of cards. Each grows into whatever its hidden neighbors leave:
-   agenda (+ Spotify) on the left; thermostats, Kids and Groceries on the right.
-   Kids/Groceries hide when empty (a footer pill takes their place). */
+/* Two columns of cards. Left: calendar, Scores, Spotify. Right: thermostats and the
+   big "What to wear" card. Kids and Groceries live in footer pills. */
 .col { display: flex; flex-direction: column; gap: 14px; min-height: 0; min-width: 0; }
 .col-left { grid-area: left; }
 .col-right { grid-area: right; }
 .col > .card { flex: none; }
-.col > .agenda, .col > .chores, .col > .grocery { flex: 1 1 0; }
-/* Both lists folded away: the thermostats spread out and a Scores card fills the rest. */
-.col-right.lists-folded > .scores { flex: 1 1 0; }
-.col-right.lists-folded .tstat { padding: 8px 0; }
-.col-right.lists-folded .tstat:first-child { padding-top: 2px; }
-
-.col-right.lists-folded .t-name { font-size: 22px; }
-.col-right.lists-folded .t-status { font-size: 16px; }
-.col-right.lists-folded .t-now { font-size: 42px; }
-.col-right.lists-folded .t-ctrl button { width: 44px; height: 44px; font-size: 24px; }
-.col-right.lists-folded .t-target { font-size: 24px; min-width: 58px; }
+.col > .agenda, .col > .wear { flex: 1 1 0; }
 #hub.right-empty { grid-template-columns: 1fr; grid-template-areas: "top" "left" "status"; }
 #hub.right-empty .col-right { display: none; }
 
@@ -116,51 +105,44 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 
 /* ---------------------------------------------------------------- header */
 
-.top { grid-area: top; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4px; }
+.top { grid-area: top; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; padding: 0 4px; row-gap: 8px; }
 .time { font-size: 84px; font-weight: 200; letter-spacing: -2px; line-height: 0.95; font-variant-numeric: tabular-nums; }
 .top { color: var(--on-photo); text-shadow: var(--photo-shadow); gap: 24px; }
 .clock { flex: 1; min-width: 0; }
 .weather { flex: none; }
 .time .ampm { font-size: 28px; font-weight: 400; letter-spacing: 0; margin-left: 6px; color: var(--on-photo-muted); }
 .date { font-size: 24px; color: var(--on-photo); margin-top: 6px; white-space: nowrap; font-weight: 500; }
-.greeting { font-size: 17px; color: var(--on-photo-muted); margin-top: 2px; line-height: 1.3; }
-.greeting[hidden], .precip-alert[hidden] { display: none; }
-.greeting.swap { animation: fade-in 1.2s ease both; }
+.precip-alert[hidden] { display: none; }
 .precip-alert {
   display: inline-block; margin-top: 6px; padding: 5px 14px; border-radius: 999px;
   background: rgba(47, 123, 214, 0.88); color: #fff; font-size: 17px; font-weight: 600;
   white-space: nowrap; text-shadow: none; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 .precip-alert.snow { background: rgba(120, 150, 190, 0.92); }
-.score-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.score-chips[hidden] { display: none; }
-.score-chip {
-  border: 0; padding: 5px 14px; border-radius: 999px; font-size: 16px; font-weight: 600; white-space: nowrap;
-  background: rgba(20, 30, 50, 0.62); color: #fff; text-shadow: none; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-}
-.score-chip.live { background: rgba(200, 56, 40, 0.9); }
-.score-chip.live::before { content: "● "; animation: blink 1.6s ease-in-out infinite; }
-.score-chip.win { background: rgba(46, 125, 70, 0.88); }
-@keyframes blink { 50% { opacity: 0.25; } }
+
 
 .weather { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
 .wx-main { display: flex; align-items: flex-end; gap: 16px; }
 
-/* What to wear: big emoji, tiny labels, readable by pre-readers. */
-.wx-wear {
-  display: flex; align-items: center; gap: 4px; padding: 4px 12px 4px 14px; border-radius: 16px;
-  background: rgba(20, 30, 50, 0.45); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-}
-.wear-when { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--on-photo-muted); margin-right: 6px; }
-.wear-item { display: flex; flex-direction: column; align-items: center; min-width: 54px; }
-.wear-icon { font-size: 28px; line-height: 1.15; }
-.wear-label { font-size: 11px; font-weight: 600; color: var(--on-photo); white-space: nowrap; }
+/* What to wear (pop-up row and the big card): pictures first, one-word labels. */
+.wear-item { display: flex; flex-direction: column; align-items: center; }
+.wear-when { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 6px; }
+.wear-icon { line-height: 1.15; }
+.wear-label { font-weight: 600; white-space: nowrap; }
 .wear-big { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin-bottom: 12px; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); }
 .wear-big .wear-when { color: var(--muted); font-size: 15px; }
 .wear-big .wear-item { min-width: 76px; }
 .wear-big .wear-icon { font-size: 44px; }
 .wear-big .wear-label { font-size: 14px; color: var(--ink); }
+.wear-grid { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 10px 6px; }
+.wear-tile { width: 104px; text-align: center; min-width: 0; }
+.wear-tile-icon { font-size: 58px; line-height: 1.1; }
+.wear-tile-label { font-size: 17px; font-weight: 700; margin-top: 2px; }
+.wear-grid.many { gap: 6px 4px; }
+.wear-grid.many .wear-tile { width: 92px; }
+.wear-grid.many .wear-tile-icon { font-size: 44px; }
+.wear-grid.many .wear-tile-label { font-size: 14px; white-space: nowrap; }
+.wear-sub { text-align: center; color: var(--muted); font-size: 15px; font-weight: 600; margin-top: 6px; }
 .wear-feels { margin-left: auto; color: var(--muted); font-size: 15px; font-weight: 600; }
 .wx-now { display: flex; align-items: center; gap: 10px; }
 .wx-icon { font-size: 48px; line-height: 1; }
@@ -180,15 +162,15 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 
 /* Scores card (shown when both lists are folded away) */
 .scores { cursor: pointer; }
-.scores-mini { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; }
-.sm-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-top: 1px solid var(--line); }
-.sm-row:first-child { border-top: 0; padding-top: 0; }
-.sm-emoji { font-size: 22px; width: 28px; text-align: center; flex: none; }
-.sm-info { flex: 1; min-width: 0; }
-.sm-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sm-next { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sm-result { flex: none; font-size: 16px; white-space: nowrap; }
-.sm-row.live { background: rgba(200, 56, 40, 0.10); border-radius: 10px; padding-left: 6px; padding-right: 6px; }
+.scores { padding-top: 12px; padding-bottom: 10px; }
+.scores h2 { margin-bottom: 6px; }
+.scores-mini { display: flex; gap: 6px; }
+.sm-tile { flex: 1 1 0; min-width: 0; padding: 6px 6px; border-radius: 12px; background: var(--control-bg); }
+.sm-tile.live { background: rgba(200, 56, 40, 0.16); }
+.sm-name { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sm-result { font-size: 15px; white-space: nowrap; margin: 3px 0 2px; }
+.sm-next { font-size: 11.5px; letter-spacing: -0.1px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sm-muted { color: var(--muted); }
 
 /* Scores pop-up */
 .modal-card.scores-card { width: 860px; }
@@ -261,8 +243,6 @@ body.glass-dark .tstat.heating .t-status, body.glass-dark .tstat.heating .t-targ
 body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-target { color: #8cc0ff; }
 
 .card h2 .icon { font-size: 17px; letter-spacing: 0; }
-.count { margin-left: auto; color: #fff; background: var(--accent); border-radius: 999px; font-size: 13px; letter-spacing: 0; padding: 1px 9px; }
-.count:empty { display: none; }
 
 .card[hidden] { display: none; }
 .nest[hidden] { display: none; }
@@ -319,15 +299,15 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 
 /* ---------------------------------------------------------------- agenda */
 
-.day { margin-bottom: 14px; }
-.day-name { font-size: 17px; font-weight: 700; margin: 0 0 6px; }
+.day { margin-bottom: 8px; }
+.day-name { font-size: 16px; font-weight: 700; margin: 0 0 2px; }
 .day-name span { font-weight: 400; color: var(--muted); margin-left: 6px; }
-.day-empty { color: var(--muted); font-size: 16px; padding: 2px 0 4px; }
+.day-empty { color: var(--muted); font-size: 15px; padding: 0 0 2px; }
 
-.event { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); }
+.event { display: flex; align-items: center; gap: 12px; padding: 4px 0; border-top: 1px solid var(--line); }
 .event:first-of-type { border-top: 0; }
 .event .when { width: 86px; flex: none; font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.event .what { flex: 1; font-size: 19px; line-height: 1.3; }
+.event .what { flex: 1; font-size: 17px; line-height: 1.25; }
 .event .where { display: block; font-size: 14px; color: var(--muted); }
 .event .bar { width: 4px; align-self: stretch; border-radius: 2px; flex: none; background: var(--muted); }
 .event .pill { flex: none; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 3px 10px; color: var(--accent); background: var(--accent-soft); }
@@ -337,15 +317,16 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 
 /* ---------------------------------------------------------------- countdowns */
 
-.countdowns { display: flex; gap: 8px; flex: none; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+/* Countdown pills: a full-width row along the bottom of the header, one line only. */
+.countdowns { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px 8px; max-height: 30px; overflow: hidden; }
 .countdowns[hidden] { display: none; }
-.cd { flex: 1; min-width: 0; text-align: center; padding: 6px 4px 7px; border-radius: 12px; background: var(--control-bg); }
-.cd-icon { font-size: 22px; line-height: 1.2; }
-.cd-num { font-size: 26px; font-weight: 300; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.cd-unit { font-size: 13px; font-weight: 500; color: var(--muted); }
-.cd-label { font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cd.today { background: var(--accent-soft); }
-.cd.today .cd-num { font-size: 20px; font-weight: 700; color: var(--accent); line-height: 1.43; }
+.cd-pill {
+  padding: 4px 12px; border-radius: 999px; font-size: 15px; font-weight: 500; white-space: nowrap; line-height: 22px;
+  background: rgba(20, 30, 50, 0.5); color: #fff; text-shadow: none;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.cd-pill b { font-weight: 700; }
+.cd-pill.today { background: rgba(200, 85, 61, 0.9); }
 
 /* ---------------------------------------------------------------- tasks */
 
@@ -370,14 +351,6 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 .task.leaving { opacity: 0; transform: translateX(24px); }
 .empty { color: var(--muted); font-size: 16px; padding: 8px 2px; }
 
-/* Round + in the Groceries header; opens the system "Add to Groceries" prompt. */
-.add-btn {
-  width: 36px; height: 36px; margin: -6px 0 -6px 10px; padding: 0; border: 0; border-radius: 50%;
-  background: var(--accent); color: #fff; font-size: 24px; font-weight: 400; line-height: 36px;
-  letter-spacing: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-.add-btn:active { transform: scale(0.94); }
-.count:empty + .add-btn { margin-left: auto; }
 
 /* ---------------------------------------------------------------- status */
 
@@ -429,7 +402,7 @@ body.is-night #hub { visibility: hidden; }
   0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 1; }
   100% { transform: translate3d(var(--drift), 420px, 0) rotate(540deg); opacity: 0; }
 }
-.chores { position: relative; overflow: hidden; }
+
 
 /* ---------------------------------------------------------------- spotify */
 
@@ -505,11 +478,14 @@ body.is-night #hub { visibility: hidden; }
 .timer-btn:active { transform: scale(0.96); }
 #status-text { margin-right: auto; }
 .timer-btn[hidden] { display: none; }
-.list-pill { display: flex; align-items: center; gap: 8px; padding-right: 5px; }
-.pill-plus {
-  width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff;
-  font-size: 18px; line-height: 24px; text-align: center; text-shadow: none;
+.list-pill { display: flex; align-items: center; gap: 8px; padding-right: 6px; font-size: 16px; }
+.pill-count {
+  min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: rgba(255, 255, 255, 0.3); color: #fff;
+  font-size: 14px; line-height: 24px; text-align: center; text-shadow: none;
 }
+.list-pill.has-items .pill-count { background: var(--accent); }
+.list-card { position: relative; overflow: hidden; }
+.list-tasks { max-height: 260px; margin-top: 8px; }
 
 /* Running timers: big pills across the top center of the screen (also shown over the
    night clock). A finished timer becomes the full-screen alert below. */
