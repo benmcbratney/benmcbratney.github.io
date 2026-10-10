@@ -37,7 +37,7 @@ button, input { font: inherit; color: inherit; }
 /* Stop long-presses from selecting text on the display, but keep this off every
    ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
    to show the keyboard for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card {
+.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card, .grocery-card, .tstat-card {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -260,6 +260,31 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 .tstat.heating .t-target { color: #d0652a; }
 .tstat.cooling .t-target { color: #2f7bd6; }
 .t-target.pending { opacity: 0.6; }
+.tstat { cursor: pointer; }
+
+/* Thermostat pop-up */
+.tm-modes { display: flex; gap: 10px; margin: 6px 0 18px; }
+.tm-mode {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--bg); font-size: 16px; font-weight: 600;
+}
+.tm-mode-icon { font-size: 26px; line-height: 1.1; }
+.tm-mode.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tm-mode.busy { opacity: 0.6; }
+.tm-mode:disabled:not(.on) { opacity: 0.45; }
+.tm-mode:active { transform: scale(0.96); }
+.tm-set { min-height: 96px; margin-bottom: 14px; }
+.tm-row { display: flex; align-items: center; gap: 16px; padding: 6px 0; }
+.tm-label { flex: 1; font-size: 19px; font-weight: 600; }
+.tm-btn {
+  width: 60px; height: 60px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg);
+  font-size: 30px; line-height: 1; padding: 0;
+}
+.tm-btn:active { background: var(--accent-soft); }
+.tm-btn:disabled { opacity: 0.35; }
+.tm-temp { min-width: 96px; text-align: center; font-size: 46px; font-weight: 300; font-variant-numeric: tabular-nums; }
+.tm-temp.pending { opacity: 0.6; }
+.tm-note { color: var(--muted); font-size: 17px; padding: 14px 0; line-height: 1.4; }
 
 .agenda-list, .tasks { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; }
 

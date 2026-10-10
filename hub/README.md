@@ -173,6 +173,9 @@ doesn't have `/countdowns` yet, the holidays still show.
   because they name the kids). Edit that variable in Cloudflare to change them; no re-paste needed.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
+- Tap a thermostat's name or temperature for a pop-up: switch between Heat, Cool, Heat · Cool, Off and
+  Eco (only the modes that thermostat supports), with big −/+ for the setpoint (both ends in Heat · Cool,
+  kept at least 3° apart). Picking a mode while it's in Eco takes it off Eco first.
 - Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check.
 - Updates itself: every 10 minutes (and whenever it's reopened) it checks `version.json`; when a
