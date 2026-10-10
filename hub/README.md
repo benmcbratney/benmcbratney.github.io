@@ -173,7 +173,8 @@ doesn't have `/countdowns` yet, the holidays still show.
   Tap it, or **🏆 Scores** in the footer, for every team's last result, next game and TV channel. Data comes
   from ESPN's free (unofficial) feeds through the Worker; change teams with an optional `SPORTS_TEAMS` variable
   (see the top of worker.js).
-- What to wear: under the weather, picture icons with one-word labels (🧥 coat, 🧤 mittens, 🩳 shorts, ☂️ umbrella,
+- What to wear: under the weather, picture icons with one-word labels (👔 long sleeves + 👖 pants below 70°, 👕 T-shirt +
+  🩳 shorts at 70°+, 🧥 coats when it's cold, 🧤 mittens, ☂️ umbrella,
   🥾 snow/rain boots, 🧴 sunscreen, 💨 windy) from the daytime (7am–7pm) "feels like" temperatures, rain/snow
   chances, wind and UV. From 5pm it switches to tomorrow, so it's ready for getting dressed in the morning.
 - Tap the weather for the next 24 hours: temperature (the numbers ride higher when it's warmer), conditions,

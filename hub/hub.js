@@ -539,15 +539,17 @@
     if (lo < 33) items.push(["🧥", "Big coat"], ["🧣", "Hat & scarf"], ["🧤", "Mittens"]);
     else if (lo < 50) items.push(["🧥", "Coat"]);
     else if (lo < 60) items.push(["🧥", "Light jacket"]);
-    if (hi >= 75) items.push(["🩳", "Shorts"], ["👕", "T-shirt"]);
-    else if (hi >= 65) items.push(["👕", "T-shirt"]);
-    else if (!snowy) items.push(["👖", "Pants"]);
+    if (hi >= 70) items.push(["👕", "T-shirt"], ["🩳", "Shorts"]);
+    else {
+      items.push(["👔", "Long sleeves"]);
+      if (!snowy) items.push(["👖", "Pants"]);
+    }
     if (snowy) items.push(["👖", "Snow pants"], ["🥾", "Snow boots"]);
     else if (rainy) items.push(["☂️", "Umbrella"], ["🥾", "Rain boots"]);
     else if (pop >= 40) items.push(["☂️", "Umbrella"]);
     if (uv >= 6 && hi >= 60) items.push(["🧴", "Sunscreen"]);
     if (wind >= 20) items.push(["💨", "Windy!"]);
-    return { when: tomorrow ? "Tomorrow" : "Today", items: items.slice(0, 6), lo: Math.round(lo), hi: Math.round(hi) };
+    return { when: tomorrow ? "Tomorrow" : "Today", items: items.slice(0, 7), lo: Math.round(lo), hi: Math.round(hi) };
   }
 
   function outfitRow(wear, cls) {
