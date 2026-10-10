@@ -167,7 +167,9 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .scores-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 6px; }
 .sm-tile { display: flex; align-items: center; gap: 5px; min-width: 0; height: 34px; padding: 0 9px 0 6px; border-radius: 10px; background: var(--control-bg); }
 .sm-tile.live { background: rgba(200, 56, 40, 0.16); }
-.sm-emoji { font-size: 19px; flex: none; }
+.sm-emoji { font-size: 19px; flex: none; width: 24px; text-align: center; }
+.sm-emoji img, .sc-emoji img { display: block; width: 100%; height: auto; }
+.sc-emoji { width: 32px; text-align: center; flex: none; }
 .sm-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sm-opp { font-weight: 500; color: var(--muted); }
 .sm-when { font-size: 11px; font-weight: 600; color: var(--muted); }

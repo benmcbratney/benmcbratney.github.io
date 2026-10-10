@@ -50,6 +50,7 @@
 //
 // Optional SPORTS_TEAMS (plain) overrides the default Chicago teams, e.g.
 //   [{"key":"bears","name":"Bears","emoji":"🐻","path":"football/nfl","id":"3"}]
+//   (logos come from ESPN; add "logo":"https://…" to a team to use your own image)
 
 const TODOIST = "https://api.todoist.com/api/v1";
 const SDM = "https://smartdevicemanagement.googleapis.com/v1";
@@ -460,7 +461,17 @@ async function sportsTeam(t) {
   const last = games.filter((g) => g.state === "post").sort((a, b) => b.start - a.start)[0] || null;
   const upcoming = games.filter((g) => g.state === "pre" && g.start && g.start > now - 6 * 3600e3).sort((a, b) => a.start - b.start)[0] || null;
   const rec = info && info.team && info.team.record && info.team.record.items && info.team.record.items[0];
-  return { key: t.key, name: t.name, emoji: t.emoji, record: rec ? rec.summary : null, live, last, next: upcoming };
+  return { key: t.key, name: t.name, emoji: t.emoji, logo: t.logo || espnLogo(info), record: rec ? rec.summary : null, live, last, next: upcoming };
+}
+
+// The team's logo, shrunk to 80px through ESPN's image resizer so the old iPad isn't
+// decoding 500px PNGs. (The hub falls back to the emoji if it doesn't load.)
+function espnLogo(info) {
+  const logos = (info && info.team && info.team.logos) || [];
+  const pick = logos.find((l) => (l.rel || []).includes("default")) || logos[0];
+  if (!pick || !pick.href) return null;
+  const m = /^https:\/\/a\.espncdn\.com(\/i\/teamlogos\/[^?]+\.png)$/.exec(pick.href);
+  return m ? `https://a.espncdn.com/combiner/i?img=${encodeURIComponent(m[1])}&w=80&h=80` : pick.href;
 }
 
 async function sports(env) {

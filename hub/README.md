@@ -163,7 +163,8 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Sports: the Scores card has one line per team with a game yesterday, today or tomorrow (Bears, Cubs, Bulls,
   Blackhawks, Northwestern football/basketball), showing just one game, in this order: live score, today's final,
   yesterday's final (marked "Yest"), or the next game's day and time, always with the opponent. Live games come
-  first and refresh every minute. With no games in that window the card hides. Tap it for every team's record, last result, next game and TV channel. Data comes from ESPN's free
+  first and refresh every minute. Teams show their ESPN logo (falling back to an emoji if it can't load). With no
+  games in that window the card hides. Tap it for every team's record, last result, next game and TV channel. Data comes from ESPN's free
   (unofficial) feeds through the Worker; change teams with an optional `SPORTS_TEAMS` variable (see the top of
   worker.js).
 - What to wear: big picture icons with one-word labels so the kids can read it from across the room
