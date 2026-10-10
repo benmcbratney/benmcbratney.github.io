@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#1d2733">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-180.png">
-  <link rel="stylesheet" href="hub.css?v=2026-10-10.6">
+  <link rel="stylesheet" href="hub.css?v=2026-10-10.7">
 </head>
 <body>
   <div class="backdrop" aria-hidden="true">
@@ -98,6 +98,18 @@
     </div>
   </div>
 
+  <div id="tstat-modal" class="modal" hidden>
+    <div class="modal-card tstat-card">
+      <h2 id="tm-name"></h2>
+      <p id="tm-status" class="hint"></p>
+      <div id="tm-modes" class="tm-modes"></div>
+      <div id="tm-set" class="tm-set"></div>
+      <div class="actions">
+        <button type="button" id="tm-done" class="primary">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div id="timer-picker" class="modal" hidden>
     <div class="modal-card timer-card">
       <h2>Kitchen timer</h2>
@@ -151,7 +163,7 @@
 
   <!-- Bump this version (here, on both asset URLs, and in version.json) with every
        change so wall displays pick it up instead of a cached copy. -->
-  <script>window.HUB_VERSION = "2026-10-10.6";</script>
-  <script src="hub.js?v=2026-10-10.6"></script>
+  <script>window.HUB_VERSION = "2026-10-10.7";</script>
+  <script src="hub.js?v=2026-10-10.7"></script>
 </body>
 </html>

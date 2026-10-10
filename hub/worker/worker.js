@@ -38,6 +38,7 @@
 //                                      and the Kids quick-add buttons
 //   GET  /nest                         thermostats (null when Nest isn't configured)
 //   POST /nest/set        {"id": "...", "heatC": 20.5, "coolC": 24}   (either or both)
+//   POST /nest/mode       {"id": "...", "mode": "HEAT"|"COOL"|"HEATCOOL"|"OFF"|"ECO"}
 //   GET  /nest/connect    (browser, no key) start Google sign-in
 //   GET  /nest/callback   (browser, no key) shows the refresh token to save
 //   GET  /spotify                      now playing (null when Spotify isn't configured)
@@ -110,6 +111,11 @@ export default {
       if (url.pathname === "/nest/set" && request.method === "POST") {
         const { id, heatC, coolC } = await request.json();
         await nestSetpoint(env, id, heatC, coolC);
+        return json({ ok: true });
+      }
+      if (url.pathname === "/nest/mode" && request.method === "POST") {
+        const { id, mode } = await request.json();
+        await nestMode(env, id, mode);
         return json({ ok: true });
       }
       return json({ error: "not found" }, 404);
@@ -451,6 +457,8 @@ async function nestThermostats(env) {
         ambientC: get("Temperature", "ambientTemperatureCelsius"),
         humidity: get("Humidity", "ambientHumidityPercent"),
         mode: get("ThermostatMode", "mode") || "OFF", // HEAT, COOL, HEATCOOL, OFF
+        modes: get("ThermostatMode", "availableModes") || ["HEAT", "COOL", "HEATCOOL", "OFF"],
+        ecoAvailable: (get("ThermostatEco", "availableModes") || []).includes("MANUAL_ECO"),
         hvac: get("ThermostatHvac", "status") || "OFF", // HEATING, COOLING, OFF
         eco,
         heatC: eco ? get("ThermostatEco", "heatCelsius") : get("ThermostatTemperatureSetpoint", "heatCelsius"),
@@ -459,10 +467,38 @@ async function nestThermostats(env) {
     });
 }
 
-async function nestSetpoint(env, id, heatC, coolC) {
+function checkThermostatId(env, id) {
   if (!nestConfigured(env)) throw new Error("Nest isn't configured");
   const prefix = `enterprises/${env.NEST_PROJECT_ID}/devices/`;
   if (typeof id !== "string" || !id.startsWith(prefix) || id.includes("..")) throw new Error("bad thermostat id");
+}
+
+function nestCommand(env, id, command, params) {
+  return sdm(env, `/${id}:executeCommand`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ command: "sdm.devices.commands." + command, params }),
+  });
+}
+
+// Heat / Cool / Heat·Cool / Off, or "ECO" for Nest's Eco temperatures. Picking a
+// regular mode while Eco is on turns Eco off first, like the Nest app does.
+async function nestMode(env, id, mode) {
+  checkThermostatId(env, id);
+  if (mode === "ECO") return nestCommand(env, id, "ThermostatEco.SetMode", { mode: "MANUAL_ECO" });
+  if (!["HEAT", "COOL", "HEATCOOL", "OFF"].includes(mode)) throw new Error("bad mode");
+  const device = await sdm(env, `/${id}`);
+  const traits = device.traits || {};
+  if ((traits["sdm.devices.traits.ThermostatEco"] || {}).mode === "MANUAL_ECO") {
+    await nestCommand(env, id, "ThermostatEco.SetMode", { mode: "OFF" });
+  }
+  if ((traits["sdm.devices.traits.ThermostatMode"] || {}).mode !== mode) {
+    await nestCommand(env, id, "ThermostatMode.SetMode", { mode });
+  }
+}
+
+async function nestSetpoint(env, id, heatC, coolC) {
+  checkThermostatId(env, id);
   const ok = (v) => typeof v === "number" && v >= 5 && v <= 35; // °C — Nest's own range is about 9–32
   let command, params;
   if (ok(heatC) && ok(coolC)) {
@@ -477,11 +513,7 @@ async function nestSetpoint(env, id, heatC, coolC) {
   } else {
     throw new Error("bad temperature");
   }
-  await sdm(env, `/${id}:executeCommand`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ command: "sdm.devices.commands.ThermostatTemperatureSetpoint." + command, params }),
-  });
+  await nestCommand(env, id, "ThermostatTemperatureSetpoint." + command, params);
 }
 
 // ---------------------------------------------------------------- Calendar

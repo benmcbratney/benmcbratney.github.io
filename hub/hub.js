@@ -981,6 +981,7 @@
   var pendingSet = {}; // id -> { heatF, coolF, timer }
   var demoThermostatList = null;
 
+  function deg(f) { return f == null ? "--" : f + "°"; }
   function cToF(c) { return Math.round(c * 9 / 5 + 32); }
   function fToC(f) { return Math.round((f - 32) * 5 / 9 * 100) / 100; }
 
@@ -1022,14 +1023,14 @@
       var adjustable = t.online && !t.eco && t.mode !== "OFF";
       var row = el("div", "tstat" + (t.hvac === "HEATING" ? " heating" : t.hvac === "COOLING" ? " cooling" : ""));
 
+      // Tap anywhere but the −/+ for the full controls (mode, Eco, off).
+      row.addEventListener("click", function (ev) {
+        if (!ev.target.closest(".t-ctrl")) openNestModal(t.id);
+      });
+
       var info = el("div", "t-info");
       info.appendChild(el("div", "t-name", t.name));
-      var status = !t.online ? "Offline"
-        : t.hvac === "HEATING" ? "🔥 Heating"
-        : t.hvac === "COOLING" ? "❄️ Cooling"
-        : t.mode === "OFF" ? "Off"
-        : t.eco ? "Eco"
-        : "Holding";
+      var status = nestStatus(t);
       if (t.humidity != null) status += " · " + Math.round(t.humidity) + "% humidity";
       info.appendChild(el("div", "t-status", status));
       row.appendChild(info);
@@ -1044,11 +1045,12 @@
       var label;
       if (t.mode === "OFF") label = "Off";
       else if (t.eco) label = "Eco";
-      else if (t.mode === "HEATCOOL") label = tg.heatF + "–" + tg.coolF + "°";
-      else if (t.mode === "COOL") label = tg.coolF + "°";
-      else label = tg.heatF + "°";
+      else if (t.mode === "HEATCOOL") label = deg(tg.heatF) + "–" + deg(tg.coolF);
+      else if (t.mode === "COOL") label = deg(tg.coolF);
+      else label = deg(tg.heatF);
       var target = el("span", "t-target" + (t.mode === "HEATCOOL" ? " range" : "") + (tg.pending ? " pending" : ""), label);
-      minus.disabled = plus.disabled = !adjustable;
+      // Right after a mode switch the new setpoint isn't known until the next refresh.
+      minus.disabled = plus.disabled = !adjustable || label.indexOf("--") >= 0;
       minus.addEventListener("click", function () { nudge(t, -1); });
       plus.addEventListener("click", function () { nudge(t, 1); });
       ctrl.appendChild(minus);
@@ -1058,14 +1060,36 @@
 
       box.appendChild(row);
     });
+    renderNestModal();
   }
 
-  function nudge(t, delta) {
+  function nestStatus(t) {
+    return !t.online ? "Offline"
+      : t.hvac === "HEATING" ? "🔥 Heating"
+      : t.hvac === "COOLING" ? "❄️ Cooling"
+      : t.mode === "OFF" ? "Off"
+      : t.eco ? "Eco"
+      : "Holding";
+  }
+
+  // `which` ("heat"/"cool") moves one end of a Heat·Cool range; the card's −/+ moves both.
+  var RANGE_GAP_F = 3; // Nest keeps heat and cool setpoints at least this far apart
+  function nudge(t, delta, which) {
     var tg = targets(t);
+    if ((t.mode === "HEAT" || t.mode === "HEATCOOL") && tg.heatF == null) return;
+    if ((t.mode === "COOL" || t.mode === "HEATCOOL") && tg.coolF == null) return;
     var clamp = function (f) { return Math.max(50, Math.min(90, f)); };
     var p = pendingSet[t.id] || {};
-    if (t.mode === "HEAT" || t.mode === "HEATCOOL") p.heatF = clamp(tg.heatF + delta);
-    if (t.mode === "COOL" || t.mode === "HEATCOOL") p.coolF = clamp(tg.coolF + delta);
+    if (t.mode === "HEAT" || (t.mode === "HEATCOOL" && which !== "cool")) p.heatF = clamp(tg.heatF + delta);
+    if (t.mode === "COOL" || (t.mode === "HEATCOOL" && which !== "heat")) p.coolF = clamp(tg.coolF + delta);
+    if (t.mode === "HEATCOOL") {
+      // A range has to go out as both ends (SetRange), even if only one moved.
+      if (p.heatF == null) p.heatF = tg.heatF;
+      if (p.coolF == null) p.coolF = tg.coolF;
+      if (p.coolF - p.heatF < RANGE_GAP_F) {
+        if (which === "cool") p.heatF = p.coolF - RANGE_GAP_F; else p.coolF = p.heatF + RANGE_GAP_F;
+      }
+    }
     clearTimeout(p.timer);
     // Wait for the taps to stop, then send one change (Google rate-limits commands).
     p.timer = setTimeout(function () { sendSetpoint(t, p); }, 1200);
@@ -1086,6 +1110,107 @@
       if (demo) renderNest(); else setTimeout(loadNest, 3000);
     }).catch(function (e) {
       if (pendingSet[t.id] === p) delete pendingSet[t.id];
+      renderNest();
+      setProblem("thermostat", e.message);
+    });
+  }
+
+  // Thermostat pop-up: mode buttons (whatever this thermostat supports, plus Eco)
+  // and big setpoint controls.
+  var NEST_MODES = [["HEAT", "🔥", "Heat"], ["COOL", "❄️", "Cool"], ["HEATCOOL", "🔥❄️", "Heat · Cool"], ["OFF", "💤", "Off"]];
+  var nestModalId = null;
+  var pendingMode = {}; // id -> mode being sent
+
+  function openNestModal(id) {
+    nestModalId = id;
+    $("tstat-modal").hidden = false;
+    renderNestModal();
+  }
+
+  function closeNestModal() {
+    nestModalId = null;
+    $("tstat-modal").hidden = true;
+  }
+  $("tm-done").addEventListener("click", closeNestModal);
+
+  function setpointRow(t, label, value, which) {
+    var row = el("div", "tm-row");
+    row.appendChild(el("div", "tm-label", label));
+    var minus = el("button", "tm-btn", "−"), plus = el("button", "tm-btn", "+");
+    minus.type = plus.type = "button";
+    minus.disabled = plus.disabled = value == null || !!pendingMode[t.id];
+    minus.addEventListener("click", function () { nudge(t, -1, which); });
+    plus.addEventListener("click", function () { nudge(t, 1, which); });
+    row.appendChild(minus);
+    row.appendChild(el("div", "tm-temp" + (targets(t).pending ? " pending" : ""), deg(value)));
+    row.appendChild(plus);
+    return row;
+  }
+
+  function renderNestModal() {
+    if (!nestModalId) return;
+    var t = thermostats.filter(function (x) { return x.id === nestModalId; })[0];
+    if (!t) { closeNestModal(); return; }
+    var current = t.eco ? "ECO" : t.mode, sending = pendingMode[t.id];
+    var tg = targets(t);
+
+    $("tm-name").textContent = t.name;
+    var info = "Inside " + (t.ambientC != null ? cToF(t.ambientC) + "°" : "--");
+    if (t.humidity != null) info += " · " + Math.round(t.humidity) + "% humidity";
+    $("tm-status").textContent = info + " · " + nestStatus(t);
+
+    var modes = $("tm-modes");
+    modes.innerHTML = "";
+    var options = NEST_MODES.filter(function (m) { return (t.modes || ["HEAT", "COOL", "HEATCOOL", "OFF"]).indexOf(m[0]) >= 0; });
+    if (t.ecoAvailable) options.push(["ECO", "🍃", "Eco"]);
+    options.forEach(function (m) {
+      var on = (sending || current) === m[0];
+      var b = el("button", "tm-mode" + (on ? " on" : "") + (sending === m[0] ? " busy" : ""));
+      b.type = "button";
+      b.appendChild(el("span", "tm-mode-icon", m[1]));
+      b.appendChild(el("span", null, m[2]));
+      b.disabled = !t.online || !!sending;
+      b.addEventListener("click", function () { if (m[0] !== current) setNestMode(t, m[0]); });
+      modes.appendChild(b);
+    });
+
+    var set = $("tm-set");
+    set.innerHTML = "";
+    if (sending) set.appendChild(el("div", "tm-note", "Switching to " + options.filter(function (m) { return m[0] === sending; })[0][2] + "…"));
+    else if (!t.online) set.appendChild(el("div", "tm-note", "This thermostat is offline."));
+    else if (t.eco) set.appendChild(el("div", "tm-note", "Eco holds it between " + deg(tg.heatF) + " and " + deg(tg.coolF) +
+      " to save energy. Pick a mode to take it off Eco."));
+    else if (t.mode === "OFF") set.appendChild(el("div", "tm-note", "Heating and cooling are off."));
+    else {
+      if (t.mode === "HEAT" || t.mode === "HEATCOOL") set.appendChild(setpointRow(t, "🔥 Heat to", tg.heatF, "heat"));
+      if (t.mode === "COOL" || t.mode === "HEATCOOL") set.appendChild(setpointRow(t, "❄️ Cool to", tg.coolF, "cool"));
+    }
+  }
+
+  function setNestMode(t, mode) {
+    if (pendingMode[t.id]) return;
+    pendingMode[t.id] = mode;
+    var p = pendingSet[t.id];
+    if (p) { clearTimeout(p.timer); delete pendingSet[t.id]; } // the mode change wins
+    renderNest();
+    var send = demo ? Promise.resolve() : api("/nest/mode", { method: "POST", body: { id: t.id, mode: mode } });
+    send.then(function () {
+      // Show the new mode right away; the real setpoints arrive with the next refresh.
+      if (mode === "ECO") t.eco = true;
+      else {
+        t.eco = false;
+        t.mode = mode;
+        if (demo) {
+          if (t.heatC == null) t.heatC = 20;
+          if (t.coolC == null) t.coolC = 24.4;
+        }
+      }
+      t.hvac = "OFF";
+      delete pendingMode[t.id];
+      renderNest();
+      if (!demo) setTimeout(loadNest, 3000);
+    }).catch(function (e) {
+      delete pendingMode[t.id];
       renderNest();
       setProblem("thermostat", e.message);
     });
@@ -1358,8 +1483,10 @@
 
   function demoThermostats() {
     return [
-      { id: "demo-up", name: "Upstairs", online: true, ambientC: 21.1, humidity: 44, mode: "HEAT", hvac: "HEATING", eco: false, heatC: 22.2 },
-      { id: "demo-down", name: "Downstairs", online: true, ambientC: 21.7, humidity: 41, mode: "HEAT", hvac: "OFF", eco: false, heatC: 20.6 },
+      { id: "demo-up", name: "Upstairs", online: true, ambientC: 21.1, humidity: 44, mode: "HEAT", hvac: "HEATING", eco: false, heatC: 22.2,
+        modes: ["HEAT", "COOL", "HEATCOOL", "OFF"], ecoAvailable: true },
+      { id: "demo-down", name: "Downstairs", online: true, ambientC: 21.7, humidity: 41, mode: "HEAT", hvac: "OFF", eco: false, heatC: 20.6,
+        modes: ["HEAT", "COOL", "HEATCOOL", "OFF"], ecoAvailable: true },
     ];
   }
 
@@ -1400,7 +1527,7 @@
         if (timers.length) return;
         // Don't yank the page out from under someone typing or in settings.
         var active = document.activeElement;
-        if ((active && active.tagName === "INPUT") || !$("settings").hidden) return;
+        if ((active && active.tagName === "INPUT") || document.querySelector(".modal:not([hidden])")) return;
         // At most one update reload per 30 minutes, in case a cache serves stale files.
         var last = 0;
         try { last = +localStorage.getItem("homehub.updateReload") || 0; } catch (e) {}
