@@ -187,6 +187,9 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Groceries: tap **+** for one-tap buttons (the household staples, then anything else that's been on
   the list, most frequent first). Items already on the list show a ✓. "Type something else…" opens the
   system prompt, for when the iPad's keyboard cooperates. Edit the staples in `GROCERY_STAPLES` in hub.js.
+- Empty lists fold away: when Kids or Groceries has nothing on it, its card disappears (after the confetti, for
+  chores) and a **🧒 Kids +** / **🛒 Groceries +** pill appears in the footer; tap it to add something and the
+  card comes back. The other cards grow into the space, and if nothing's left on the right the agenda goes full width.
 - Kids: the **+** works the same way, with buttons from the `KIDS_QUICK_ADD` Worker variable (kept there
   because they name the kids). Edit that variable in Cloudflare to change them; no re-paste needed.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.

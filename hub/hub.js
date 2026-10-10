@@ -1113,11 +1113,19 @@
     return lists.chores.filter(function (t) { return !t.due || t.due.slice(0, 10) <= today; });
   }
 
+  // An empty list folds its card away into a footer pill ("🛒 Groceries +"), so the
+  // other cards get the room. Right after the last chore, the card waits for the confetti.
+  var celebrateUntil = 0;
+
   function renderList(name) {
     var items = name === "chores" ? visibleChores() : lists.grocery;
     var ul = $(name);
     ul.innerHTML = "";
     $(name + "-count").textContent = items.length ? items.length : "";
+    var folded = !items.length && !(name === "chores" && Date.now() < celebrateUntil);
+    document.querySelector(".card." + name).hidden = folded;
+    $("pill-" + name).hidden = !folded;
+    layoutColumns();
     if (!items.length) {
       ul.appendChild(el("li", "empty", name === "chores" ? "All caught up 🎉" : "List is empty"));
       return;
@@ -1133,6 +1141,14 @@
     });
   }
 
+  // If every card on the right is hidden, the agenda takes the full width.
+  function layoutColumns() {
+    var cards = document.querySelectorAll(".col-right > .card");
+    var any = false;
+    for (var i = 0; i < cards.length; i++) if (!cards[i].hidden) any = true;
+    $("hub").classList.toggle("right-empty", !any);
+  }
+
   function completeTask(name, task, li) {
     if (li.classList.contains("done")) return;
     li.classList.add("done");
@@ -1143,6 +1159,10 @@
       setTimeout(function () {
         if (demo || !task.recurring) {
           lists[name] = lists[name].filter(function (t) { return t !== task; });
+          if (name === "chores" && !visibleChores().length) {
+            celebrateUntil = Date.now() + 3000;
+            setTimeout(function () { renderList("chores"); }, 3100);
+          }
           renderList(name);
           if (name === "chores" && !visibleChores().length) celebrate();
         } else {
@@ -1278,6 +1298,8 @@
 
   $("grocery-add").addEventListener("click", function () { openPicker("grocery"); });
   $("chores-add").addEventListener("click", function () { openPicker("chores"); });
+  $("pill-chores").addEventListener("click", function () { openPicker("chores"); });
+  $("pill-grocery").addEventListener("click", function () { openPicker("grocery"); });
   $("picker-done").addEventListener("click", function () { $("picker").hidden = true; });
   $("picker-type").addEventListener("click", function () {
     var list = pickerList;
@@ -1322,7 +1344,7 @@
     var card = $("nest-card");
     var show = thermostats.length > 0;
     card.hidden = !show;
-    $("hub").classList.toggle("has-nest", show);
+    layoutColumns();
     if (!show) return;
     $("nest-title").textContent = thermostats.length > 1 ? "Thermostats" : "Thermostat";
 
@@ -1700,7 +1722,6 @@
   function renderSpotify() {
     var show = !!spotify;
     $("spotify-card").hidden = !show;
-    $("hub").classList.toggle("has-spotify", show);
     if (!show) return;
     var idle = !spotify.active;
     $("spotify-card").classList.toggle("idle", idle);

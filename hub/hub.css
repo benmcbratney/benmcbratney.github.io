@@ -68,93 +68,40 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
   height: 100%;
   animation: rise 0.8s ease both;
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
-  grid-template-rows: auto 1fr 1fr auto;
+  grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr); /* same split the old grid ended up with */
+  grid-template-rows: auto 1fr auto;
   grid-template-areas:
     "top top"
-    "agenda chores"
-    "agenda grocery"
+    "left right"
     "status status";
   gap: 14px;
   padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
-/* Optional cards: thermostats sit above Kids on the right; Spotify sits under the
-   agenda on the left, with Groceries stretching down beside it. */
-#hub.has-spotify {
-  grid-template-rows: auto 1fr 1fr auto auto;
-  grid-template-areas:
-    "top top"
-    "agenda chores"
-    "agenda grocery"
-    "spotify grocery"
-    "status status";
-}
-#hub.has-nest.has-spotify {
-  grid-template-rows: auto auto 1fr 1fr auto auto;
-  grid-template-areas:
-    "top top"
-    "agenda nest"
-    "agenda chores"
-    "agenda grocery"
-    "spotify grocery"
-    "status status";
-}
-
-/* With thermostats: a compact row above chores in the right column. */
-#hub.has-nest {
-  grid-template-rows: auto auto 1fr 1fr auto;
-  grid-template-areas:
-    "top top"
-    "agenda nest"
-    "agenda chores"
-    "agenda grocery"
-    "status status";
-}
+/* Two columns of cards. Each grows into whatever its hidden neighbors leave:
+   agenda (+ Spotify) on the left; thermostats, Kids and Groceries on the right.
+   Kids/Groceries hide when empty (a footer pill takes their place). */
+.col { display: flex; flex-direction: column; gap: 14px; min-height: 0; min-width: 0; }
+.col-left { grid-area: left; }
+.col-right { grid-area: right; }
+.col > .card { flex: none; }
+.col > .agenda, .col > .chores, .col > .grocery { flex: 1 1 0; }
+#hub.right-empty { grid-template-columns: 1fr; grid-template-areas: "top" "left" "status"; }
+#hub.right-empty .col-right { display: none; }
 
 @media (orientation: portrait) {
-  #hub.has-spotify {
-    grid-template-rows: auto 1.2fr auto 1fr auto;
-    grid-template-areas:
-      "top top"
-      "agenda agenda"
-      "spotify spotify"
-      "chores grocery"
-      "status status";
-  }
-  #hub.has-nest.has-spotify {
-    grid-template-rows: auto 1.2fr auto auto 1fr auto;
-    grid-template-areas:
-      "top top"
-      "agenda agenda"
-      "spotify spotify"
-      "nest nest"
-      "chores grocery"
-      "status status";
-  }
-  #hub.has-nest {
-    grid-template-rows: auto 1.2fr auto 1fr auto;
-    grid-template-areas:
-      "top top"
-      "agenda agenda"
-      "nest nest"
-      "chores grocery"
-      "status status";
-  }
   .time { font-size: 68px; }
   .wx-temp { font-size: 50px; }
   .wx-icon { font-size: 44px; }
   .weather { gap: 14px; }
   .wx-detail { display: none; } /* the 5-day strip covers it; no room in portrait */
-  #hub {
-    grid-template-columns: 1fr 1fr;
+  #hub, #hub.right-empty {
+    grid-template-columns: 1fr;
     grid-template-rows: auto 1.2fr 1fr auto;
-    grid-template-areas:
-      "top top"
-      "agenda agenda"
-      "chores grocery"
-      "status status";
+    grid-template-areas: "top" "left" "right" "status";
   }
+  .col-right { flex-direction: row; flex-wrap: wrap; }
+  .col-right > .nest { flex-basis: 100%; }
 }
 
 /* ---------------------------------------------------------------- header */
@@ -295,11 +242,6 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 .count { margin-left: auto; color: #fff; background: var(--accent); border-radius: 999px; font-size: 13px; letter-spacing: 0; padding: 1px 9px; }
 .count:empty { display: none; }
 
-.agenda { grid-area: agenda; }
-.chores { grid-area: chores; }
-.grocery { grid-area: grocery; }
-.nest { grid-area: nest; }
-.spotify { grid-area: spotify; }
 .card[hidden] { display: none; }
 .nest[hidden] { display: none; }
 
@@ -309,7 +251,7 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 .tstat:first-child { border-top: 0; padding-top: 0; }
 .t-info { flex: 1; min-width: 0; }
 .t-name { font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.t-status { font-size: 14px; color: var(--muted); white-space: nowrap; }
+.t-status { font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tstat.heating .t-status { color: #d0652a; }
 .tstat.cooling .t-status { color: #2f7bd6; }
 .t-now { font-size: 36px; font-weight: 300; font-variant-numeric: tabular-nums; }
@@ -417,7 +359,7 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 
 /* ---------------------------------------------------------------- status */
 
-.status { grid-area: status; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 13px; color: var(--on-photo-muted); text-shadow: var(--photo-shadow); padding: 0 4px; }
+.status { grid-area: status; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--on-photo-muted); text-shadow: var(--photo-shadow); padding: 0 4px; }
 .status .warn { color: #ffd2c6; }
 .gear { background: none; border: 0; font-size: 22px; color: var(--on-photo); padding: 2px 6px; text-shadow: var(--photo-shadow); }
 
@@ -534,12 +476,18 @@ body.is-night #hub { visibility: hidden; }
 /* ---------------------------------------------------------------- timers */
 
 .timer-btn {
-  flex: none; margin-left: auto; border: 0; border-radius: 999px; padding: 6px 14px; font-size: 15px; font-weight: 600;
+  flex: none; border: 0; border-radius: 999px; padding: 6px 14px; font-size: 15px; font-weight: 600;
   background: rgba(255, 255, 255, 0.18); color: var(--on-photo);
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
 }
 .timer-btn:active { transform: scale(0.96); }
-.timer-btn + .timer-btn { margin-left: -6px; }
+#status-text { margin-right: auto; }
+.timer-btn[hidden] { display: none; }
+.list-pill { display: flex; align-items: center; gap: 8px; padding-right: 5px; }
+.pill-plus {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 18px; line-height: 24px; text-align: center; text-shadow: none;
+}
 
 /* Running timers: big pills across the top center of the screen (also shown over the
    night clock). A finished timer becomes the full-screen alert below. */
