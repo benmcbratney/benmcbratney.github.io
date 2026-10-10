@@ -43,6 +43,8 @@
 //   GET  /nest/callback   (browser, no key) shows the refresh token to save
 //   GET  /spotify                      now playing (null when Spotify isn't configured)
 //   POST /spotify/control {"action": "play"|"pause"|"next"|"previous"}
+//   GET  /spotify/library              your playlists + Spotify Connect speakers
+//   POST /spotify/play    {"deviceId": "...", "uri": "spotify:playlist:…"}   (uri optional: just move playback)
 //   GET  /spotify/connect, /spotify/callback   (browser, no key) one-time sign-in
 
 const TODOIST = "https://api.todoist.com/api/v1";
@@ -99,6 +101,14 @@ export default {
       }
       if (url.pathname === "/spotify" && request.method === "GET") {
         return json({ spotify: await spotifyNow(env) });
+      }
+      if (url.pathname === "/spotify/library" && request.method === "GET") {
+        return json(await spotifyLibrary(env));
+      }
+      if (url.pathname === "/spotify/play" && request.method === "POST") {
+        const { deviceId, uri } = await request.json();
+        await spotifyPlay(env, deviceId, uri);
+        return json({ ok: true });
       }
       if (url.pathname === "/spotify/control" && request.method === "POST") {
         const { action } = await request.json();
@@ -206,7 +216,8 @@ async function todoistLists(env) {
 
 // ---------------------------------------------------------------- Spotify (now playing)
 
-const SPOTIFY_SCOPES = "user-read-playback-state user-read-currently-playing user-modify-playback-state";
+const SPOTIFY_SCOPES =
+  "user-read-playback-state user-read-currently-playing user-modify-playback-state playlist-read-private playlist-read-collaborative";
 
 function spotifyConfigured(env) {
   return !!(env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET && env.SPOTIFY_REFRESH_TOKEN);
@@ -318,6 +329,54 @@ async function spotifyControl(env, action) {
   const r = routes[action];
   if (!r) throw new Error("bad action");
   await spotifyApi(env, r[1], { method: r[0] });
+}
+
+// Playlists (yours and followed, up to 100) and the speakers Spotify can see right now.
+// Echo and other smart speakers only show up while they're awake/recently used.
+async function spotifyLibrary(env) {
+  if (!spotifyConfigured(env)) throw new Error("Spotify isn't configured");
+  const [page1, devs] = await Promise.all([
+    spotifyApi(env, "/me/playlists?limit=50"),
+    spotifyApi(env, "/me/player/devices"),
+  ]);
+  let items = (page1 && page1.items) || [];
+  if (page1 && page1.next && page1.total > 50) {
+    const page2 = await spotifyApi(env, "/me/playlists?limit=50&offset=50");
+    items = items.concat((page2 && page2.items) || []);
+  }
+  const playlists = items.filter(Boolean).map((pl) => {
+    const imgs = pl.images || [];
+    // Smallest cover that's still >= 120px (Spotify lists largest first).
+    const img = imgs.filter((i) => !i.width || i.width >= 120).pop() || imgs[0] || null;
+    return { uri: pl.uri, name: pl.name, image: img ? img.url : null };
+  });
+  const devices = ((devs && devs.devices) || []).map((d) => ({
+    id: d.id,
+    name: d.name,
+    type: d.type, // Computer, Smartphone, Speaker, TV, CastAudio, …
+    active: !!d.is_active,
+    restricted: !!d.is_restricted || !d.id,
+  }));
+  return { playlists, devices };
+}
+
+async function spotifyPlay(env, deviceId, uri) {
+  if (!spotifyConfigured(env)) throw new Error("Spotify isn't configured");
+  if (typeof deviceId !== "string" || !/^[\w-]+$/.test(deviceId)) throw new Error("pick a speaker first");
+  if (uri != null && (typeof uri !== "string" || !/^spotify:[a-z]+:[\w:.-]+$/i.test(uri))) throw new Error("bad playlist");
+  if (uri) {
+    await spotifyApi(env, `/me/player/play?device_id=${encodeURIComponent(deviceId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ context_uri: uri }),
+    });
+  } else {
+    await spotifyApi(env, "/me/player", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_ids: [deviceId], play: true }),
+    });
+  }
 }
 
 // ---------------------------------------------------------------- Family (personal greetings)

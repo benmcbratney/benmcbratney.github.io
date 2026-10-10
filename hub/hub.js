@@ -89,8 +89,11 @@
       cache: "no-store",
     }).then(function (res) {
       clearTimeout(timer);
-      if (!res.ok) throw new Error(path + " → HTTP " + res.status);
-      return res.json();
+      if (res.ok) return res.json();
+      // Keep the Worker's own explanation (e.g. "Spotify Premium is needed…").
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        throw new Error(path + " → HTTP " + res.status + (body && body.error ? ": " + body.error : ""));
+      });
     }, function (err) {
       clearTimeout(timer);
       throw err;
@@ -1385,15 +1388,19 @@
     });
   }
 
+  // Once Spotify is set up the card stays put, so there's always something to tap
+  // for the music picker; when nothing's playing it just says so.
   function renderSpotify() {
-    var show = !!(spotify && spotify.active);
+    var show = !!spotify;
     $("spotify-card").hidden = !show;
     $("hub").classList.toggle("has-spotify", show);
     if (!show) return;
-    $("sp-title").textContent = spotify.title || "";
-    $("sp-artist").textContent = spotify.artist || "";
-    $("sp-art").style.backgroundImage = spotify.art ? "url(\"" + spotify.art + "\")" : "";
-    $("spotify-card").classList.toggle("paused", !spotify.playing);
+    var idle = !spotify.active;
+    $("spotify-card").classList.toggle("idle", idle);
+    $("sp-title").textContent = idle ? "Nothing playing" : spotify.title || "";
+    $("sp-artist").textContent = idle ? "Tap to pick a playlist and speaker" : spotify.artist || "";
+    $("sp-art").style.backgroundImage = !idle && spotify.art ? "url(\"" + spotify.art + "\")" : "";
+    $("spotify-card").classList.toggle("paused", !idle && !spotify.playing);
     $("sp-icon-play").style.display = spotify.playing ? "none" : "";
     $("sp-icon-pause").style.display = spotify.playing ? "" : "none";
     renderSpotifyProgress();
@@ -1425,6 +1432,138 @@
   var spButtons = document.querySelectorAll("#spotify-card [data-sp]");
   for (var sb = 0; sb < spButtons.length; sb++) {
     spButtons[sb].addEventListener("click", function (ev) { spotifyControl(ev.currentTarget.getAttribute("data-sp")); });
+  }
+
+  // ------------------------------------------------------------- music picker
+  // Tap the Spotify card: pick a speaker ("Play on") and a playlist.
+
+  var library = null;       // { playlists, devices } from the Worker
+  var musicDevice = null;   // chosen speaker id
+  var musicBusy = null;     // playlist uri or device id being sent
+  var DEVICE_ICONS = { Computer: "💻", Smartphone: "📱", Tablet: "📱", Speaker: "🔊", TV: "📺", CastAudio: "🔊",
+    CastVideo: "📺", AVR: "📻", STB: "📺", AudioDongle: "🔌", GameConsole: "🎮", Automobile: "🚗" };
+
+  function openMusic() {
+    unlockAudio();
+    $("music").hidden = false;
+    $("music-error").hidden = true;
+    loadLibrary();
+  }
+  function closeMusic() { $("music").hidden = true; }
+
+  function musicError(msg) {
+    var e = $("music-error");
+    e.textContent = msg;
+    e.hidden = !msg;
+  }
+
+  function loadLibrary() {
+    if (!library) renderMusic(); // "Loading…"
+    var p = demo ? Promise.resolve(demoLibrary()) : api("/spotify/library");
+    $("music-refresh").classList.add("spin");
+    return p.then(function (data) {
+      library = data;
+      var ids = library.devices.map(function (d) { return d.id; });
+      if (ids.indexOf(musicDevice) < 0) {
+        var active = library.devices.filter(function (d) { return d.active; })[0];
+        musicDevice = active ? active.id : null;
+      }
+      renderMusic();
+    }).catch(function (e) {
+      musicError("Couldn't load your music: " + e.message +
+        (/403|scope|Insufficient/i.test(e.message) ? " — re-run /spotify/connect to allow playlists." : ""));
+    }).then(function () { $("music-refresh").classList.remove("spin"); });
+  }
+
+  function renderMusic() {
+    var devBox = $("music-devices"), plBox = $("music-playlists");
+    devBox.innerHTML = "";
+    plBox.innerHTML = "";
+    if (!library) { plBox.appendChild(el("div", "music-note", "Loading…")); return; }
+
+    if (!library.devices.length) {
+      devBox.appendChild(el("div", "music-note",
+        "No speakers awake right now. Open Spotify on a phone or speaker (or say \"Alexa, open Spotify\"), then tap ↻."));
+    }
+    library.devices.forEach(function (d) {
+      var b = el("button", "music-dev" + (d.id === musicDevice ? " on" : "") + (musicBusy === d.id ? " busy" : ""));
+      b.type = "button";
+      b.disabled = d.restricted;
+      b.appendChild(el("span", "music-dev-icon", DEVICE_ICONS[d.type] || "🔈"));
+      b.appendChild(el("span", null, d.name));
+      if (d.active) b.appendChild(el("span", "music-dev-live", "playing"));
+      b.addEventListener("click", function () { pickDevice(d); });
+      devBox.appendChild(b);
+    });
+
+    if (!library.playlists.length) plBox.appendChild(el("div", "music-note", "No playlists found on this Spotify account."));
+    library.playlists.forEach(function (pl) {
+      var b = el("button", "music-pl" + (musicBusy === pl.uri ? " busy" : ""));
+      b.type = "button";
+      var cover = el("div", "music-cover", pl.image ? null : "🎵");
+      if (pl.image) cover.style.backgroundImage = "url(\"" + pl.image + "\")";
+      b.appendChild(cover);
+      b.appendChild(el("div", "music-pl-name", pl.name));
+      b.addEventListener("click", function () { playPlaylist(pl); });
+      plBox.appendChild(b);
+    });
+  }
+
+  function musicSend(body, busyKey) {
+    musicBusy = busyKey;
+    musicError("");
+    renderMusic();
+    var p = demo ? new Promise(function (r) { setTimeout(r, 400); }) : api("/spotify/play", { method: "POST", body: body });
+    return p.then(function () {
+      library.devices.forEach(function (d) { d.active = d.id === body.deviceId; });
+      return true;
+    }).catch(function (e) {
+      musicError(/PREMIUM|Premium/.test(e.message) ? "Spotify Premium is needed to start music from here."
+        : /404/.test(e.message) ? "That speaker went to sleep — wake it up and tap ↻."
+        : "Spotify said no: " + e.message);
+      return false;
+    }).then(function (ok) {
+      musicBusy = null;
+      renderMusic();
+      setTimeout(loadSpotify, 1200);
+      return ok;
+    });
+  }
+
+  function pickDevice(d) {
+    if (musicBusy) return;
+    musicDevice = d.id;
+    musicError("");
+    // Something's already playing somewhere else? Move it over.
+    if (spotify && spotify.active && !d.active) musicSend({ deviceId: d.id }, d.id);
+    else renderMusic();
+  }
+
+  function playPlaylist(pl) {
+    if (musicBusy) return;
+    if (!musicDevice) { musicError("Pick a speaker under \"Play on\" first."); return; }
+    musicSend({ deviceId: musicDevice, uri: pl.uri }, pl.uri).then(function (ok) {
+      if (ok) setTimeout(closeMusic, 600);
+    });
+  }
+
+  $("spotify-card").addEventListener("click", function (ev) {
+    if (!ev.target.closest(".sp-ctrl")) openMusic();
+  });
+  $("music-done").addEventListener("click", closeMusic);
+  $("music-refresh").addEventListener("click", function () { loadLibrary(); });
+
+  function demoLibrary() {
+    var names = ["Saturday Morning", "Dinner Jazz", "Kids Dance Party", "Bears Game Day", "Chill Sunday", "Road Trip",
+      "Focus", "90s Hits", "Christmas Classics", "Lullabies"];
+    return {
+      playlists: names.map(function (n, i) { return { uri: "spotify:playlist:demo" + i, name: n, image: null }; }),
+      devices: [
+        { id: "d1", name: "Kitchen Echo", type: "Speaker", active: true, restricted: false },
+        { id: "d2", name: "Living Room TV", type: "TV", active: false, restricted: false },
+        { id: "d3", name: "Ben's iPhone", type: "Smartphone", active: false, restricted: false },
+      ],
+    };
   }
 
   function demoSpotify() {
