@@ -611,16 +611,19 @@
     return gameWhen(ms, now).replace(/ \S+$/, "").replace("Tomorrow", "Tmrw");
   }
 
-  // Compact row of team tiles under the calendar. Returns false when there's nothing to show.
+  // Compact row of team tiles under the calendar (today/tomorrow's games only). Returns false
+  // when nobody's playing, which hides the card.
   function renderScoreCard() {
     var box = $("scores-mini");
     box.innerHTML = "";
     if (!sports) return false;
     var now = new Date();
+    // Only teams with a game today or tomorrow: live now, finished earlier today, or up next.
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    var dayAfter = today + 2 * DAY_MS;
+    var soon = function (g) { return !!(g && g.start && g.start >= today && g.start < dayAfter); };
     var shown = sports.filter(function (t) {
-      if (t.error) return false;
-      if (t.live || t.next) return true;
-      return !!(t.last && now - t.last.start < 45 * DAY_MS); // skip long-idle off-season teams
+      return !t.error && (t.live || soon(t.next) || soon(t.last));
     });
     // One small tile per team: name, result (or LIVE), then what's next.
     shown.forEach(function (t) {
