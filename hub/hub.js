@@ -604,42 +604,51 @@
   function vsLine(g) { return (g.home ? "vs " : "@ ") + g.them; }
 
   var SHORT_NAMES = { Blackhawks: "Hawks", Northwestern: "NU" };
-  // Today: just the time. Otherwise just the day ("Tmrw", "Sun", "Oct 21").
+  // "Today 6p" / "Tmrw 12p" (tiles only ever show today's and tomorrow's games).
   function shortWhen(ms, now) {
-    var d = new Date(ms);
-    if (d.toDateString() === now.toDateString()) return fmtTime(d);
-    return gameWhen(ms, now).replace(/ \S+$/, "").replace("Tomorrow", "Tmrw");
+    return gameWhen(ms, now).replace("Tomorrow", "Tmrw");
   }
 
-  // Compact row of team tiles under the calendar (today/tomorrow's games only). Returns false
+  // Compact two-column grid under the calendar (today/tomorrow's games only). Returns false
   // when nobody's playing, which hides the card.
   function renderScoreCard() {
     var box = $("scores-mini");
     box.innerHTML = "";
     if (!sports) return false;
     var now = new Date();
-    // Only teams with a game today or tomorrow: live now, finished earlier today, or up next.
+    // Only teams with a game yesterday, today or tomorrow.
     var today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    var dayAfter = today + 2 * DAY_MS;
-    var soon = function (g) { return !!(g && g.start && g.start >= today && g.start < dayAfter); };
+    var within = function (g, from, to) { return !!(g && g.start && g.start >= from && g.start < to); };
     var shown = sports.filter(function (t) {
-      return !t.error && (t.live || soon(t.next) || soon(t.last));
+      return !t.error && (t.live || within(t.next, today, today + 2 * DAY_MS) || within(t.last, today - DAY_MS, today + DAY_MS));
     });
-    // One small tile per team: name, result (or LIVE), then what's next.
+    // One line per team showing just one game, in this order: live now, finished today,
+    // yesterday's final, else the next game ("🐻 Bears @ GB · Tmrw 12p"). Sorted the same
+    // way; the game clock and TV channel are in the pop-up.
+    var opp = function (x) { return (x.home ? "vs " : "@ ") + (x.themAbbr || x.them); };
+    var rank = function (t) {
+      return t.live ? 0 : within(t.last, today, today + DAY_MS) ? 1 : within(t.last, today - DAY_MS, today) ? 2 : 3;
+    };
+    shown.sort(function (a, b) { return rank(a) - rank(b); });
     shown.forEach(function (t) {
+      var r = rank(t);
+      var final = r === 1 || r === 2 ? t.last : null;
+      var g = t.live || final || t.next;
       var tile = el("div", "sm-tile" + (t.live ? " live" : ""));
-      tile.appendChild(el("div", "sm-name", t.emoji + " " + (SHORT_NAMES[t.name] || t.name)));
-      var res = el("div", "sm-result");
-      var g = t.live || t.last;
-      if (g) {
-        var badge = t.live ? ["live", "LIVE"] : g.won ? ["win", "W"] : g.won === false ? ["loss", "L"] : ["", "T"];
-        res.appendChild(el("span", "sc-badge " + badge[0], badge[1]));
-        res.appendChild(el("b", null, " " + g.usScore + "–" + g.themScore));
-      } else res.appendChild(el("span", "sm-muted", "—"));
-      tile.appendChild(res);
-      var opp = function (x) { return (x.home ? "vs " : "@ ") + (x.themAbbr || x.them); };
-      var nextText = t.live ? t.live.detail : t.next ? shortWhen(t.next.start, now) + " " + opp(t.next) : "";
-      tile.appendChild(el("div", "sm-next", nextText || "\u00a0"));
+      tile.appendChild(el("span", "sm-emoji", t.emoji));
+      var info = el("span", "sm-name", SHORT_NAMES[t.name] || t.name);
+      info.appendChild(el("span", "sm-opp", " " + opp(g)));
+      tile.appendChild(info);
+      var main = el("span", "sm-result");
+      if (t.live || final) {
+        if (r === 2) main.appendChild(el("span", "sm-when", "Yest "));
+        if (t.live) main.appendChild(el("span", "sc-badge live", "LIVE"));
+        else main.appendChild(el("b", "sm-wl " + (g.won ? "win" : g.won === false ? "loss" : ""), g.won ? "W" : g.won === false ? "L" : "T"));
+        main.appendChild(el("b", null, " " + g.usScore + "–" + g.themScore));
+      } else {
+        main.appendChild(el("b", null, shortWhen(g.start, now)));
+      }
+      tile.appendChild(main);
       box.appendChild(tile);
     });
     return shown.length > 0;
