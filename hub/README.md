@@ -160,10 +160,10 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Header shows current conditions plus a 5-day forecast strip (rain chance shown when it's 20% or more).
 - Layout: calendar, Scores and Spotify on the left; thermostats and a big "What to wear" card on the right;
   Kids and Groceries as pills in the footer.
-- Sports: the Scores card has one tile per team playing today or tomorrow (Bears, Cubs, Bulls, Blackhawks,
-  Northwestern football/basketball): the live score (LIVE) or last result (W/L), then the next game. With no games
-  today or tomorrow, the card hides. Live games refresh every
-  minute. Tap it for every team's record, last result, next game and TV channel. Data comes from ESPN's free
+- Sports: the Scores card has one line per team with a game yesterday, today or tomorrow (Bears, Cubs, Bulls,
+  Blackhawks, Northwestern football/basketball), showing just one game, in this order: live score, today's final,
+  yesterday's final (marked "Yest"), or the next game's day and time, always with the opponent. Live games come
+  first and refresh every minute. With no games in that window the card hides. Tap it for every team's record, last result, next game and TV channel. Data comes from ESPN's free
   (unofficial) feeds through the Worker; change teams with an optional `SPORTS_TEAMS` variable (see the top of
   worker.js).
 - What to wear: big picture icons with one-word labels so the kids can read it from across the room
