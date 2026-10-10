@@ -298,8 +298,14 @@
   var fam = null;
 
   function loadFamily() {
-    if (demo) return Promise.resolve();
-    return api("/family").then(function (data) { fam = data.family || null; }).catch(function () {});
+    if (demo) {
+      kidsQuickAdd = ["Kid One school clothes", "Kid Two school clothes", "More pull-ups"];
+      return Promise.resolve();
+    }
+    return api("/family").then(function (data) {
+      fam = data.family || null;
+      kidsQuickAdd = data.kidsQuickAdd || [];
+    }).catch(function () {});
   }
 
   function familyLines(now) {
@@ -780,7 +786,7 @@
       lists.chores = data.chores || [];
       lists.grocery = data.grocery || [];
       learnGroceries(lists.grocery);
-      if (!$("grocery-picker").hidden) renderGroceryChips();
+      if (!$("picker").hidden) renderChips();
       renderList("chores");
       renderList("grocery");
       var missing = [];
@@ -870,7 +876,7 @@
   var HISTORY_KEY = "homehub.groceryHistory";
   var groceryHistory = { counts: {}, seen: [] };
   try { groceryHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || groceryHistory; } catch (e) {}
-  var pendingAdds = {}; // lowercased name -> true while the add is in flight
+  var pendingAdds = {}; // "list:lowercased name" -> true while the add is in flight
 
   function norm(name) { return String(name).trim().toLowerCase(); }
 
@@ -901,54 +907,72 @@
     return GROCERY_STAPLES.concat(learned);
   }
 
-  function onGroceryList(name) {
+  // Kids quick-adds come from the Worker's KIDS_QUICK_ADD variable (they name the
+  // kids, so they stay out of this public repo).
+  var kidsQuickAdd = [];
+  var PICKERS = {
+    grocery: { title: "🛒 Add to Groceries", choices: groceryChoices },
+    chores: { title: "🧒 Add to Kids", choices: function () { return kidsQuickAdd; } },
+  };
+  var pickerList = "grocery";
+
+  function onList(list, name) {
     var n = norm(name);
-    return lists.grocery.some(function (t) { return norm(t.content) === n; });
+    return lists[list].some(function (t) { return norm(t.content) === n; });
   }
 
-  function renderGroceryChips() {
-    var box = $("grocery-chips");
+  function renderChips() {
+    var list = pickerList, box = $("picker-chips");
     box.innerHTML = "";
-    groceryChoices().forEach(function (name) {
-      var on = onGroceryList(name), busy = pendingAdds[norm(name)];
+    var choices = PICKERS[list].choices();
+    if (!choices.length) box.appendChild(el("div", "empty", "No quick-add buttons yet — see KIDS_QUICK_ADD in the README."));
+    choices.forEach(function (name) {
+      var on = onList(list, name), busy = pendingAdds[list + ":" + norm(name)];
       var chip = el("button", "chip" + (on ? " on" : "") + (busy ? " busy" : ""), (on ? "✓ " : "") + name);
       chip.type = "button";
       chip.addEventListener("click", function () {
-        if (onGroceryList(name) || pendingAdds[norm(name)]) return;
-        addGrocery(name);
+        if (onList(list, name) || pendingAdds[list + ":" + norm(name)]) return;
+        addTask(list, name);
       });
       box.appendChild(chip);
     });
   }
 
-  function addGrocery(content) {
+  function addTask(list, content) {
     content = String(content).trim();
     if (!content) return;
-    pendingAdds[norm(content)] = true;
-    renderGroceryChips();
+    var key = list + ":" + norm(content);
+    pendingAdds[key] = true;
+    renderChips();
     var p = demo
       ? Promise.resolve({ id: "demo-" + Date.now(), content: content })
-      : api("/todoist/add", { method: "POST", body: { list: "grocery", content: content } });
+      : api("/todoist/add", { method: "POST", body: { list: list, content: content } });
     p.then(function (task) {
-      lists.grocery.push(task);
-      learnGroceries([task]);
-      renderList("grocery");
+      lists[list].push(task);
+      if (list === "grocery") learnGroceries([task]);
+      renderList(list);
     }).catch(function (e) {
       setProblem("todoist", "couldn't add \"" + content + "\": " + e.message);
     }).then(function () {
-      delete pendingAdds[norm(content)];
-      if (!$("grocery-picker").hidden) renderGroceryChips();
+      delete pendingAdds[key];
+      if (!$("picker").hidden) renderChips();
     });
   }
 
-  $("grocery-add").addEventListener("click", function () {
-    renderGroceryChips();
-    $("grocery-picker").hidden = false;
-  });
-  $("grocery-done").addEventListener("click", function () { $("grocery-picker").hidden = true; });
-  $("grocery-type").addEventListener("click", function () {
-    var content = (window.prompt("Add to Groceries") || "").trim();
-    if (content) addGrocery(content);
+  function openPicker(list) {
+    pickerList = list;
+    $("picker-title").textContent = PICKERS[list].title;
+    renderChips();
+    $("picker").hidden = false;
+  }
+
+  $("grocery-add").addEventListener("click", function () { openPicker("grocery"); });
+  $("chores-add").addEventListener("click", function () { openPicker("chores"); });
+  $("picker-done").addEventListener("click", function () { $("picker").hidden = true; });
+  $("picker-type").addEventListener("click", function () {
+    var list = pickerList;
+    var content = (window.prompt(PICKERS[list].title.replace(/^\S+ /, "")) || "").trim();
+    if (content) addTask(list, content);
   });
 
   // ------------------------------------------------------------- Nest thermostats

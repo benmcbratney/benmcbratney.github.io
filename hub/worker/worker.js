@@ -14,6 +14,8 @@
 //   GROCERY_PROJECT  plain   Todoist project name for groceries (default "Groceries")
 //   FAMILY           secret  optional JSON for personal greetings, e.g.
 //                            {"parents":["Mom","Dad"],"kids":["A","B"],"nicknames":["Ace"],"dog":"Rex"}
+//   KIDS_QUICK_ADD   plain   optional JSON array of one-tap buttons for the Kids card's +,
+//                            e.g. ["A school clothes","B school clothes"]
 //
 // Optional Nest thermostats (Google Device Access — see hub/README.md):
 //   NEST_PROJECT_ID     plain   Device Access project ID
@@ -33,6 +35,7 @@
 //   POST /todoist/close   {"id": "..."}
 //   POST /todoist/add     {"list": "chores"|"grocery", "content": "..."}
 //   GET  /family                       personal greeting names (null when FAMILY isn't set)
+//                                      and the Kids quick-add buttons
 //   GET  /nest                         thermostats (null when Nest isn't configured)
 //   POST /nest/set        {"id": "...", "heatC": 20.5, "coolC": 24}   (either or both)
 //   GET  /nest/connect    (browser, no key) start Google sign-in
@@ -91,7 +94,7 @@ export default {
         return json(trimTask(task));
       }
       if (url.pathname === "/family" && request.method === "GET") {
-        return json({ family: family(env) });
+        return json({ family: family(env), kidsQuickAdd: kidsQuickAdd(env) });
       }
       if (url.pathname === "/spotify" && request.method === "GET") {
         return json({ spotify: await spotifyNow(env) });
@@ -324,6 +327,18 @@ function family(env) {
   }
   const names = (v) => (Array.isArray(v) ? v : v ? [v] : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 12);
   return { parents: names(f.parents), kids: names(f.kids), nicknames: names(f.nicknames), dog: names(f.dog)[0] || null };
+}
+
+// One-tap buttons for the Kids card's + (they name the kids, so they live here too).
+function kidsQuickAdd(env) {
+  if (!env.KIDS_QUICK_ADD) return [];
+  let list;
+  try {
+    list = JSON.parse(env.KIDS_QUICK_ADD);
+  } catch {
+    throw new Error("KIDS_QUICK_ADD isn't valid JSON");
+  }
+  return (Array.isArray(list) ? list : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 24);
 }
 
 // ---------------------------------------------------------------- Nest (Google Smart Device Management)

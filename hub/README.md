@@ -27,6 +27,7 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `CHORES_PROJECT` | Text | Todoist project name, default `Chores` |
    | `GROCERY_PROJECT` | Text | Todoist project name, default `Groceries` |
    | `FAMILY` | Secret | optional, for personal greetings (see below) |
+   | `KIDS_QUICK_ADD` | Text | optional JSON list of one-tap buttons for the Kids card's **+**, e.g. `["Kid One school clothes","More pull-ups"]` |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
    ⚙ Settings → pick the calendar → *Integrate calendar* → **Secret address in iCal format**.
@@ -168,6 +169,8 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Groceries: tap **+** for one-tap buttons (the household staples, then anything else that's been on
   the list, most frequent first). Items already on the list show a ✓. "Type something else…" opens the
   system prompt, for when the iPad's keyboard cooperates. Edit the staples in `GROCERY_STAPLES` in hub.js.
+- Kids: the **+** works the same way, with buttons from the `KIDS_QUICK_ADD` Worker variable (kept there
+  because they name the kids). Edit that variable in Cloudflare to change them; no re-paste needed.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
