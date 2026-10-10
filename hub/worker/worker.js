@@ -21,6 +21,11 @@
 //   NEST_CLIENT_SECRET  secret  Google Cloud OAuth client secret
 //   NEST_REFRESH_TOKEN  secret  from visiting /nest/connect once (it shows you the token)
 //
+// Optional Spotify "now playing" (developer.spotify.com — see hub/README.md):
+//   SPOTIFY_CLIENT_ID      plain   Spotify app client ID
+//   SPOTIFY_CLIENT_SECRET  secret  Spotify app client secret
+//   SPOTIFY_REFRESH_TOKEN  secret  from visiting /spotify/connect once (it shows you the token)
+//
 // Routes (all require header  X-Hub-Key: <HUB_KEY>, except the two Nest setup pages):
 //   GET  /calendar?days=7
 //   GET  /todoist/lists
@@ -31,6 +36,9 @@
 //   POST /nest/set        {"id": "...", "heatC": 20.5, "coolC": 24}   (either or both)
 //   GET  /nest/connect    (browser, no key) start Google sign-in
 //   GET  /nest/callback   (browser, no key) shows the refresh token to save
+//   GET  /spotify                      now playing (null when Spotify isn't configured)
+//   POST /spotify/control {"action": "play"|"pause"|"next"|"previous"}
+//   GET  /spotify/connect, /spotify/callback   (browser, no key) one-time sign-in
 
 const TODOIST = "https://api.todoist.com/api/v1";
 const SDM = "https://smartdevicemanagement.googleapis.com/v1";
@@ -44,6 +52,8 @@ export default {
     const path = new URL(request.url).pathname;
     if (path === "/nest/connect") return nestConnect(request, env);
     if (path === "/nest/callback") return nestCallback(request, env);
+    if (path === "/spotify/connect") return spotifyConnect(request, env);
+    if (path === "/spotify/callback") return spotifyCallback(request, env);
 
     if (!env.HUB_KEY || request.headers.get("X-Hub-Key") !== env.HUB_KEY) {
       return json({ error: "unauthorized" }, 401);
@@ -78,6 +88,14 @@ export default {
       }
       if (url.pathname === "/family" && request.method === "GET") {
         return json({ family: family(env) });
+      }
+      if (url.pathname === "/spotify" && request.method === "GET") {
+        return json({ spotify: await spotifyNow(env) });
+      }
+      if (url.pathname === "/spotify/control" && request.method === "POST") {
+        const { action } = await request.json();
+        await spotifyControl(env, action);
+        return json({ ok: true });
       }
       if (url.pathname === "/nest" && request.method === "GET") {
         return json({ thermostats: await nestThermostats(env) });
@@ -171,6 +189,122 @@ async function todoistLists(env) {
   };
   const [chores, grocery] = await Promise.all([load(ids.chores), load(ids.grocery)]);
   return { chores, grocery };
+}
+
+// ---------------------------------------------------------------- Spotify (now playing)
+
+const SPOTIFY_SCOPES = "user-read-playback-state user-read-currently-playing user-modify-playback-state";
+
+function spotifyConfigured(env) {
+  return !!(env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET && env.SPOTIFY_REFRESH_TOKEN);
+}
+
+function spotifyBasicAuth(env) {
+  return "Basic " + btoa(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET || ""}`);
+}
+
+function spotifyConnect(request, env) {
+  if (!env.SPOTIFY_CLIENT_ID) {
+    return html("<h2>Almost there</h2><p>Add <code>SPOTIFY_CLIENT_ID</code> and <code>SPOTIFY_CLIENT_SECRET</code> to the Worker first.</p>", 400);
+  }
+  const auth = new URL("https://accounts.spotify.com/authorize");
+  auth.search = new URLSearchParams({
+    client_id: env.SPOTIFY_CLIENT_ID,
+    response_type: "code",
+    redirect_uri: new URL("/spotify/callback", request.url).toString(),
+    scope: SPOTIFY_SCOPES,
+    show_dialog: "true",
+  }).toString();
+  return Response.redirect(auth.toString(), 302);
+}
+
+async function spotifyCallback(request, env) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  if (!code) return html(`<h2>Sign-in didn't finish</h2><p>${escapeHtml(url.searchParams.get("error") || "No code returned.")}</p>`, 400);
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: spotifyBasicAuth(env) },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: new URL("/spotify/callback", request.url).toString(),
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.refresh_token) {
+    return html(`<h2>Couldn't get a token</h2><pre style="white-space:pre-wrap">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`, 502);
+  }
+  return html(
+    `<h2>Connected ✅</h2><p>Copy this into the Worker as a <b>Secret</b> named <code>SPOTIFY_REFRESH_TOKEN</code>, then deploy. ` +
+      `Treat it like a password and close this tab when you're done.</p>` +
+      `<textarea readonly style="width:100%;height:120px;font:14px monospace" onclick="this.select()">${escapeHtml(data.refresh_token)}</textarea>`
+  );
+}
+
+let spotifyToken = null;
+async function spotifyAccessToken(env) {
+  if (spotifyToken && spotifyToken.expires > Date.now() + 60e3) return spotifyToken.value;
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: spotifyBasicAuth(env) },
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: env.SPOTIFY_REFRESH_TOKEN }),
+  });
+  if (!res.ok) throw new Error(`Spotify sign-in ${res.status} (re-run /spotify/connect if this persists)`);
+  const data = await res.json();
+  spotifyToken = { value: data.access_token, expires: Date.now() + data.expires_in * 1000 };
+  return spotifyToken.value;
+}
+
+async function spotifyApi(env, path, init = {}) {
+  const res = await fetch("https://api.spotify.com/v1" + path, {
+    ...init,
+    headers: { Authorization: `Bearer ${await spotifyAccessToken(env)}`, ...(init.headers || {}) },
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    const reason = detail && detail.error && (detail.error.reason || detail.error.message);
+    if (reason === "PREMIUM_REQUIRED") throw new Error("Spotify Premium is needed for play/pause/skip");
+    if (reason === "NO_ACTIVE_DEVICE") throw new Error("nothing is playing on a Spotify device");
+    throw new Error(`Spotify ${res.status}${reason ? ": " + reason : ""}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function spotifyNow(env) {
+  if (!spotifyConfigured(env)) return null;
+  const p = await spotifyApi(env, "/me/player?additional_types=episode");
+  if (!p || !p.item) return { active: false };
+  const item = p.item;
+  const images = (item.album && item.album.images) || item.images || (item.show && item.show.images) || [];
+  // Spotify lists images largest first; take the smallest that's still >= 200px.
+  const art = images.filter((i) => !i.width || i.width >= 200).pop() || images[0] || null;
+  return {
+    active: true,
+    playing: !!p.is_playing,
+    title: item.name,
+    artist: item.artists ? item.artists.map((a) => a.name).join(", ") : item.show ? item.show.name : "",
+    album: item.album ? item.album.name : "",
+    art: art ? art.url : null,
+    progressMs: p.progress_ms || 0,
+    durationMs: item.duration_ms || 0,
+    device: p.device ? p.device.name : null,
+  };
+}
+
+async function spotifyControl(env, action) {
+  if (!spotifyConfigured(env)) throw new Error("Spotify isn't configured");
+  const routes = {
+    play: ["PUT", "/me/player/play"],
+    pause: ["PUT", "/me/player/pause"],
+    next: ["POST", "/me/player/next"],
+    previous: ["POST", "/me/player/previous"],
+  };
+  const r = routes[action];
+  if (!r) throw new Error("bad action");
+  await spotifyApi(env, r[1], { method: r[0] });
 }
 
 // ---------------------------------------------------------------- Family (personal greetings)

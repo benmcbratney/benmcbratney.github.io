@@ -86,6 +86,32 @@ be in the Google Home app (not an old Nest account), on a personal Gmail account
    `NEST_REFRESH_TOKEN` and deploy.
 6. Reopen Home Hub. The thermostat card appears on its own.
 
+## 4. Optional: Spotify "now playing" (~10 min, free)
+
+Adds a card under the calendar with album art, the song and artist, a progress bar,
+and ⏮ ⏯ ⏭. It shows up whenever something is playing on your Spotify account (phone,
+speaker, Echo, …) and hides itself otherwise. Seeing what's playing works on any
+account; **play/pause/skip need Spotify Premium** (Spotify's rule).
+
+> If you set up the Worker before Spotify support existed, re-paste the latest
+> `worker/worker.js` into the Cloudflare editor and Deploy first.
+
+1. Go to **developer.spotify.com/dashboard**, log in, **Create app**:
+   - App name/description: anything (`Home Hub`).
+   - Redirect URI: `https://home-hub.YOURNAME.workers.dev/spotify/callback` → **Add**.
+   - APIs used: **Web API**. Agree and **Save**.
+2. Open the app → **Settings** → copy the **Client ID**, click **View client secret**
+   and copy that too.
+3. Worker → **Settings → Variables and Secrets**: `SPOTIFY_CLIENT_ID` (Text),
+   `SPOTIFY_CLIENT_SECRET` (Secret). Deploy.
+4. Open `https://home-hub.YOURNAME.workers.dev/spotify/connect`, log in to Spotify and
+   **Agree**. Copy the token from the "Connected ✅" page into a Secret named
+   `SPOTIFY_REFRESH_TOKEN` and deploy.
+5. Play something on Spotify. The card appears within about 30 seconds.
+
+If the sign-in page says the user isn't registered, add your Spotify email under the
+app's **User Management** in the Spotify dashboard (new apps start in development mode).
+
 ## Smart home (later)
 
 Kasa, WiZ, iRobot and friends can only be reached from inside the house, so they go
@@ -114,7 +140,13 @@ and says when the Bears are on.
 
 ## How it behaves
 
-- Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min.
+- Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
+  Spotify every 10 s while playing (30 s otherwise).
+- Header shows current conditions plus a 5-day forecast strip (rain chance shown when it's 20% or more).
+- Kitchen timers: tap **⏲️ Timer** for presets (1 min–1 hour) or Custom. Running timers sit in the
+  bottom bar; a finished one turns red, pulses and chimes every 3 s (for up to 10 min) until tapped.
+  Timers survive reloads, and the hub holds off self-updates while one is running. The chime needs the
+  iPad's volume up and the side switch not on mute.
 - Thermostat taps are batched: change it a few degrees and it sends one update after you stop tapping.
   Setpoints can't be changed while a thermostat is off or in Eco (same as Google's own rules).
 - Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
@@ -132,8 +164,8 @@ and says when the Bears are on.
 
 The backdrop matches the current weather, using freely licensed photos from
 Wikimedia Commons that the iPad loads directly. After dark the photo is dimmed,
-and clear nights get a starry sky. The photographer is credited in the
-bottom-right corner. To use your own photo instead, paste its URL into
+and clear nights get a starry sky. Photographers are credited here (not on the
+wall), which their licenses allow. To use your own photo instead, paste its URL into
 ⚙︎ → Background photo URL.
 
 | Weather | Photo | Photographer |
