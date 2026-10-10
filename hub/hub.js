@@ -735,7 +735,13 @@
     ev.preventDefault();
     var input = $("grocery-input");
     var content = input.value.trim();
-    if (!content) return;
+    if (!content) {
+      // Fallback for an iPadOS bug where home-screen apps sometimes won't show the
+      // keyboard for a text box: tapping + on an empty box opens the system prompt.
+      input.blur();
+      content = (window.prompt("Add to Groceries") || "").trim();
+      if (!content) return;
+    }
     input.value = "";
     input.blur();
     var p = demo

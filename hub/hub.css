@@ -28,13 +28,20 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
-  -webkit-user-select: none;
-  user-select: none;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
 
 button, input { font: inherit; color: inherit; }
+
+/* Stop long-presses from selecting text on the display, but keep this off every
+   ancestor of a text box: iPadOS home-screen apps can refuse to show the keyboard
+   for inputs inside user-select: none. */
+.top, .status, .night, .agenda, .nest, .chores, .grocery h2, .grocery .tasks {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 
 /* ---------------------------------------------------------------- photo backdrop */
 
