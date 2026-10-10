@@ -146,7 +146,7 @@
     }
 
     // Reload once a night to keep an old iPad's memory tidy and pick up code updates.
-    if (h === 3 && now.getMinutes() === 30 && performance.now() > 120000) freshReload(window.HUB_VERSION || "");
+    if (h === 3 && now.getMinutes() === 30 && performance.now() > 120000 && !timers.length) freshReload(window.HUB_VERSION || "");
   }
 
   $("night").addEventListener("click", function () {
@@ -442,7 +442,7 @@
       "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
       "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
       "&hourly=precipitation_probability&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
-      "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=2";
+      "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
@@ -459,25 +459,30 @@
         var box = $("weather");
         box.innerHTML = "";
 
-        var tomorrow = el("div", "wx-tomorrow");
-        tomorrow.appendChild(el("div", null, "Tomorrow"));
-        tomorrow.appendChild(el("div", null, wmo(day.weather_code[1], 1)[0] + " " +
-          Math.round(day.temperature_2m_max[1]) + "° / " + Math.round(day.temperature_2m_min[1]) + "°"));
-        tomorrow.appendChild(el("div", null, day.precipitation_probability_max[1] + "% precip"));
+        // 5-day strip: today + the next four days.
+        var strip = el("div", "wx-strip");
+        for (var i = 0; i < Math.min(5, day.time ? day.time.length : 0); i++) {
+          var dd = parseWall(day.time[i]);
+          var cell = el("div", "fc-day" + (i === 0 ? " today" : ""));
+          cell.appendChild(el("div", "fc-name", i === 0 ? "Today" : DAY_NAMES[dd.getDay()].slice(0, 3)));
+          cell.appendChild(el("div", "fc-icon", wmo(day.weather_code[i], 1)[0]));
+          var temps = el("div", "fc-temp");
+          temps.appendChild(el("b", null, Math.round(day.temperature_2m_max[i]) + "°"));
+          temps.appendChild(document.createTextNode(" " + Math.round(day.temperature_2m_min[i]) + "°"));
+          cell.appendChild(temps);
+          var pop = day.precipitation_probability_max[i];
+          cell.appendChild(el("div", "fc-pop", pop >= 20 ? "💧" + pop + "%" : "\u00a0"));
+          strip.appendChild(cell);
+        }
 
         var detail = el("div", "wx-detail");
-        var line1 = el("div");
-        line1.appendChild(el("b", null, now[1]));
-        line1.appendChild(document.createTextNode(" · feels " + Math.round(c.apparent_temperature) + "°"));
-        detail.appendChild(line1);
-        detail.appendChild(el("div", null, "H " + Math.round(day.temperature_2m_max[0]) + "°  L " +
-          Math.round(day.temperature_2m_min[0]) + "° · " + day.precipitation_probability_max[0] + "% precip"));
-        var sunLine = "";
+        detail.appendChild(el("b", null, now[1]));
+        detail.appendChild(el("div", null, "Feels " + Math.round(c.apparent_temperature) + "° · wind " + Math.round(c.wind_speed_10m)));
         if (sun) {
           var t = new Date();
-          sunLine = t < sun.rise ? " · sunrise " + fmtTime(sun.rise) : t < sun.set ? " · sunset " + fmtTime(sun.set) : "";
+          var sunLine = t < sun.rise ? "Sunrise " + fmtTime(sun.rise) : t < sun.set ? "Sunset " + fmtTime(sun.set) : settings.placeName;
+          detail.appendChild(el("div", null, sunLine));
         }
-        detail.appendChild(el("div", null, settings.placeName + " · wind " + Math.round(c.wind_speed_10m) + " mph" + sunLine));
 
         var nowBox = el("div", "wx-now");
         nowBox.appendChild(el("span", "wx-icon", now[0]));
@@ -485,7 +490,7 @@
 
         box.appendChild(detail);
         box.appendChild(nowBox);
-        box.appendChild(tomorrow);
+        box.appendChild(strip);
         setProblem("weather", null);
       })
       .catch(function (e) { setProblem("weather", e.message); });
@@ -863,6 +868,198 @@
     });
   }
 
+  // ------------------------------------------------------------- kitchen timers
+  // Timers are saved with their end time, so a reload doesn't lose them. The chime
+  // uses Web Audio, which iPadOS only allows after a tap, so audio is unlocked on the
+  // tap that starts a timer (and on any later tap).
+
+  var TIMER_KEY = "homehub.timers";
+  var timers = [];
+  try { timers = JSON.parse(localStorage.getItem(TIMER_KEY) || "[]") || []; } catch (e) { timers = []; }
+  var audio = null;
+  var lastChime = 0;
+
+  function saveTimers() {
+    try { localStorage.setItem(TIMER_KEY, JSON.stringify(timers)); } catch (e) {}
+  }
+
+  function unlockAudio() {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!audio) { try { audio = new Ctx(); } catch (e) { return; } }
+    if (audio.state === "suspended" && audio.resume) audio.resume();
+  }
+  document.addEventListener("touchend", unlockAudio);
+  document.addEventListener("click", unlockAudio);
+
+  function chime() {
+    if (!audio || audio.state !== "running") return;
+    var t0 = audio.currentTime;
+    [0, 0.22, 0.44].forEach(function (offset, i) {
+      var osc = audio.createOscillator(), gain = audio.createGain();
+      osc.type = "sine";
+      osc.frequency.value = i === 2 ? 1175 : 880;
+      gain.gain.setValueAtTime(0.0001, t0 + offset);
+      gain.gain.exponentialRampToValueAtTime(0.5, t0 + offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + offset + 0.2);
+      osc.connect(gain); gain.connect(audio.destination);
+      osc.start(t0 + offset); osc.stop(t0 + offset + 0.22);
+    });
+  }
+
+  function fmtLeft(ms) {
+    var s = Math.max(0, Math.ceil(ms / 1000));
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return (h ? h + ":" + pad(m) : m) + ":" + pad(sec);
+  }
+
+  function addTimer(minutes, label) {
+    unlockAudio();
+    timers.push({ id: Date.now() + "-" + Math.random().toString(36).slice(2, 6), label: label, ends: Date.now() + minutes * 60000 });
+    saveTimers();
+    renderTimers();
+  }
+
+  function removeTimer(id) {
+    timers = timers.filter(function (t) { return t.id !== id; });
+    saveTimers();
+    renderTimers();
+  }
+
+  // Build the pills only when timers are added or removed; the 1-second tick just
+  // updates text, so a tap never lands on a pill that's being swapped out.
+  var timerRows = {};
+
+  function renderTimers() {
+    document.body.classList.toggle("has-timers", timers.length > 0); // frees the bottom bar
+    var box = $("timers");
+    box.innerHTML = "";
+    timerRows = {};
+    timers.forEach(function (t) {
+      var row = el("div", "timer");
+      var left = el("span", "t-left");
+      var label = el("span", "t-label");
+      var x = el("button", "t-x", "✕");
+      x.type = "button";
+      x.addEventListener("click", function (ev) { ev.stopPropagation(); removeTimer(t.id); });
+      row.addEventListener("click", function () { if (row.classList.contains("done")) removeTimer(t.id); });
+      row.appendChild(left); row.appendChild(label); row.appendChild(x);
+      box.appendChild(row);
+      timerRows[t.id] = { row: row, left: left, label: label, x: x, t: t, done: null };
+    });
+    updateTimerText();
+  }
+
+  function updateTimerText() {
+    var now = Date.now();
+    Object.keys(timerRows).forEach(function (id) {
+      var r = timerRows[id], done = now >= r.t.ends;
+      if (r.done !== done) {
+        r.done = done;
+        r.row.className = "timer" + (done ? " done" : "");
+        r.label.textContent = done ? r.t.label + " — time's up!" : r.t.label;
+        r.x.setAttribute("aria-label", done ? "Dismiss timer" : "Cancel timer");
+      }
+      var text = done ? "⏰" : fmtLeft(r.t.ends - now);
+      if (r.left.textContent !== text) r.left.textContent = text;
+    });
+  }
+
+  function tickTimers() {
+    if (!timers.length) return;
+    updateTimerText();
+    var now = Date.now();
+    // Ring every 3 seconds while a finished timer is up, for up to 10 minutes.
+    var ringing = timers.some(function (t) { return now >= t.ends && now - t.ends < 10 * 60000; });
+    if (ringing && now - lastChime >= 3000) { lastChime = now; chime(); }
+  }
+
+  function openTimerPicker() { unlockAudio(); $("timer-picker").hidden = false; }
+  function closeTimerPicker() { $("timer-picker").hidden = true; }
+  $("open-timers").addEventListener("click", openTimerPicker);
+  $("timer-close").addEventListener("click", closeTimerPicker);
+  var presetButtons = document.querySelectorAll("#timer-picker [data-min]");
+  for (var pb = 0; pb < presetButtons.length; pb++) {
+    presetButtons[pb].addEventListener("click", function (ev) {
+      var min = +ev.currentTarget.getAttribute("data-min");
+      addTimer(min, min >= 60 ? min / 60 + " hour" : min + " min");
+      closeTimerPicker();
+    });
+  }
+  $("timer-custom").addEventListener("click", function () {
+    var raw = window.prompt("Timer length in minutes");
+    var min = parseFloat(raw);
+    if (!(min > 0) || min > 24 * 60) return;
+    addTimer(min, (Math.round(min * 10) / 10) + " min");
+    closeTimerPicker();
+  });
+
+  // ------------------------------------------------------------- Spotify now playing
+
+  var spotify = null;       // last state from the Worker
+  var spotifyAt = 0;        // when it arrived (for smooth progress between polls)
+  var spotifyPolls = 0;
+
+  function loadSpotify() {
+    var p = demo ? Promise.resolve({ spotify: spotify && spotify.demo ? spotify : demoSpotify() }) : api("/spotify");
+    return p.then(function (data) {
+      spotify = data.spotify || null;
+      spotifyAt = Date.now();
+      renderSpotify();
+      setProblem("spotify", null);
+    }).catch(function (e) {
+      if (/HTTP 404/.test(e.message)) { spotify = null; renderSpotify(); return; } // older Worker
+      setProblem("spotify", e.message);
+    });
+  }
+
+  function renderSpotify() {
+    var show = !!(spotify && spotify.active);
+    $("spotify-card").hidden = !show;
+    $("hub").classList.toggle("has-spotify", show);
+    if (!show) return;
+    $("sp-title").textContent = spotify.title || "";
+    $("sp-artist").textContent = spotify.artist || "";
+    $("sp-art").style.backgroundImage = spotify.art ? "url(\"" + spotify.art + "\")" : "";
+    $("spotify-card").classList.toggle("paused", !spotify.playing);
+    $("sp-icon-play").style.display = spotify.playing ? "none" : "";
+    $("sp-icon-pause").style.display = spotify.playing ? "" : "none";
+    renderSpotifyProgress();
+  }
+
+  function renderSpotifyProgress() {
+    if (!spotify || !spotify.active || !spotify.durationMs) return;
+    var ms = spotify.progressMs + (spotify.playing ? Date.now() - spotifyAt : 0);
+    $("sp-progress").style.width = Math.min(100, (ms / spotify.durationMs) * 100) + "%";
+    // Song probably ended: check sooner than the next scheduled poll.
+    if (spotify.playing && ms > spotify.durationMs + 1500 && Date.now() - spotifyAt > 3000) loadSpotify();
+  }
+
+  function spotifyControl(action) {
+    if (!spotify) return;
+    if (action === "toggle") action = spotify.playing ? "pause" : "play";
+    // Show the change right away; the next poll confirms it.
+    if (action === "pause" || action === "play") {
+      spotify.progressMs += spotify.playing ? Date.now() - spotifyAt : 0;
+      spotifyAt = Date.now();
+      spotify.playing = action === "play";
+      renderSpotify();
+    }
+    if (demo) return;
+    api("/spotify/control", { method: "POST", body: { action: action } })
+      .then(function () { setTimeout(loadSpotify, 700); })
+      .catch(function (e) { setProblem("spotify", e.message); loadSpotify(); });
+  }
+  var spButtons = document.querySelectorAll("#spotify-card [data-sp]");
+  for (var sb = 0; sb < spButtons.length; sb++) {
+    spButtons[sb].addEventListener("click", function (ev) { spotifyControl(ev.currentTarget.getAttribute("data-sp")); });
+  }
+
+  function demoSpotify() {
+    return { demo: true, active: true, playing: true, title: "Sweet Home Chicago", artist: "The Blues Brothers",
+      art: null, progressMs: 72000, durationMs: 330000 };
+  }
+
   // ------------------------------------------------------------- settings modal
 
   function openSettings() {
@@ -942,6 +1139,8 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (v) {
         if (!v || !v.version || v.version === window.HUB_VERSION) return;
+        // A reload would lose the timer chime (iPad audio needs a tap to unlock); wait.
+        if (timers.length) return;
         // Don't yank the page out from under someone typing or in settings.
         var active = document.activeElement;
         if ((active && active.tagName === "INPUT") || !$("settings").hidden) return;
@@ -958,7 +1157,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadLists(), loadNest(), loadFamily(), loadSpotify()]).then(function () {
       lastSync = new Date();
       renderStatus();
     });
@@ -975,6 +1174,13 @@
   setInterval(loadWeather, 15 * 60 * 1000);
   setInterval(function () { renderAgenda(); renderStatus(); }, 60 * 1000); // keep "now"/"past" styling current
   setInterval(checkForUpdate, 10 * 60 * 1000);
+  setInterval(function () { tickTimers(); renderSpotifyProgress(); }, 1000);
+  // Spotify: every 10s while something's playing, every 30s otherwise.
+  setInterval(function () {
+    spotifyPolls++;
+    if ((spotify && spotify.playing) || spotifyPolls % 3 === 0) loadSpotify();
+  }, 10 * 1000);
+  renderTimers();
   setTimeout(checkForUpdate, 30 * 1000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { refreshAll(); checkForUpdate(); } });
 })();

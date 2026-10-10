@@ -37,7 +37,7 @@ button, input { font: inherit; color: inherit; }
 /* Stop long-presses from selecting text on the display, but keep this off every
    ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
    to show the keyboard for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .chores, .grocery {
+.top, .status, .night, .agenda, .nest, .chores, .grocery, .spotify, .timers, .timer-card {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -79,6 +79,28 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
   padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
+/* Optional cards: thermostats sit above Kids on the right; Spotify sits under the
+   agenda on the left, with Groceries stretching down beside it. */
+#hub.has-spotify {
+  grid-template-rows: auto 1fr 1fr auto auto;
+  grid-template-areas:
+    "top top"
+    "agenda chores"
+    "agenda grocery"
+    "spotify grocery"
+    "status status";
+}
+#hub.has-nest.has-spotify {
+  grid-template-rows: auto auto 1fr 1fr auto auto;
+  grid-template-areas:
+    "top top"
+    "agenda nest"
+    "agenda chores"
+    "agenda grocery"
+    "spotify grocery"
+    "status status";
+}
+
 /* With thermostats: a compact row above chores in the right column. */
 #hub.has-nest {
   grid-template-rows: auto auto 1fr 1fr auto;
@@ -91,6 +113,25 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 }
 
 @media (orientation: portrait) {
+  #hub.has-spotify {
+    grid-template-rows: auto 1.2fr auto 1fr auto;
+    grid-template-areas:
+      "top top"
+      "agenda agenda"
+      "spotify spotify"
+      "chores grocery"
+      "status status";
+  }
+  #hub.has-nest.has-spotify {
+    grid-template-rows: auto 1.2fr auto auto 1fr auto;
+    grid-template-areas:
+      "top top"
+      "agenda agenda"
+      "spotify spotify"
+      "nest nest"
+      "chores grocery"
+      "status status";
+  }
   #hub.has-nest {
     grid-template-rows: auto 1.2fr auto 1fr auto;
     grid-template-areas:
@@ -104,8 +145,7 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
   .wx-temp { font-size: 50px; }
   .wx-icon { font-size: 44px; }
   .weather { gap: 14px; }
-  .wx-detail, .wx-tomorrow { font-size: 14px; }
-  .wx-tomorrow { display: none; }
+  .wx-detail { display: none; } /* the 5-day strip covers it; no room in portrait */
   #hub {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto 1.2fr 1fr auto;
@@ -136,13 +176,20 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 }
 .precip-alert.snow { background: rgba(120, 150, 190, 0.92); }
 
-.weather { display: flex; align-items: flex-end; gap: 22px; text-align: right; }
+.weather { display: flex; align-items: flex-end; gap: 16px; text-align: right; }
 .wx-now { display: flex; align-items: center; gap: 10px; }
-.wx-icon { font-size: 56px; line-height: 1; }
-.wx-temp { font-size: 64px; font-weight: 200; line-height: 1; }
-.wx-detail { white-space: nowrap; font-size: 18px; color: var(--on-photo-muted); line-height: 1.45; }
+.wx-icon { font-size: 48px; line-height: 1; }
+.wx-temp { font-size: 60px; font-weight: 200; line-height: 1; }
+.wx-detail { white-space: nowrap; font-size: 16px; color: var(--on-photo-muted); line-height: 1.45; }
 .wx-detail b { color: var(--on-photo); font-weight: 600; }
-.wx-tomorrow { white-space: nowrap; font-size: 16px; color: var(--on-photo-muted); border-left: 1px solid rgba(255,255,255,0.35); padding-left: 18px; line-height: 1.45; }
+.wx-strip { display: flex; border-left: 1px solid rgba(255, 255, 255, 0.35); padding-left: 10px; }
+.fc-day { width: 56px; text-align: center; line-height: 1.25; }
+.fc-name { font-size: 14px; font-weight: 600; color: var(--on-photo-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.fc-day.today .fc-name { color: var(--on-photo); }
+.fc-icon { font-size: 26px; line-height: 1.35; }
+.fc-temp { font-size: 15px; white-space: nowrap; color: var(--on-photo-muted); }
+.fc-temp b { color: var(--on-photo); font-weight: 600; }
+.fc-pop { font-size: 12px; color: #bfe0ff; white-space: nowrap; }
 
 /* ---------------------------------------------------------------- cards */
 
@@ -187,6 +234,8 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 .chores { grid-area: chores; }
 .grocery { grid-area: grocery; }
 .nest { grid-area: nest; }
+.spotify { grid-area: spotify; }
+.card[hidden] { display: none; }
 .nest[hidden] { display: none; }
 
 /* ---------------------------------------------------------------- thermostats */
@@ -316,3 +365,69 @@ body.is-night #hub { visibility: hidden; }
   100% { transform: translate3d(var(--drift), 420px, 0) rotate(540deg); opacity: 0; }
 }
 .chores { position: relative; overflow: hidden; }
+
+/* ---------------------------------------------------------------- spotify */
+
+.spotify { flex-direction: row; align-items: center; gap: 14px; padding: 12px 14px; }
+.sp-art {
+  width: 64px; height: 64px; flex: none; border-radius: 10px; background-size: cover; background-position: center;
+  background-color: rgba(29, 185, 84, 0.35); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.sp-info { flex: 1; min-width: 0; }
+.sp-title { font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-artist { font-size: 15px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.sp-bar { height: 4px; border-radius: 2px; background: var(--line); margin-top: 8px; overflow: hidden; }
+.sp-progress { height: 100%; width: 0; background: #1db954; border-radius: 2px; }
+.sp-ctrl { display: flex; align-items: center; gap: 6px; flex: none; }
+.sp-ctrl button {
+  width: 40px; height: 40px; border: 0; border-radius: 50%; padding: 0; background: transparent; color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+}
+.sp-ctrl button svg { width: 22px; height: 22px; fill: currentColor; }
+.sp-ctrl .sp-main { width: 48px; height: 48px; background: #1db954; color: #fff; }
+.sp-ctrl .sp-main svg { width: 26px; height: 26px; }
+.sp-ctrl button:active { transform: scale(0.92); }
+.spotify.paused .sp-title, .spotify.paused .sp-artist { opacity: 0.6; }
+
+/* ---------------------------------------------------------------- timers */
+
+body.has-timers .credit { visibility: hidden; }
+.timer-btn {
+  flex: none; border: 0; border-radius: 999px; padding: 6px 14px; font-size: 15px; font-weight: 600;
+  background: rgba(255, 255, 255, 0.18); color: var(--on-photo);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.timer-btn:active { transform: scale(0.96); }
+
+/* Running timers: compact pills in the empty middle of the bottom bar (also shown
+   over the night screen). A finished timer grows, turns red and pulses. */
+.timers {
+  position: fixed; left: 50%; bottom: max(6px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 15;
+  display: flex; flex-direction: row; align-items: flex-end; gap: 8px; pointer-events: none;
+}
+.timer {
+  pointer-events: auto; display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 4px 5px 4px 14px; border-radius: 999px;
+  background: rgba(20, 24, 32, 0.78); color: #fff; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  animation: fade-in 0.3s ease both;
+}
+.timer .t-left { font-size: 22px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.timer .t-label { font-size: 13px; opacity: 0.75; }
+.timer .t-x {
+  width: 28px; height: 28px; border-radius: 50%; border: 0; padding: 0;
+  background: rgba(255, 255, 255, 0.16); color: #fff; font-size: 14px;
+}
+.timer.done { background: var(--accent); padding: 10px 10px 10px 22px; gap: 12px; animation: ring 1s ease-in-out infinite; }
+.timer.done .t-left { font-size: 30px; }
+.timer.done .t-label { opacity: 1; font-weight: 600; font-size: 18px; }
+.timer.done .t-x { width: 38px; height: 38px; font-size: 18px; }
+@keyframes ring { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+
+.timer-card { width: 520px; }
+.presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 16px; }
+.presets button {
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 14px;
+  padding: 16px 0; font-size: 20px; font-weight: 600;
+}
+.presets button:active { background: var(--accent-soft); }

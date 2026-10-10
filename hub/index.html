@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#1d2733">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-180.png">
-  <link rel="stylesheet" href="hub.css?v=2026-10-10.1">
+  <link rel="stylesheet" href="hub.css?v=2026-10-10.2">
 </head>
 <body>
   <div class="backdrop" aria-hidden="true">
@@ -51,12 +51,54 @@
       <ul id="grocery" class="tasks"></ul>
     </section>
 
+    <section id="spotify-card" class="card spotify" hidden>
+      <div id="sp-art" class="sp-art"></div>
+      <div class="sp-info">
+        <div id="sp-title" class="sp-title"></div>
+        <div id="sp-artist" class="sp-artist"></div>
+        <div class="sp-bar"><div id="sp-progress" class="sp-progress"></div></div>
+      </div>
+      <div class="sp-ctrl">
+        <button type="button" data-sp="previous" aria-label="Previous">
+          <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg></button>
+        <button type="button" id="sp-toggle" data-sp="toggle" aria-label="Play or pause" class="sp-main">
+          <svg id="sp-icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="sp-icon-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+        <button type="button" data-sp="next" aria-label="Next">
+          <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg></button>
+      </div>
+    </section>
+
     <footer class="status">
       <span id="status-text"></span>
       <a id="credit" class="credit" target="_blank" rel="noopener"></a>
+      <button id="open-timers" class="timer-btn" type="button">⏲️ Timer</button>
       <button id="open-settings" class="gear" aria-label="Settings">⚙︎</button>
     </footer>
   </main>
+
+  <div id="timers" class="timers"></div>
+
+  <div id="timer-picker" class="modal" hidden>
+    <div class="modal-card timer-card">
+      <h2>Kitchen timer</h2>
+      <div class="presets">
+        <button type="button" data-min="1">1 min</button>
+        <button type="button" data-min="3">3 min</button>
+        <button type="button" data-min="5">5 min</button>
+        <button type="button" data-min="10">10 min</button>
+        <button type="button" data-min="15">15 min</button>
+        <button type="button" data-min="20">20 min</button>
+        <button type="button" data-min="30">30 min</button>
+        <button type="button" data-min="45">45 min</button>
+        <button type="button" data-min="60">1 hour</button>
+      </div>
+      <div class="actions">
+        <button type="button" id="timer-custom">Custom…</button>
+        <button type="button" id="timer-close" class="primary">Done</button>
+      </div>
+    </div>
+  </div>
 
   <div id="night" class="night" hidden>
     <div id="night-time" class="night-time"></div>
@@ -90,7 +132,7 @@
 
   <!-- Bump this version (here, on both asset URLs, and in version.json) with every
        change so wall displays pick it up instead of a cached copy. -->
-  <script>window.HUB_VERSION = "2026-10-10.1";</script>
-  <script src="hub.js?v=2026-10-10.1"></script>
+  <script>window.HUB_VERSION = "2026-10-10.2";</script>
+  <script src="hub.js?v=2026-10-10.2"></script>
 </body>
 </html>
