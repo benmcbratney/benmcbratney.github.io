@@ -90,9 +90,16 @@ be in the Google Home app (not an old Nest account), on a personal Gmail account
 ## 4. Optional: Spotify "now playing" (~10 min, free)
 
 Adds a card under the calendar with album art, the song and artist, a progress bar,
-and ⏮ ⏯ ⏭. It shows up whenever something is playing on your Spotify account (phone,
-speaker, Echo, …) and hides itself otherwise. Seeing what's playing works on any
-account; **play/pause/skip need Spotify Premium** (Spotify's rule).
+and ⏮ ⏯ ⏭ for whatever's playing on your Spotify account (phone, speaker, Echo, …).
+When nothing's playing it says so. **Tap the card** for a music picker: choose a
+speaker under "Play on" and tap a playlist (yours and ones you follow, up to 100).
+Tapping a different speaker while music is playing moves it there. Smart speakers
+like Echo only appear while they're awake, so say "Alexa, open Spotify" (or play
+something on it once) and tap ↻. Seeing what's playing works on any account;
+**play/pause/skip and starting music need Spotify Premium** (Spotify's rule).
+
+> Connected Spotify before the music picker existed? Re-run step 4 (`/spotify/connect`)
+> once and replace `SPOTIFY_REFRESH_TOKEN`, because playlists need an extra permission.
 
 > If you set up the Worker before Spotify support existed, re-paste the latest
 > `worker/worker.js` into the Cloudflare editor and Deploy first.
