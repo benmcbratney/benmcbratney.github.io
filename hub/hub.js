@@ -604,6 +604,22 @@
   function vsLine(g) { return (g.home ? "vs " : "@ ") + g.them; }
 
   var SHORT_NAMES = { Blackhawks: "Hawks", Northwestern: "NU" };
+
+  // Team logo from ESPN (via the Worker), or the team's emoji if there isn't one or it
+  // fails to load. Northwestern has two teams, so its logo keeps the sport emoji beside it.
+  function teamMark(t, cls) {
+    var box = el("span", cls);
+    if (!t.logo) { box.textContent = t.emoji; return box; }
+    var img = document.createElement("img");
+    img.alt = "";
+    img.src = t.logo;
+    img.onerror = function () { box.textContent = t.emoji; };
+    box.appendChild(img);
+    return box;
+  }
+  function needsSport(t) {
+    return !!t.logo && sports.filter(function (x) { return x.name === t.name; }).length > 1;
+  }
   // "Today 6p" / "Tmrw 12p" (tiles only ever show today's and tomorrow's games).
   function shortWhen(ms, now) {
     return gameWhen(ms, now).replace("Tomorrow", "Tmrw");
@@ -635,8 +651,8 @@
       var final = r === 1 || r === 2 ? t.last : null;
       var g = t.live || final || t.next;
       var tile = el("div", "sm-tile" + (t.live ? " live" : ""));
-      tile.appendChild(el("span", "sm-emoji", t.emoji));
-      var info = el("span", "sm-name", SHORT_NAMES[t.name] || t.name);
+      tile.appendChild(teamMark(t, "sm-emoji"));
+      var info = el("span", "sm-name", (SHORT_NAMES[t.name] || t.name) + (needsSport(t) ? " " + t.emoji : ""));
       info.appendChild(el("span", "sm-opp", " " + opp(g)));
       tile.appendChild(info);
       var main = el("span", "sm-result");
@@ -663,8 +679,8 @@
     sports.forEach(function (t) {
       var row = el("div", "sc-row" + (t.live ? " live" : ""));
       var who = el("div", "sc-team");
-      who.appendChild(el("span", "sc-emoji", t.emoji));
-      var nm = el("div", "sc-name", t.name);
+      who.appendChild(teamMark(t, "sc-emoji"));
+      var nm = el("div", "sc-name", t.name + (needsSport(t) ? " " + t.emoji : ""));
       if (t.record) nm.appendChild(el("span", "sc-record", t.record));
       who.appendChild(nm);
       row.appendChild(who);
