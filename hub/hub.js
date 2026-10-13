@@ -1045,6 +1045,7 @@
   var GROCERY_STAPLES = [
     "Milk", "Sandy bread", "Kids yogurt", "Dad yogurt", "Bagels", "Mofns",
     "Bananas", "Strawberries", "Blueberries", "Turkey", "Cheese",
+    "Egg sandies", "Cold brew", "French toast stix", "Chips",
   ];
   var HISTORY_KEY = "homehub.groceryHistory";
   var groceryHistory = { counts: {}, seen: [] };
