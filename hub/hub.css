@@ -492,8 +492,21 @@ body.is-night #hub { visibility: hidden; }
   font-size: 14px; line-height: 24px; text-align: center; text-shadow: none;
 }
 .list-pill.has-items .pill-count { background: var(--accent); }
-.list-card { position: relative; overflow: hidden; }
-.list-tasks { max-height: 260px; margin-top: 8px; }
+/* List pop-up: the list on the left, add buttons on the right, so it fits on screen
+   no matter how long either gets (each side scrolls if it has to). */
+.modal-card.list-card {
+  position: relative; overflow: hidden; width: 960px; max-height: calc(100% - 32px);
+  display: grid; grid-template-columns: 300px 1fr; grid-template-rows: auto auto 1fr auto; column-gap: 22px;
+}
+.list-card > h2 { grid-column: 1 / -1; }
+.list-card > .list-tasks { grid-column: 1; grid-row: 2 / 4; margin-top: 8px; min-height: 0; max-height: none; }
+.list-card > .music-label { grid-column: 2; grid-row: 2; }
+.list-card > .chips {
+  grid-column: 2; grid-row: 3; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  margin: 8px 0 12px; align-content: start;
+}
+.list-card > .actions { grid-column: 1 / -1; }
+.list-card .chip { padding: 12px 6px; font-size: 17px; }
 
 /* Running timers: big pills across the top center of the screen (also shown over the
    night clock). A finished timer becomes the full-screen alert below. */
