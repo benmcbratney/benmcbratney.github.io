@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Office TV</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#11161d">
+  <link rel="stylesheet" href="tv.css?v=2026-10-19.2">
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <div id="bg-a" class="bg-layer"></div>
+    <div id="bg-b" class="bg-layer"></div>
+  </div>
+
+  <!-- Laid out on a fixed 1920×1080 canvas and scaled to fit, so it looks the same
+       whatever size the TV's browser reports. -->
+  <main id="stage">
+    <header class="top">
+      <div class="clock">
+        <div id="time" class="time">--:--</div>
+        <div id="date" class="date"></div>
+        <div id="precip-alert" class="precip-alert" hidden></div>
+      </div>
+      <div id="weather" class="weather"></div>
+    </header>
+
+    <section class="card timeline-card">
+      <div class="tl-head">
+        <h2>📅 Today</h2>
+        <div id="tl-summary" class="tl-summary"></div>
+        <div id="tl-allday" class="tl-allday"></div>
+      </div>
+      <div id="timeline" class="timeline"></div>
+    </section>
+
+    <div class="col col-left">
+      <section id="next-card" class="card next-card">
+        <div class="next-body">
+          <div id="next-label" class="next-label"></div>
+          <div id="next-title" class="next-title"></div>
+          <div id="next-count" class="next-count"></div>
+          <div id="next-when" class="next-when"></div>
+          <div id="next-after" class="next-after"></div>
+        </div>
+      </section>
+      <section id="spotify-card" class="card spotify" hidden>
+        <div id="sp-art" class="sp-art"></div>
+        <div class="sp-info">
+          <div id="sp-title" class="sp-title"></div>
+          <div id="sp-artist" class="sp-artist"></div>
+          <div class="sp-bar"><div id="sp-progress" class="sp-progress"></div></div>
+        </div>
+        <div id="sp-state" class="sp-state"></div>
+      </section>
+    </div>
+
+    <div class="col col-right">
+      <section id="scores-card" class="card scores-card" hidden>
+        <h2>🏆 Scores</h2>
+        <div id="live-game" class="live-game" hidden></div>
+        <div id="scores" class="scores"></div>
+      </section>
+      <section id="news-card" class="card news-card" hidden>
+        <h2>📰 Headlines</h2>
+        <div id="news" class="news"></div>
+      </section>
+    </div>
+
+    <footer class="status"><span id="status-text"></span></footer>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <div id="night" class="night" hidden>
+    <div id="night-time" class="night-time"></div>
+    <div id="night-next" class="night-next"></div>
+  </div>
+
+  <!-- Bump this version (here, on both asset URLs, in ../index.html and in ../version.json)
+       with every change so the TV and the iPad pick it up instead of a cached copy. -->
+  <script>window.HUB_VERSION = "2026-10-19.2";</script>
+  <script src="tv.js?v=2026-10-19.2"></script>
+</body>
+</html>

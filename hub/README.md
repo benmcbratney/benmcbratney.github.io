@@ -28,6 +28,7 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `GROCERY_PROJECT` | Text | Todoist project name, default `Groceries` |
    | `FAMILY` | Secret | optional, picks out family birthdays for the countdowns (see below) |
    | `KIDS_QUICK_ADD` | Text | optional JSON list of one-tap buttons for the Kids list, e.g. `["Kid One school clothes","More pull-ups"]` |
+   | `TV_CALENDARS` | Text | optional, which calendars the office TV shows, e.g. `Work` (see [Office TV](#office-tv-fire-tv)) |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
    ⚙ Settings → pick the calendar → *Integrate calendar* → **Secret address in iCal format**.
@@ -120,6 +121,41 @@ something on it once) and tap ↻. Seeing what's playing works on any account;
 If the sign-in page says the user isn't registered, add your Spotify email under the
 app's **User Management** in the Spotify dashboard (new apps start in development mode).
 
+## Office TV (Fire TV)
+
+A second, look-only board at `https://benmcbratney.com/hub/tv/` for the Fire TV in the
+office, built for a 1080p/4K TV read from the desk. It uses the same Worker:
+
+- **Clock, weather and air quality:** current conditions, sunset (sunrise after dark), the
+  US air quality index from Open-Meteo with the EPA's color, a 5-day strip, and the same
+  rain/snow heads-up as the iPad.
+- **Today timeline:** the work day left to right (default 8a–6p, stretched for anything
+  earlier or later) with meetings as blocks, overlaps stacked, a red "now" line, and open
+  time from now to the end of the day outlined in green. The longest open stretch (an hour
+  or more) is marked "Focus". All-day events show as chips above it.
+- **Next meeting countdown:** "Next up · Design review · in 42 min". Turns amber at
+  5 minutes (counting down m:ss) and pulses red in the last minute. During a meeting it shows
+  how long is left and what's after. Zoom/Meet/Teams/Webex links show as just the service name.
+- **Scores:** the iPad's one-line-per-team list. When a team is playing, a big scoreboard
+  takes over the column, with ESPN's live win probability when it has one (mostly football
+  and basketball). Quiet stretches show the next few games instead.
+- **Headlines:** recent ESPN stories tagged with your teams (hidden during a game).
+- **Spotify:** now playing. The remote's ⏯ and ⏪/⏩ buttons play/pause and skip.
+- **After hours** (8pm–7am by default; see `on` below) the screen goes black with a dim clock,
+  unless a game is on. Any remote button wakes it for 5 minutes.
+
+**Which calendars:** add your work calendar to `CALENDARS` like any other (Outlook:
+Settings → Calendar → Shared calendars → *Publish a calendar* → ICS link; a Google Workspace
+calendar: the same *Secret address in iCal format*, if your company allows it). Then set
+`TV_CALENDARS` to its name, e.g. `Work` (or `Work, Ben` for more than one). Without it, the
+TV shows every calendar. The iPad isn't affected.
+
+**Settings** come from a one-time link, like the iPad's (there's no keyboard worth typing on):
+`https://benmcbratney.com/hub/tv/#worker=https://home-hub.YOURNAME.workers.dev&key=YOUR_HUB_KEY`.
+Optional extras: `&work=8-18` (timeline hours), `&on=7-20` (when the screen is lit),
+`&place=…&lat=…&lon=…` (weather location; defaults to Lake Forest). Without a Worker it
+runs on demo data.
+
 ## Smart home (later)
 
 Kasa, WiZ, iRobot and friends can only be reached from inside the house, so they go
@@ -193,8 +229,9 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Reloads itself at 3:30am to keep memory in check.
 - Updates itself: every 10 minutes (and whenever it's reopened) it checks `version.json`; when a
   newer version is published it reloads through a fresh URL, so the iPad never sticks on cached files.
-  **When changing the hub, bump the version** in `version.json` and in `index.html` (the
-  `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`).
+  **When changing the hub, bump the version** in `version.json`, in `index.html` (the
+  `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`) and in `tv/index.html` (same
+  idea), since the iPad and the TV share `version.json`.
 - Weather comes from Open-Meteo (free, no key).
 - Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
   "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
