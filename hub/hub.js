@@ -264,6 +264,28 @@
     85: ["🌨️", "Snow showers"], 86: ["❄️", "Snow showers"],
     95: ["⛈️", "Thunderstorms"], 96: ["⛈️", "T-storms + hail"], 99: ["⛈️", "T-storms + hail"],
   };
+  // Drawn icons for the 5-day strip. On the wall iPad some emoji (☀️ in particular) came
+  // out as blank boxes in that strip only, so it uses these instead of the emoji font.
+  var SVG_SUN = '<circle cx="12" cy="12" r="5" fill="#ffc531"/><g stroke="#ffc531" stroke-width="2" stroke-linecap="round">' +
+    '<path d="M12 2.5v2.5M12 19v2.5M2.5 12h2.5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></g>';
+  var SVG_CLOUD = '<path d="M10 27h14.5a5.5 5.5 0 0 0 .6-10.97A7.5 7.5 0 0 0 10.6 14.6 6.2 6.2 0 0 0 10 27z" fill="#fff" stroke="#c9d1db" stroke-width="1"/>';
+  var SVG_CLOUD_DARK = '<path d="M10 23h14.5a5.5 5.5 0 0 0 .6-10.97A7.5 7.5 0 0 0 10.6 10.6 6.2 6.2 0 0 0 10 23z" fill="#e3e8ee" stroke="#aeb7c2" stroke-width="1"/>';
+  function wxSvg(code) {
+    var body;
+    if (code === 0) body = '<g transform="translate(4 4)">' + SVG_SUN + '</g>';
+    else if (code === 1 || code === 2) body = '<g transform="translate(-1 -1) scale(.9)">' + SVG_SUN + '</g>' + SVG_CLOUD;
+    else if (code === 3) body = '<g transform="translate(0 -2)">' + SVG_CLOUD + '</g>';
+    else if (code === 45 || code === 48) body = SVG_CLOUD_DARK + '<g stroke="#c9d1db" stroke-width="2" stroke-linecap="round"><path d="M7 26.5h18M10 30h14"/></g>';
+    else if ((code >= 71 && code <= 77) || code === 85 || code === 86)
+      body = SVG_CLOUD_DARK + '<g fill="#fff" stroke="#9fb3c8" stroke-width=".8"><circle cx="11" cy="27" r="1.8"/><circle cx="17" cy="29" r="1.8"/><circle cx="23" cy="27" r="1.8"/></g>';
+    else if (code >= 95)
+      body = SVG_CLOUD_DARK + '<path d="M17 22l-4 6h4l-2 4 6-7h-4l2-3z" fill="#ffc531"/>';
+    else if (code >= 51)
+      body = SVG_CLOUD_DARK + '<g stroke="#4a90d9" stroke-width="2" stroke-linecap="round"><path d="M11 26l-1.2 3M17 26l-1.2 3M23 26l-1.2 3"/></g>';
+    else body = SVG_CLOUD;
+    return '<svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">' + body + '</svg>';
+  }
+
   function wmo(code, isDay) {
     var w = WMO[code] || ["🌡️", ""];
     if (!isDay && (code === 0 || code === 1)) return ["🌙", w[1]];
@@ -300,7 +322,10 @@
           var dd = parseWall(day.time[i]);
           var cell = el("div", "fc-day" + (i === 0 ? " today" : ""));
           cell.appendChild(el("div", "fc-name", i === 0 ? "Today" : DAY_NAMES[dd.getDay()].slice(0, 3)));
-          cell.appendChild(el("div", "fc-icon", wmo(day.weather_code[i], 1)[0]));
+          var ic = el("div", "fc-icon");
+          ic.innerHTML = wxSvg(day.weather_code[i]);
+          ic.title = wmo(day.weather_code[i], 1)[1];
+          cell.appendChild(ic);
           var temps = el("div", "fc-temp");
           temps.appendChild(el("b", null, Math.round(day.temperature_2m_max[i]) + "°"));
           temps.appendChild(document.createTextNode(" " + Math.round(day.temperature_2m_min[i]) + "°"));
