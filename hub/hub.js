@@ -253,19 +253,19 @@
   // ------------------------------------------------------------- weather (Open-Meteo, no key)
 
   var WMO = {
-    0: ["☀️", "Clear"], 1: ["🌤", "Mostly clear"], 2: ["⛅️", "Partly cloudy"], 3: ["☁️", "Cloudy"],
-    45: ["🌫", "Fog"], 48: ["🌫", "Freezing fog"],
-    51: ["🌦", "Light drizzle"], 53: ["🌦", "Drizzle"], 55: ["🌧", "Heavy drizzle"],
-    56: ["🌧", "Freezing drizzle"], 57: ["🌧", "Freezing drizzle"],
-    61: ["🌦", "Light rain"], 63: ["🌧", "Rain"], 65: ["🌧", "Heavy rain"],
-    66: ["🌧", "Freezing rain"], 67: ["🌧", "Freezing rain"],
-    71: ["🌨", "Light snow"], 73: ["🌨", "Snow"], 75: ["❄️", "Heavy snow"], 77: ["🌨", "Snow grains"],
-    80: ["🌦", "Showers"], 81: ["🌧", "Showers"], 82: ["⛈", "Heavy showers"],
-    85: ["🌨", "Snow showers"], 86: ["❄️", "Snow showers"],
-    95: ["⛈", "Thunderstorms"], 96: ["⛈", "T-storms + hail"], 99: ["⛈", "T-storms + hail"],
+    0: ["☀️", "Clear"], 1: ["🌤️", "Mostly clear"], 2: ["⛅️", "Partly cloudy"], 3: ["☁️", "Cloudy"],
+    45: ["🌫️", "Fog"], 48: ["🌫️", "Freezing fog"],
+    51: ["🌦️", "Light drizzle"], 53: ["🌦️", "Drizzle"], 55: ["🌧️", "Heavy drizzle"],
+    56: ["🌧️", "Freezing drizzle"], 57: ["🌧️", "Freezing drizzle"],
+    61: ["🌦️", "Light rain"], 63: ["🌧️", "Rain"], 65: ["🌧️", "Heavy rain"],
+    66: ["🌧️", "Freezing rain"], 67: ["🌧️", "Freezing rain"],
+    71: ["🌨️", "Light snow"], 73: ["🌨️", "Snow"], 75: ["❄️", "Heavy snow"], 77: ["🌨️", "Snow grains"],
+    80: ["🌦️", "Showers"], 81: ["🌧️", "Showers"], 82: ["⛈️", "Heavy showers"],
+    85: ["🌨️", "Snow showers"], 86: ["❄️", "Snow showers"],
+    95: ["⛈️", "Thunderstorms"], 96: ["⛈️", "T-storms + hail"], 99: ["⛈️", "T-storms + hail"],
   };
   function wmo(code, isDay) {
-    var w = WMO[code] || ["🌡", ""];
+    var w = WMO[code] || ["🌡️", ""];
     if (!isDay && (code === 0 || code === 1)) return ["🌙", w[1]];
     return w;
   }
@@ -534,7 +534,7 @@
       var run = slots.slice(firstWet);
       var snow = run.some(function (s) { return wet(s) && s.snowCm >= 0.05; });
       var word = snow ? "Snow" : "Rain";
-      var icon = snow ? "🌨" : "☔";
+      var icon = snow ? "🌨️" : "☔";
       var start = new Date(slots[firstWet].end - Q);
       if (start <= now) {
         // Already falling: say when it lets up, if that's within the hour.
@@ -553,7 +553,7 @@
     });
     if (best >= 50) {
       var cold = precip.tempF != null && precip.tempF <= 34;
-      return { text: (cold ? "🌨 " : "☔ ") + best + "% chance of " + (cold ? "snow" : "rain") + " this hour", snow: cold };
+      return { text: (cold ? "🌨️ " : "☔ ") + best + "% chance of " + (cold ? "snow" : "rain") + " this hour", snow: cold };
     }
     return null;
   }
