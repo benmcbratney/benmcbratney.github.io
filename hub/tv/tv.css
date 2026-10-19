@@ -1,0 +1,254 @@
+/* Office TV — a look-only board for a Fire TV, drawn on a 1920×1080 canvas that
+   tv.js scales to fit. Read from a desk a few feet away, so everything is big. */
+
+:root {
+  --ink: #f3f5f8;
+  --muted: #a3afbd;
+  --faint: #6f7b89;
+  --card: rgba(13, 18, 26, 0.74);
+  --card-line: rgba(255, 255, 255, 0.09);
+  --track: rgba(255, 255, 255, 0.07);
+  --amber: #f5b041;
+  --red: #ef5350;
+  --green: #5fbf7a;
+  --blue: #4f8cff;
+  --radius: 26px;
+  --photo-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #11161d;
+  color: var(--ink);
+  font-family: Roboto, "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  cursor: none;
+}
+
+h2 { margin: 0; font-size: 30px; font-weight: 600; color: var(--muted); letter-spacing: 0.3px; }
+[hidden] { display: none !important; }
+
+/* ---------------------------------------------------------------- photo backdrop */
+
+.backdrop { position: fixed; inset: 0; background: linear-gradient(160deg, #2c3e52, #11161d); }
+.bg-layer {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: 0; transition: opacity 2.5s ease;
+}
+.bg-layer.show { opacity: 1; }
+/* Always darkened: the cards sit on it all day and the TV is bright. */
+.backdrop::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(5, 9, 16, 0.55), rgba(5, 9, 16, 0.42) 30%, rgba(5, 9, 16, 0.62));
+}
+.backdrop.dim::after { background: rgba(5, 9, 18, 0.74); }
+
+/* ---------------------------------------------------------------- layout */
+
+#stage {
+  position: absolute; left: 0; top: 0;
+  width: 1920px; height: 1080px;
+  transform-origin: 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top top"
+    "tl tl"
+    "left right"
+    "status status";
+  gap: 24px 28px;
+  /* ~3% inside the edges, in case the TV crops (overscan). */
+  padding: 34px 60px 12px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius);
+  padding: 22px 30px;
+  min-height: 0;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.col { display: flex; flex-direction: column; gap: 24px; min-height: 0; min-width: 0; }
+.col-left { grid-area: left; }
+.col-right { grid-area: right; }
+
+/* ---------------------------------------------------------------- header */
+
+.top { grid-area: top; display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; text-shadow: var(--photo-shadow); }
+.clock { flex: 1; min-width: 0; }
+.time { font-size: 128px; font-weight: 200; letter-spacing: -4px; line-height: 0.92; font-variant-numeric: tabular-nums; }
+.time .ampm { font-size: 40px; font-weight: 400; letter-spacing: 0; margin-left: 10px; color: var(--muted); }
+.date { font-size: 38px; font-weight: 500; margin-top: 6px; white-space: nowrap; }
+.precip-alert {
+  display: inline-block; margin-top: 10px; padding: 6px 20px; border-radius: 999px;
+  background: rgba(47, 123, 214, 0.92); font-size: 26px; font-weight: 600;
+  white-space: nowrap; text-shadow: none;
+}
+.precip-alert.snow { background: rgba(110, 130, 175, 0.92); }
+
+.weather { display: flex; align-items: flex-end; gap: 36px; }
+.wx-detail { font-size: 26px; line-height: 1.45; color: var(--muted); text-align: right; white-space: nowrap; }
+.wx-detail b { display: block; color: var(--ink); font-size: 32px; font-weight: 600; }
+.wx-now { display: flex; align-items: center; gap: 10px; line-height: 1; }
+.wx-icon { font-size: 84px; }
+.wx-temp { font-size: 112px; font-weight: 200; letter-spacing: -3px; }
+.aqi { display: inline-flex; align-items: center; gap: 10px; }
+.aqi-dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35); }
+.wx-strip { display: flex; gap: 6px; }
+.fc-day {
+  width: 112px; padding: 10px 0 8px; text-align: center; border-radius: 18px;
+  background: rgba(13, 18, 26, 0.5); text-shadow: none;
+}
+.fc-day.today { background: rgba(255, 255, 255, 0.14); }
+.fc-name { font-size: 22px; font-weight: 600; color: var(--muted); }
+.fc-icon { font-size: 40px; margin: 4px 0; }
+.fc-temp { font-size: 24px; color: var(--muted); white-space: nowrap; }
+.fc-temp b { color: var(--ink); font-weight: 600; }
+.fc-pop { font-size: 20px; color: #8cc0ff; height: 24px; }
+
+/* ---------------------------------------------------------------- day timeline */
+
+.timeline-card { grid-area: tl; padding: 16px 30px 12px; }
+.tl-head { display: flex; align-items: baseline; gap: 26px; margin-bottom: 10px; min-width: 0; }
+.tl-head h2 { color: var(--ink); flex: none; }
+.tl-summary { font-size: 26px; color: var(--muted); white-space: nowrap; flex: none; }
+.tl-allday { display: flex; gap: 10px; justify-content: flex-end; flex: 1; min-width: 0; overflow: hidden; }
+.tl-chip {
+  font-size: 22px; padding: 4px 16px; border-radius: 999px; white-space: nowrap;
+  background: rgba(255, 255, 255, 0.1); border-left: 6px solid var(--blue);
+  overflow: hidden; text-overflow: ellipsis; max-width: 460px;
+}
+
+.timeline { position: relative; height: 104px; margin-bottom: 30px; }
+.tl-track { position: absolute; inset: 0; background: var(--track); border-radius: 14px; }
+.tl-past { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0, 0, 0, 0.32); border-radius: 14px 0 0 14px; z-index: 3; pointer-events: none; }
+.tl-tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.09); }
+.tl-hour { position: absolute; top: 100%; margin-top: 4px; transform: translateX(-50%); font-size: 20px; color: var(--faint); white-space: nowrap; }
+.tl-free {
+  position: absolute; top: 6px; bottom: 6px; z-index: 1;
+  border: 2px dashed rgba(95, 191, 122, 0.45); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(140, 220, 160, 0.85); font-size: 22px; font-weight: 600; white-space: nowrap; overflow: hidden;
+}
+.tl-free.best { border-style: solid; border-color: rgba(95, 191, 122, 0.9); background: rgba(95, 191, 122, 0.14); color: #a8ecbb; }
+.tl-event {
+  position: absolute; z-index: 2;
+  border-radius: 10px; padding: 4px 7px;
+  background: rgba(79, 140, 255, 0.85);
+  font-size: 20px; font-weight: 600; line-height: 1.15; overflow: hidden;
+  border: 2px solid rgba(13, 18, 26, 0.9);
+}
+.tl-event .tl-ev-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tl-event .tl-ev-time { display: block; font-weight: 400; font-size: 18px; opacity: 0.85; white-space: nowrap; overflow: hidden; }
+.tl-event.lanes .tl-ev-title { -webkit-line-clamp: 1; }
+.tl-event.now { box-shadow: 0 0 0 3px #fff; }
+.tl-now { position: absolute; top: -10px; bottom: -10px; width: 4px; margin-left: -2px; background: var(--red); border-radius: 2px; z-index: 4; box-shadow: 0 0 12px rgba(239, 83, 80, 0.8); }
+.tl-now::before { content: ""; position: absolute; top: -6px; left: -6px; width: 16px; height: 16px; border-radius: 50%; background: var(--red); }
+.tl-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--muted); z-index: 2; }
+
+/* ---------------------------------------------------------------- next meeting */
+
+.next-card { flex: 1 1 0; display: flex; flex-direction: column; padding: 20px 40px; transition: background 0.6s; }
+/* Centered when it fits; top-aligned (never clipped at the top) when it doesn't. */
+.next-body { margin: auto 0; }
+.next-label { font-size: 26px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+.next-label .badge { display: inline-block; padding: 2px 14px; border-radius: 8px; background: var(--red); color: #fff; letter-spacing: 2px; margin-right: 12px; }
+.next-title { font-size: 48px; font-weight: 600; line-height: 1.12; margin-top: 6px; flex: none; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.next-count { font-size: 88px; font-weight: 300; letter-spacing: -2px; line-height: 1.05; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.next-count small { font-size: 40px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.next-when { font-size: 28px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.next-after { font-size: 24px; color: var(--faint); margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.next-after:empty { display: none; }
+.next-card.soon { background: rgba(120, 78, 10, 0.82); border-color: rgba(245, 176, 65, 0.6); }
+.next-card.soon .next-count, .next-card.soon .next-label { color: var(--amber); }
+.next-card.urgent { background: rgba(130, 24, 24, 0.86); border-color: rgba(239, 83, 80, 0.8); animation: pulse 1.6s ease-in-out infinite; }
+.next-card.urgent .next-count, .next-card.urgent .next-label { color: #ffb3b0; }
+.next-card.calm .next-title { font-size: 46px; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(239, 83, 80, 0.35); } }
+
+/* ---------------------------------------------------------------- Spotify */
+
+.spotify { flex: none; display: flex; align-items: center; gap: 24px; padding: 16px 24px; }
+.sp-art { width: 96px; height: 96px; flex: none; border-radius: 14px; background: rgba(255, 255, 255, 0.08) center / cover no-repeat; }
+.sp-info { flex: 1; min-width: 0; }
+.sp-title { font-size: 32px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-artist { font-size: 24px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-bar { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); margin-top: 12px; overflow: hidden; }
+.sp-progress { height: 100%; width: 0; background: var(--green); border-radius: 4px; }
+.sp-state { font-size: 48px; flex: none; color: var(--muted); }
+.spotify.idle .sp-bar, .spotify.idle .sp-state { visibility: hidden; }
+.spotify.paused .sp-progress { background: var(--faint); }
+
+/* ---------------------------------------------------------------- scores */
+
+.scores-card { flex: 1 1 0; display: flex; flex-direction: column; gap: 14px; }
+/* A game is on: the scoreboard gets the whole column; headlines come back after. */
+.col-right.live .news-card { display: none !important; }
+.scores { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow: hidden; }
+.sc-row { display: flex; align-items: center; gap: 18px; font-size: 30px; padding: 8px 4px; border-bottom: 1px solid var(--card-line); }
+.sc-row:last-child { border-bottom: 0; }
+.mark { width: 52px; height: 52px; flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 40px; }
+.mark img { width: 100%; height: 100%; object-fit: contain; }
+/* No logo: the abbreviation in a disc. */
+.mark.abbr { border-radius: 50%; background: rgba(255, 255, 255, 0.14); font-size: 18px; font-weight: 800; letter-spacing: 0.5px; }
+.sc-name { font-weight: 600; white-space: nowrap; }
+.sc-opp { color: var(--muted); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.sc-result { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sc-when { color: var(--muted); }
+.badge-sm { display: inline-block; padding: 1px 10px; border-radius: 6px; font-size: 22px; font-weight: 800; vertical-align: 3px; margin-right: 8px; background: rgba(255, 255, 255, 0.15); }
+.badge-sm.win { background: #2e7d46; }
+.badge-sm.loss { background: #6b6560; }
+.badge-sm.live { background: var(--red); }
+.sc-sub { font-size: 24px; color: var(--muted); margin: 2px 0 6px; }
+
+/* A Chicago team is playing: big scoreboard at the top of the card. */
+.live-game { background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 14px 26px 16px; }
+.lg-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 20px; }
+.lg-side { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.lg-side .mark { width: 76px; height: 76px; font-size: 58px; }
+.lg-side .mark.abbr { font-size: 26px; }
+.lg-name { font-size: 28px; font-weight: 600; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg-score { font-size: 100px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lg-score .dash { color: var(--faint); margin: 0 14px; }
+.lg-detail { text-align: center; font-size: 26px; color: var(--muted); margin-top: 4px; }
+.lg-detail .badge-sm { font-size: 24px; }
+.wp { margin-top: 10px; }
+.wp-label { display: flex; justify-content: space-between; font-size: 22px; color: var(--muted); margin-bottom: 6px; }
+.wp-label b { color: var(--ink); }
+.wp-bar { height: 14px; border-radius: 7px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+.wp-fill { height: 100%; background: var(--blue); border-radius: 7px; transition: width 1s; }
+.more-live { margin-top: 10px; font-size: 24px; color: var(--muted); text-align: center; }
+
+/* ---------------------------------------------------------------- headlines */
+
+.news-card { flex: 1 1 0; display: flex; flex-direction: column; gap: 10px; }
+.news { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.nw-row { display: flex; align-items: flex-start; gap: 18px; padding: 10px 0; border-bottom: 1px solid var(--card-line); }
+.nw-row:last-child { border-bottom: 0; }
+.nw-row .mark { width: 40px; height: 40px; font-size: 30px; margin-top: 2px; }
+.nw-text { flex: 1; min-width: 0; font-size: 27px; line-height: 1.28; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.nw-age { flex: none; font-size: 22px; color: var(--faint); margin-top: 4px; white-space: nowrap; }
+
+/* ---------------------------------------------------------------- status, toast, night */
+
+.status { grid-area: status; font-size: 18px; color: var(--faint); text-align: right; }
+.status .warn { color: #ffb3a5; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%);
+  padding: 18px 40px; border-radius: 999px; background: rgba(13, 18, 26, 0.92);
+  border: 1px solid var(--card-line); font-size: 34px; z-index: 20;
+}
+
+.night { position: fixed; inset: 0; z-index: 10; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #3c434c; }
+.night-time { font-size: 18vh; font-weight: 200; font-variant-numeric: tabular-nums; }
+.night-next { font-size: 3.4vh; margin-top: 1vh; }

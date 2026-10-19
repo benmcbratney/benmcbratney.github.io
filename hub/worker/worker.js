@@ -16,6 +16,8 @@
 //                            {"parents":["Mom","Dad"],"kids":["A","B"],"nicknames":["Ace"],"dog":"Rex"}
 //   KIDS_QUICK_ADD   plain   optional JSON array of one-tap buttons for the Kids card's +,
 //                            e.g. ["A school clothes","B school clothes"]
+//   TV_CALENDARS     plain   optional CALENDARS names the office TV shows, as JSON or a
+//                            comma list, e.g. ["Work"] or Work, Ben (default: all of them)
 //
 // Optional Nest thermostats (Google Device Access — see hub/README.md):
 //   NEST_PROJECT_ID     plain   Device Access project ID
@@ -29,7 +31,7 @@
 //   SPOTIFY_REFRESH_TOKEN  secret  from visiting /spotify/connect once (it shows you the token)
 //
 // Routes (all require header  X-Hub-Key: <HUB_KEY>, except the two Nest setup pages):
-//   GET  /calendar?days=7
+//   GET  /calendar?days=7              add &for=tv for just the TV_CALENDARS
 //   GET  /countdowns                   next year of "⏳"-tagged events and birthdays
 //   GET  /todoist/lists
 //   POST /todoist/close   {"id": "..."}
@@ -47,6 +49,7 @@
 //   POST /spotify/play    {"deviceId": "...", "uri": "spotify:playlist:…"}   (uri optional: just move playback)
 //   GET  /spotify/connect, /spotify/callback   (browser, no key) one-time sign-in
 //   GET  /sports                       last/live/next game for each team (ESPN's free feeds)
+//   GET  /news                         recent ESPN headlines about those teams
 //
 // Optional SPORTS_TEAMS (plain) overrides the default Chicago teams, e.g.
 //   [{"key":"bears","name":"Bears","emoji":"🐻","path":"football/nfl","id":"3"}]
@@ -75,7 +78,8 @@ export default {
     try {
       if (url.pathname === "/calendar" && request.method === "GET") {
         const days = clamp(parseInt(url.searchParams.get("days") || "7", 10), 1, 31);
-        return json(await calendar(env, days));
+        const only = url.searchParams.get("for") === "tv" ? tvCalendars(env) : null;
+        return json(await calendar(env, days, null, only));
       }
       if (url.pathname === "/countdowns" && request.method === "GET") {
         return json(await countdowns(env));
@@ -103,6 +107,9 @@ export default {
       }
       if (url.pathname === "/sports" && request.method === "GET") {
         return json(await sports(env));
+      }
+      if (url.pathname === "/news" && request.method === "GET") {
+        return json(await news(env));
       }
       if (url.pathname === "/family" && request.method === "GET") {
         return json({ family: family(env), kidsQuickAdd: kidsQuickAdd(env) });
@@ -401,8 +408,8 @@ const DEFAULT_TEAMS = [
   { key: "nu-hoops", name: "Northwestern", emoji: "🏀", path: "basketball/mens-college-basketball", id: "77" },
 ];
 
-async function espn(path) {
-  const res = await fetch(ESPN + path, { cf: { cacheTtl: 60, cacheEverything: true } });
+async function espn(path, ttl = 60) {
+  const res = await fetch(ESPN + path, { cf: { cacheTtl: ttl, cacheEverything: true } });
   if (!res.ok) throw new Error(`ESPN ${res.status}`);
   return res.json();
 }
@@ -433,6 +440,7 @@ function espnGame(ev, teamId) {
     themScore: espnScore(them.score),
     them: t.shortDisplayName || t.displayName || t.abbreviation || "?",
     themAbbr: t.abbreviation || "",
+    themLogo: t.logo || (t.logos && t.logos[0] && t.logos[0].href) || null,
     won: status.state === "post" && us.winner != null ? !!us.winner : null,
     tv: (tv.media && tv.media.shortName) || (tv.names && tv.names[0]) || null,
   };
@@ -455,7 +463,13 @@ async function sportsTeam(t) {
   if (live) {
     const sum = await espn(`${t.path}/summary?event=${encodeURIComponent(live.id)}`).catch(() => null);
     const fresh = sum && sum.header && espnGame({ ...sum.header, id: live.id, date: live.start && new Date(live.start).toISOString() }, t.id);
-    if (fresh) live = { ...live, ...fresh, start: live.start };
+    if (fresh) live = { ...live, ...fresh, start: live.start, themLogo: fresh.themLogo || live.themLogo };
+    // ESPN's live win probability (football and basketball mostly), as our side's %.
+    const wp = sum && Array.isArray(sum.winprobability) && sum.winprobability[sum.winprobability.length - 1];
+    if (wp && typeof wp.homeWinPercentage === "number") {
+      const home = wp.homeWinPercentage, tie = wp.tiePercentage || 0;
+      live.winPct = Math.round(100 * (live.home ? home : 1 - home - tie));
+    }
   }
   const now = Date.now();
   const last = games.filter((g) => g.state === "post").sort((a, b) => b.start - a.start)[0] || null;
@@ -474,15 +488,48 @@ function espnLogo(info) {
   return m ? `https://a.espncdn.com/combiner/i?img=${encodeURIComponent(m[1])}&w=80&h=80` : pick.href;
 }
 
+function sportsTeams(env) {
+  if (!env.SPORTS_TEAMS) return DEFAULT_TEAMS;
+  try { return JSON.parse(env.SPORTS_TEAMS).slice(0, 10); } catch { throw new Error("SPORTS_TEAMS isn't valid JSON"); }
+}
+
 async function sports(env) {
-  let teams = DEFAULT_TEAMS;
-  if (env.SPORTS_TEAMS) {
-    try { teams = JSON.parse(env.SPORTS_TEAMS); } catch { throw new Error("SPORTS_TEAMS isn't valid JSON"); }
-  }
-  const out = await Promise.all(teams.slice(0, 10).map((t) =>
+  const teams = sportsTeams(env);
+  const out = await Promise.all(teams.map((t) =>
     sportsTeam(t).catch((err) => ({ key: t.key, name: t.name, emoji: t.emoji, error: err.message }))
   ));
   return { teams: out };
+}
+
+// Headlines: each league's ESPN news feed, kept to the articles tagged with one of our
+// teams. Asks for the team's own feed first and falls back to the league's latest 50.
+function newsTeamMatch(article, id) {
+  return (article.categories || []).some((c) =>
+    c.type === "team" && (String(c.teamId) === id || String(c.team && c.team.id) === id || new RegExp("~t:" + id + "$").test(c.uid || ""))
+  );
+}
+
+async function newsForTeam(t) {
+  const id = String(t.id);
+  const pick = (data) => ((data && data.articles) || []).filter((a) => a.headline && newsTeamMatch(a, id));
+  let articles = pick(await espn(`${t.path}/news?team=${encodeURIComponent(id)}&limit=20`, 600).catch(() => null));
+  if (!articles.length) articles = pick(await espn(`${t.path}/news?limit=50`, 600).catch(() => null));
+  return articles.slice(0, 5).map((a) => ({
+    key: t.key, name: t.name, emoji: t.emoji,
+    headline: a.headline,
+    published: Date.parse(a.published || a.lastModified) || null,
+    premium: !!a.premium,
+  }));
+}
+
+async function news(env) {
+  const lists = await Promise.all(sportsTeams(env).map((t) => newsForTeam(t).catch(() => [])));
+  const seen = new Set();
+  const articles = lists.flat()
+    .sort((a, b) => (b.published || 0) - (a.published || 0))
+    .filter((a) => (seen.has(a.headline) ? false : seen.add(a.headline)))
+    .slice(0, 12);
+  return { articles };
 }
 
 // ---------------------------------------------------------------- Family (personal greetings)
@@ -684,9 +731,19 @@ async function nestSetpoint(env, id, heatC, coolC) {
 // ---------------------------------------------------------------- Calendar
 
 // `keep` optionally narrows which VEVENTs get expanded (see countdowns).
-async function calendar(env, days, keep) {
+// TV_CALENDARS: which CALENDARS (by name) the office TV shows. null means all of them.
+function tvCalendars(env) {
+  const raw = (env.TV_CALENDARS || "").trim();
+  if (!raw) return null;
+  if (raw.startsWith("[")) {
+    try { return JSON.parse(raw).map(String); } catch { throw new Error("TV_CALENDARS isn't valid JSON"); }
+  }
+  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+async function calendar(env, days, keep, only) {
   const tz = env.HOME_TZ || "America/Chicago";
-  const cals = JSON.parse(env.CALENDARS || "[]");
+  const cals = JSON.parse(env.CALENDARS || "[]").filter((c) => !only || only.includes(c.name));
 
   const today = wallParts(new Date(), tz);
   const start = { y: today.y, m: today.m, d: today.d, h: 0, mi: 0, s: 0 };
