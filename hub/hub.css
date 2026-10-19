@@ -153,7 +153,9 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .fc-day { width: 56px; text-align: center; line-height: 1.25; }
 .fc-name { font-size: 14px; font-weight: 600; color: var(--on-photo-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 .fc-day.today .fc-name { color: var(--on-photo); }
-.fc-icon { font-size: 26px; line-height: 1.35; }
+/* Match the hourly pop-up's icons (which render fine on the wall iPad): same size, the
+   emoji font named outright, and no photo text-shadow. In this strip ☀️ drew as a blank box. */
+.fc-icon { font-size: 28px; line-height: 1.25; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; text-shadow: none; }
 .fc-temp { font-size: 15px; white-space: nowrap; color: var(--on-photo-muted); }
 .fc-temp b { color: var(--on-photo); font-weight: 600; }
 .fc-pop { font-size: 12px; color: #bfe0ff; white-space: nowrap; }
