@@ -259,7 +259,7 @@
     img.src = url;
   }
 
-  // ------------------------------------------------------------- weather + air quality (Open-Meteo, no key)
+  // ------------------------------------------------------------- weather (Open-Meteo, no key)
 
   var WMO = {
     0: ["☀️", "Clear"], 1: ["🌤️", "Mostly clear"], 2: ["⛅️", "Partly cloudy"], 3: ["☁️", "Cloudy"],
@@ -280,7 +280,6 @@
   }
 
   var wx = null;  // last forecast
-  var aqi = null; // current US AQI
 
   function loadWeather() {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(settings.lat) +
@@ -302,24 +301,6 @@
       .catch(function (e) { setProblem("weather", e.message); });
   }
 
-  function loadAirQuality() {
-    var url = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + encodeURIComponent(settings.lat) +
-      "&longitude=" + encodeURIComponent(settings.lon) + "&current=us_aqi&timezone=auto";
-    return fetch(url, { cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (d) {
-        aqi = d.current && typeof d.current.us_aqi === "number" ? Math.round(d.current.us_aqi) : null;
-        renderWeather();
-      })
-      .catch(function () { aqi = null; renderWeather(); }); // nice to have; stay quiet
-  }
-
-  // EPA categories and their official colors.
-  function aqiLevel(v) {
-    return v <= 50 ? ["Good", "#00e400"] : v <= 100 ? ["Moderate", "#ffff00"] : v <= 150 ? ["Unhealthy for some", "#ff7e00"]
-      : v <= 200 ? ["Unhealthy", "#ff0000"] : v <= 300 ? ["Very unhealthy", "#8f3f97"] : ["Hazardous", "#7e0023"];
-  }
-
   function renderWeather() {
     if (!wx) return;
     var c = wx.current, day = wx.daily;
@@ -335,15 +316,6 @@
       var sunLine = t < rise ? "🌅 Sunrise " + fmtTime(rise) : t < set ? "🌇 Sunset " + fmtTime(set)
         : day.sunrise[1] ? "🌅 Sunrise " + fmtTime(parseWall(day.sunrise[1])) : "";
       if (sunLine) detail.appendChild(el("div", null, sunLine));
-    }
-    if (aqi != null) {
-      var lvl = aqiLevel(aqi);
-      var row = el("div", "aqi");
-      var dot = el("span", "aqi-dot");
-      dot.style.background = lvl[1];
-      row.appendChild(dot);
-      row.appendChild(document.createTextNode("Air " + aqi + " · " + lvl[0]));
-      detail.appendChild(row);
     }
 
     var nowBox = el("div", "wx-now");
@@ -997,7 +969,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadAirQuality(), loadCalendar(), loadSports(), loadNews(), loadSpotify()]).then(function () {
+    return Promise.all([loadWeather(), loadCalendar(), loadSports(), loadNews(), loadSpotify()]).then(function () {
       renderNews(); // team logos arrive with /sports
       renderStatus();
     });
@@ -1011,7 +983,6 @@
   setInterval(function () { renderTimeline(); renderStatus(); renderWeather(); }, 60 * 1000);
   setInterval(loadCalendar, 5 * MIN);
   setInterval(loadWeather, 15 * MIN);
-  setInterval(loadAirQuality, 30 * MIN);
   setInterval(loadNews, 15 * MIN);
   var sportsTicks = 0;
   setInterval(function () { sportsTicks++; if (sportsLive() || sportsTicks % 5 === 0) loadSports(); }, 60 * 1000);

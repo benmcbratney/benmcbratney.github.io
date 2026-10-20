@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Study</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#2a120b">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Oswald:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=UnifrakturMaguntia&display=swap">
+  <link rel="stylesheet" href="study.css?v=2026-10-20.4">
+</head>
+<body>
+  <!-- Mahogany, drawn once: stretched noise for the grain, then a vignette. -->
+  <svg class="wood" aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 1920 1080">
+    <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.0016 0.055" numOctaves="4" seed="7"/>
+      <feColorMatrix type="matrix" values="0.40 0 0 0 0.16  0.14 0 0 0 0.05  0.08 0 0 0 0.03  0 0 0 0 1"/>
+    </filter>
+    <rect width="1920" height="1080" filter="url(#grain)"/>
+  </svg>
+
+  <!-- A fixed 1920×1080 canvas, scaled to fit whatever size the TV's browser reports. -->
+  <main id="stage">
+    <div class="col-left">
+      <section class="clock-box">
+        <div class="brass-ring">
+          <svg id="clock" class="clock" viewBox="0 0 300 300" aria-hidden="true"></svg>
+        </div>
+        <div class="dateline">
+          <div id="day-name" class="day-name"></div>
+          <div id="date-line" class="date-line"></div>
+        </div>
+      </section>
+
+      <!-- "Days until", as pages torn from a desk calendar. -->
+      <section id="countdowns" class="countdowns" hidden></section>
+
+      <section class="almanac">
+        <div class="alm-head"><span>The Almanac</span><span id="alm-place"></span></div>
+        <div id="alm-now" class="alm-now"></div>
+        <div id="precip-alert" class="stamp" hidden></div>
+        <div id="alm-days" class="alm-days"></div>
+        <div id="alm-sky" class="alm-sky"></div>
+      </section>
+
+      <section id="turntable" class="turntable" hidden>
+        <div class="deck">
+          <div id="record" class="record"><div id="label" class="record-label"></div></div>
+          <svg id="arm" class="arm" viewBox="0 0 60 200" aria-hidden="true">
+            <circle cx="30" cy="22" r="17" class="arm-base"/>
+            <path d="M30 22 L30 150 L18 178" class="arm-rod"/>
+            <rect x="9" y="172" width="16" height="24" rx="3" transform="rotate(25 17 184)" class="arm-head"/>
+          </svg>
+        </div>
+        <div class="tt-info">
+          <div id="tt-kicker" class="kicker">Now playing</div>
+          <div id="tt-title" class="tt-title"></div>
+          <div id="tt-artist" class="tt-artist"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-right">
+      <section class="board-frame">
+        <div class="board">
+          <div class="board-head">
+            <span class="board-title">Departures</span>
+            <span id="plates" class="plates"></span>
+          </div>
+          <div id="banner" class="banner">
+            <div class="banner-text">
+              <div class="banner-kicker"><span id="lamp" class="lamp"></span><span id="banner-kicker"></span></div>
+              <div id="banner-title" class="banner-title"></div>
+              <div id="banner-sub" class="banner-sub"></div>
+            </div>
+            <div class="banner-count">
+              <div id="count" class="flaps big"></div>
+              <div id="count-unit" class="count-unit"></div>
+            </div>
+          </div>
+          <div class="board-cols"><span>Time</span><span>Meeting</span><span>Via</span><span>Status</span></div>
+          <div id="rows" class="rows"></div>
+        </div>
+      </section>
+
+      <section class="ruler-box">
+        <div id="ruler" class="ruler"></div>
+      </section>
+
+      <div class="bottom">
+        <!-- Flips between the scoreboard and a fire in the grate (stays on the scores during a game). -->
+        <div id="flip" class="flip">
+          <div id="flip-inner" class="flip-inner">
+            <section id="scoreboard" class="face scoreboard">
+              <div class="sb-head">
+                <span>Chicago Scoreboard</span>
+                <span id="flag" class="flag" hidden></span>
+              </div>
+              <div id="sb-live" class="sb-live" hidden></div>
+              <div id="sb-rows" class="sb-rows"></div>
+            </section>
+            <section class="face back fireplace" aria-hidden="true">
+              <div class="mantel"></div>
+              <div class="surround">
+                <div class="firebox">
+                  <div id="fire-glow" class="fire-glow"></div>
+                  <canvas id="fire" class="fire" width="400" height="280"></canvas>
+                  <div class="sparks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <svg class="logs" viewBox="0 0 300 80" preserveAspectRatio="xMidYMax meet">
+                    <defs>
+                      <linearGradient id="bark" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#5a3a24"/><stop offset="0.5" stop-color="#3a2416"/><stop offset="1" stop-color="#1c110a"/>
+                      </linearGradient>
+                      <radialGradient id="ring" cx="50%" cy="50%" r="50%">
+                        <stop offset="0" stop-color="#ffb347"/><stop offset="0.35" stop-color="#c8641e"/><stop offset="0.75" stop-color="#6b3418"/><stop offset="1" stop-color="#2a170c"/>
+                      </radialGradient>
+                    </defs>
+                    <g transform="rotate(-8 150 52)">
+                      <rect x="40" y="38" width="190" height="28" rx="14" fill="url(#bark)"/>
+                      <ellipse cx="228" cy="52" rx="9" ry="14" fill="url(#ring)"/>
+                    </g>
+                    <g transform="rotate(9 150 56)">
+                      <rect x="70" y="44" width="190" height="26" rx="13" fill="url(#bark)"/>
+                      <ellipse cx="72" cy="57" rx="8" ry="13" fill="url(#ring)"/>
+                    </g>
+                    <rect x="95" y="28" width="120" height="22" rx="11" fill="url(#bark)"/>
+                    <ellipse cx="213" cy="39" rx="7" ry="11" fill="url(#ring)"/>
+                    <path class="embers" d="M60 70 Q150 62 250 72" />
+                  </svg>
+                  <div class="grate"></div>
+                </div>
+              </div>
+              <div class="hearth"></div>
+            </section>
+          </div>
+        </div>
+
+        <section id="paper" class="paper" hidden>
+          <div id="masthead" class="masthead">The Sports Page</div>
+          <div id="paper-dateline" class="paper-dateline"></div>
+          <div id="stories" class="stories"></div>
+        </section>
+      </div>
+    </div>
+
+    <footer id="status-text" class="status"></footer>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <div id="night" class="night" hidden>
+    <div id="night-time" class="night-time"></div>
+    <div id="night-next" class="night-next"></div>
+  </div>
+
+  <!-- Bump this version (here, on both asset URLs, in ../index.html, ../tv/index.html and
+       ../version.json) with every change so the TV and the iPad don't keep a cached copy. -->
+  <script>window.HUB_VERSION = "2026-10-20.4";</script>
+  <script src="study.js?v=2026-10-20.4"></script>
+</body>
+</html>

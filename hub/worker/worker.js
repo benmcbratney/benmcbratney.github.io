@@ -50,6 +50,11 @@
 //   GET  /spotify/connect, /spotify/callback   (browser, no key) one-time sign-in
 //   GET  /sports                       last/live/next game for each team (ESPN's free feeds)
 //   GET  /news                         recent ESPN headlines about those teams
+//   GET  /headlines                    those, plus top news, celebrity and good-news headlines (RSS)
+//
+// Optional NEWS_FEEDS (plain) replaces the RSS feeds behind /headlines, e.g.
+//   {"news":["https://feeds.npr.org/1001/rss.xml"],"celebrity":[…],"good":[…]}
+//   (each section merges whichever of its feeds answer; a section with none is left out)
 //
 // Optional SPORTS_TEAMS (plain) overrides the default Chicago teams, e.g.
 //   [{"key":"bears","name":"Bears","emoji":"🐻","path":"football/nfl","id":"3"}]
@@ -110,6 +115,9 @@ export default {
       }
       if (url.pathname === "/news" && request.method === "GET") {
         return json(await news(env));
+      }
+      if (url.pathname === "/headlines" && request.method === "GET") {
+        return json(await headlines(env));
       }
       if (url.pathname === "/family" && request.method === "GET") {
         return json({ family: family(env), kidsQuickAdd: kidsQuickAdd(env) });
@@ -520,6 +528,77 @@ async function newsForTeam(t) {
     published: Date.parse(a.published || a.lastModified) || null,
     premium: !!a.premium,
   }));
+}
+
+// ---------------------------------------------------------------- Headlines (RSS)
+// Plain RSS/Atom feeds, read with a small regex parser (Workers have no DOMParser).
+
+const DEFAULT_FEEDS = {
+  news: ["https://feeds.npr.org/1001/rss.xml", "https://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml"],
+  celebrity: ["https://www.usmagazine.com/feed/", "https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml"],
+  good: ["https://www.goodnewsnetwork.org/feed/", "https://www.positive.news/feed/"],
+};
+
+function xmlText(s) {
+  return String(s || "")
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d))
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+    .replace(/<[^>]+>/g, "") // titles that were HTML-escaped ("&lt;i&gt;")
+    .replace(/\s+/g, " ").trim();
+}
+
+function xmlTag(block, names) {
+  for (const n of names) {
+    const m = new RegExp("<" + n + "(?:\\s[^>]*)?>([\\s\\S]*?)</" + n + ">", "i").exec(block);
+    if (m) return xmlText(m[1]);
+  }
+  return "";
+}
+
+// Outlet names for the default feeds; anything else uses the feed's own title.
+const FEED_NAMES = { "npr.org": "NPR", "bbci.co.uk": "BBC", "usmagazine.com": "Us Weekly", "eonline.com": "E! News", "goodnewsnetwork.org": "Good News Network", "positive.news": "Positive News" };
+
+function parseFeed(xml, url) {
+  const host = new URL(url).hostname;
+  const known = Object.keys(FEED_NAMES).find((d) => host === d || host.endsWith("." + d));
+  const source = known ? FEED_NAMES[known] : xmlTag(xml.replace(/<(item|entry)[\s>][\s\S]*$/i, ""), ["title"]);
+  const blocks = xml.match(/<(item|entry)[\s>][\s\S]*?<\/\1>/gi) || [];
+  return blocks.slice(0, 10).map((b) => ({
+    headline: xmlTag(b, ["title"]),
+    published: Date.parse(xmlTag(b, ["pubDate", "published", "updated", "dc:date"])) || null,
+    source,
+  })).filter((a) => a.headline);
+}
+
+async function feedSection(urls) {
+  const lists = await Promise.all(urls.map(async (u) => {
+    try {
+      const res = await fetch(u, { headers: { "User-Agent": "HomeHub/1.0 (+https://benmcbratney.com/hub/)" }, cf: { cacheTtl: 900, cacheEverything: true } });
+      return res.ok ? parseFeed(await res.text(), u) : [];
+    } catch { return []; }
+  }));
+  const seen = new Set();
+  return lists.flat()
+    .sort((a, b) => (b.published || 0) - (a.published || 0))
+    .filter((a) => (seen.has(a.headline) ? false : seen.add(a.headline)))
+    .slice(0, 8);
+}
+
+async function headlines(env) {
+  let feeds = DEFAULT_FEEDS;
+  if (env.NEWS_FEEDS) {
+    try { feeds = { ...DEFAULT_FEEDS, ...JSON.parse(env.NEWS_FEEDS) }; } catch { throw new Error("NEWS_FEEDS isn't valid JSON"); }
+  }
+  const [sports, ...rest] = await Promise.all([
+    news(env).then((n) => n.articles).catch(() => []),
+    ...["news", "celebrity", "good"].map((k) => feedSection(feeds[k] || [])),
+  ]);
+  const sections = [{ key: "sports", items: sports }, { key: "news", items: rest[0] }, { key: "celebrity", items: rest[1] }, { key: "good", items: rest[2] }];
+  return { sections: sections.filter((x) => x.items.length) };
 }
 
 async function news(env) {
