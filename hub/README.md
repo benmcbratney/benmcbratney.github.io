@@ -156,6 +156,32 @@ Optional extras: `&work=8-18` (timeline hours), `&on=7-20` (when the screen is l
 `&place=…&lat=…&lon=…` (weather location; defaults to Lake Forest). Without a Worker it
 runs on demo data.
 
+## The Study (Fire TV, retro)
+
+A second take on the office TV at `https://benmcbratney.com/hub/study/`, dressed for a
+room with a mahogany bookcase wall: the same data as the Office TV page, drawn as things
+you'd find in an old study. It shares the Office TV's settings, so a TV that's already set
+up just needs the new address (or use the same `#worker=…&key=…` link with `/study/`).
+
+- **Brass clock** with Roman numerals, plus the day and time in type.
+- **The Almanac** (weather) on parchment: conditions, a 5-day row, sunrise/sunset, how long
+  the day is and how much daylight tomorrow gains or loses, air quality, and the moon's
+  phase. A red stamp appears when rain or snow is due within the hour.
+- **Departures board:** today's meetings on a split-flap board like the old train-station
+  boards (the letters riffle when they change). Status reads DEPARTED, NOW, BOARDING (last
+  5 minutes), FINAL (last minute) or IN 42 MIN. The big counter above counts down to the next
+  one, with a lamp that blinks amber when boarding and red on the final call.
+- **The day as a brass rule:** meetings inlaid in oxblood, open time in green, the longest
+  stretch (an hour or more) marked Focus.
+- **Chicago Scoreboard** in Wrigley green with numbers on tiles, a big panel when a game is
+  on (visitors on top, with ESPN's win chance), and Wrigley's flag after a Cubs game: white
+  W for a win, blue L for a loss.
+- **The Sports Page:** team headlines as a newspaper clipping.
+- **Turntable:** Spotify as a spinning record with the album art on the label; the tonearm
+  creeps across as the song plays. The remote's ⏯ ⏪ ⏩ work here too.
+
+Fonts are Playfair Display, EB Garamond, Oswald and UnifrakturMaguntia from Google Fonts.
+
 ## Smart home (later)
 
 Kasa, WiZ, iRobot and friends can only be reached from inside the house, so they go
@@ -230,8 +256,8 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Updates itself: every 10 minutes (and whenever it's reopened) it checks `version.json`; when a
   newer version is published it reloads through a fresh URL, so the iPad never sticks on cached files.
   **When changing the hub, bump the version** in `version.json`, in `index.html` (the
-  `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`) and in `tv/index.html` (same
-  idea), since the iPad and the TV share `version.json`.
+  `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`) and in `tv/index.html` and
+  `study/index.html` (same idea), since the iPad and the TV pages share `version.json`.
 - Weather comes from Open-Meteo (free, no key).
 - Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
   "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).

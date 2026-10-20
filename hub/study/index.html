@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Study</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#2a120b">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Oswald:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=UnifrakturMaguntia&display=swap">
+  <link rel="stylesheet" href="study.css?v=2026-10-20.1">
+</head>
+<body>
+  <!-- Mahogany, drawn once: stretched noise for the grain, then a vignette. -->
+  <svg class="wood" aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 1920 1080">
+    <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.0016 0.055" numOctaves="4" seed="7"/>
+      <feColorMatrix type="matrix" values="0.40 0 0 0 0.16  0.14 0 0 0 0.05  0.08 0 0 0 0.03  0 0 0 0 1"/>
+    </filter>
+    <rect width="1920" height="1080" filter="url(#grain)"/>
+  </svg>
+
+  <!-- A fixed 1920×1080 canvas, scaled to fit whatever size the TV's browser reports. -->
+  <main id="stage">
+    <div class="col-left">
+      <section class="clock-box">
+        <div class="brass-ring">
+          <svg id="clock" class="clock" viewBox="0 0 300 300" aria-hidden="true"></svg>
+        </div>
+        <div class="dateline">
+          <div id="day-name" class="day-name"></div>
+          <div id="date-line" class="date-line"></div>
+        </div>
+      </section>
+
+      <section class="almanac">
+        <div class="alm-head"><span>The Almanac</span><span id="alm-place"></span></div>
+        <div id="alm-now" class="alm-now"></div>
+        <div id="precip-alert" class="stamp" hidden></div>
+        <div id="alm-days" class="alm-days"></div>
+        <div id="alm-sky" class="alm-sky"></div>
+      </section>
+
+      <section id="turntable" class="turntable" hidden>
+        <div class="deck">
+          <div id="record" class="record"><div id="label" class="record-label"></div></div>
+          <svg id="arm" class="arm" viewBox="0 0 60 200" aria-hidden="true">
+            <circle cx="30" cy="22" r="17" class="arm-base"/>
+            <path d="M30 22 L30 150 L18 178" class="arm-rod"/>
+            <rect x="9" y="172" width="16" height="24" rx="3" transform="rotate(25 17 184)" class="arm-head"/>
+          </svg>
+        </div>
+        <div class="tt-info">
+          <div id="tt-kicker" class="kicker">Now playing</div>
+          <div id="tt-title" class="tt-title"></div>
+          <div id="tt-artist" class="tt-artist"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-right">
+      <section class="board-frame">
+        <div class="board">
+          <div class="board-head">
+            <span class="board-title">Departures</span>
+            <span id="plates" class="plates"></span>
+          </div>
+          <div id="banner" class="banner">
+            <div class="banner-text">
+              <div class="banner-kicker"><span id="lamp" class="lamp"></span><span id="banner-kicker"></span></div>
+              <div id="banner-title" class="banner-title"></div>
+              <div id="banner-sub" class="banner-sub"></div>
+            </div>
+            <div class="banner-count">
+              <div id="count" class="flaps big"></div>
+              <div id="count-unit" class="count-unit"></div>
+            </div>
+          </div>
+          <div class="board-cols"><span>Time</span><span>Meeting</span><span>Via</span><span>Status</span></div>
+          <div id="rows" class="rows"></div>
+        </div>
+      </section>
+
+      <section class="ruler-box">
+        <div id="ruler" class="ruler"></div>
+      </section>
+
+      <div class="bottom">
+        <section id="scoreboard" class="scoreboard" hidden>
+          <div class="sb-head">
+            <span>Chicago Scoreboard</span>
+            <span id="flag" class="flag" hidden></span>
+          </div>
+          <div id="sb-live" class="sb-live" hidden></div>
+          <div id="sb-rows" class="sb-rows"></div>
+        </section>
+
+        <section id="paper" class="paper" hidden>
+          <div class="masthead">The Sports Page</div>
+          <div id="paper-dateline" class="paper-dateline"></div>
+          <div id="stories" class="stories"></div>
+        </section>
+      </div>
+    </div>
+
+    <footer id="status-text" class="status"></footer>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <div id="night" class="night" hidden>
+    <div id="night-time" class="night-time"></div>
+    <div id="night-next" class="night-next"></div>
+  </div>
+
+  <!-- Bump this version (here, on both asset URLs, in ../index.html, ../tv/index.html and
+       ../version.json) with every change so the TV and the iPad don't keep a cached copy. -->
+  <script>window.HUB_VERSION = "2026-10-20.1";</script>
+  <script src="study.js?v=2026-10-20.1"></script>
+</body>
+</html>
