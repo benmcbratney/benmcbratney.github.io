@@ -252,6 +252,7 @@
     }
     if (night !== wasNight) {
       wasNight = night;
+      updateFlip(); // no fire behind a dark screen
       try { if (window.HubTV && window.HubTV.keepAwake) window.HubTV.keepAwake(!night); } catch (e) {}
     }
     if (h === 3 && now.getMinutes() === 30 && performance.now() > 120000) freshReload(window.HUB_VERSION || "");
@@ -705,6 +706,7 @@
     return p.then(function (data) { sports = data.teams || []; renderScoreboard(); renderPaper(); setProblem("scores", null); })
       .catch(function (e) {
         if (/HTTP 404/.test(e.message)) { sports = null; renderScoreboard(); return; }
+        if (sports == null) { hasScores = false; updateFlip(); }
         setProblem("scores", e.message);
       });
   }
@@ -730,11 +732,12 @@
     return days < 0 ? day : day + " " + fmtTime(d);
   }
 
+  var hasScores = false;
+
   function renderScoreboard() {
-    var card = $("scoreboard");
     var ok = (sports || []).filter(function (t) { return !t.error; });
-    card.hidden = !ok.length;
-    layoutBottom();
+    hasScores = ok.length > 0;
+    updateFlip();
     if (!ok.length) return;
     var now = new Date(), today = startOfDay(now).getTime();
     var within = function (g, from, to) { return !!(g && g.start && g.start >= from && g.start < to); };
@@ -787,7 +790,7 @@
         res.appendChild(tiles(g.usScore));
         res.appendChild(tiles(g.themScore));
       } else if (g.state === "post") {
-        var when = gameWhen(g.start, now);
+        var when = gameWhen(g.start, now).split(" ")[0]; // a final just needs the day
         if (when !== "Today") res.appendChild(el("span", "sb-when", when));
         res.appendChild(el("span", "wl " + (g.won ? "w" : "l"), g.won ? "W" : g.won === false ? "L" : "T"));
         res.appendChild(tiles(g.usScore));
@@ -808,17 +811,27 @@
     trimOverflow(box);
   }
 
-  // ------------------------------------------------------------- the sports page (headlines)
+  // ------------------------------------------------------------- the paper (headlines)
+  // The Worker's /headlines: sports (ESPN, about the teams), top news, celebrity news and
+  // good news, from RSS. The clipping turns to the next section every 40 seconds, with a
+  // masthead to match. An older Worker without /headlines gets just the sports page.
 
-  var news = null;
+  var sections = null, sectionIdx = 0;
+  var MASTHEADS = { sports: "The Sports Page", news: "The Daily Dispatch", celebrity: "The Society Pages", good: "The Good News Gazette" };
 
-  function loadNews() {
-    var p = demo ? Promise.resolve(demoNews()) : api("/news");
-    return p.then(function (data) { news = data.articles || []; renderPaper(); setProblem("headlines", null); })
-      .catch(function (e) {
-        if (/HTTP 404/.test(e.message)) { news = null; renderPaper(); return; }
-        setProblem("headlines", e.message);
-      });
+  function loadHeadlines() {
+    var p = demo ? Promise.resolve(demoHeadlines()) : api("/headlines").catch(function (e) {
+      if (!/HTTP 404/.test(e.message)) throw e;
+      return api("/news").then(function (d) { return { sections: [{ key: "sports", items: d.articles || [] }] }; });
+    });
+    return p.then(function (data) {
+      sections = (data.sections || []).filter(function (x) { return x.items && x.items.length && MASTHEADS[x.key]; });
+      renderPaper();
+      setProblem("headlines", null);
+    }).catch(function (e) {
+      if (/HTTP 404/.test(e.message)) { sections = null; renderPaper(); return; }
+      setProblem("headlines", e.message);
+    });
   }
 
   function age(ms, now) {
@@ -830,32 +843,150 @@
 
   function renderPaper() {
     var card = $("paper");
-    card.hidden = !news || !news.length;
+    card.hidden = !sections || !sections.length;
     layoutBottom();
     if (card.hidden) return;
-    var now = new Date();
+    sectionIdx %= sections.length;
+    var sec = sections[sectionIdx], now = new Date();
+    var mast = $("masthead");
+    mast.textContent = MASTHEADS[sec.key];
+    mast.className = "masthead" + (MASTHEADS[sec.key].length > 18 ? " long" : "");
     var dl = $("paper-dateline");
     dl.innerHTML = "";
     dl.appendChild(el("span", null, DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear()));
-    dl.appendChild(el("span", null, settings.placeName + " Edition"));
+    dl.appendChild(el("span", null, settings.placeName + " Edition" + (sections.length > 1 ? " · Section " + "ABCD"[sectionIdx] : "")));
     var box = $("stories");
     box.innerHTML = "";
-    news.slice(0, 6).forEach(function (a, i) {
-      var team = (sports || []).filter(function (t) { return t.key === a.key; })[0];
+    sec.items.slice(0, 6).forEach(function (a, i) {
+      var team = sec.key === "sports" ? (sports || []).filter(function (t) { return t.key === a.key; })[0] : null;
+      var who = team ? teamLabel(team) : a.source || a.name || "";
       var s = el("div", "story" + (i === 0 ? " lead" : ""));
-      s.appendChild(el("div", "kick", (team ? teamLabel(team) : a.name || "Sports") + (a.published ? " · " + age(a.published, now) : "")));
+      s.appendChild(el("div", "kick", who + (who && a.published ? " · " : "") + (a.published ? age(a.published, now) : "")));
       s.appendChild(el("div", "hed", a.headline));
       box.appendChild(s);
     });
     trimOverflow(box);
   }
 
-  function layoutBottom() {
-    var sb = $("scoreboard").hidden, pp = $("paper").hidden;
-    var bottom = document.querySelector(".bottom");
-    bottom.hidden = sb && pp;
-    bottom.className = "bottom" + (sb || pp ? " solo" : "");
+  function turnPage() {
+    if (!sections || sections.length < 2) return;
+    var card = $("paper");
+    card.classList.add("turning");
+    setTimeout(function () { sectionIdx++; renderPaper(); card.classList.remove("turning"); }, 650);
   }
+
+  function layoutBottom() {
+    document.querySelector(".bottom").className = "bottom" + ($("paper").hidden ? " solo" : "");
+  }
+
+  // ------------------------------------------------------------- scoreboard ⇄ fireplace
+  // Every 45 seconds the scoreboard flips over to the fire, and back. It stays on the
+  // scores while a game is on, and on the fire when there are no scores at all.
+
+  var showFire = false;
+
+  function updateFlip() {
+    var back = !hasScores || (showFire && !sportsLive());
+    $("flip-inner").classList.toggle("show-back", back);
+    fire.run(back && $("night").hidden);
+  }
+
+  // A small flame simulation (the old demoscene fire): each cell takes the average of the
+  // cells below it and cools a little, so heat rises and blurs into flames; a drifting
+  // cooling pattern carves the licks. Run at 100×70 and drawn up smoothly.
+  var fire = (function () {
+    var cv = $("fire"), out = cv.getContext("2d"), W = 100, H = 70;
+    var sim = document.createElement("canvas");
+    sim.width = W;
+    sim.height = H;
+    var ctx = sim.getContext("2d");
+    out.imageSmoothingEnabled = true;
+    out.imageSmoothingQuality = "high";
+    var heat = new Float32Array(W * (H + 2)), next = new Float32Array(W * (H + 2));
+    var img = ctx.createImageData(W, H);
+    var PAL = [[7,7,7],[31,7,7],[47,15,7],[71,15,7],[87,23,7],[103,31,7],[119,31,7],[143,39,7],[159,47,7],[175,63,7],
+      [191,71,7],[199,71,7],[223,79,7],[223,87,7],[223,87,7],[215,95,7],[215,95,7],[215,103,15],[207,111,15],[207,119,15],
+      [207,127,15],[207,135,23],[199,135,23],[199,143,23],[199,151,31],[191,159,31],[191,159,31],[191,167,39],[191,167,39],
+      [191,175,47],[183,175,47],[183,183,47],[183,183,55],[207,207,111],[223,223,159],[239,239,199],[255,255,255]];
+    var TOP = PAL.length - 4; // a wood fire: the hottest is pale yellow, never white
+
+    // Smooth noise for the cooling pattern, twice the fire's height so it can scroll.
+    var CH = H * 2, coolMap = new Float32Array(W * CH);
+    for (var i = 0; i < coolMap.length; i++) coolMap[i] = Math.random();
+    for (var pass = 0; pass < 6; pass++) {
+      var tmp = new Float32Array(coolMap.length);
+      for (var y = 0; y < CH; y++) for (var x = 0; x < W; x++) {
+        var a = 0, n = 0;
+        for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+          var yy = (y + dy + CH) % CH, xx = x + dx;
+          if (xx < 0 || xx >= W) continue;
+          a += coolMap[yy * W + xx]; n++;
+        }
+        tmp[y * W + x] = a / n;
+      }
+      coolMap = tmp;
+    }
+    var lo = 1, hi = 0;
+    for (i = 0; i < coolMap.length; i++) { lo = Math.min(lo, coolMap[i]); hi = Math.max(hi, coolMap[i]); }
+    for (i = 0; i < coolMap.length; i++) coolMap[i] = (coolMap[i] - lo) / (hi - lo);
+
+    var box = document.querySelector(".fireplace");
+    var running = false, stopAt = 0, last = 0, scroll = 0;
+
+    // Hot coals along the bottom two (hidden) rows: hottest over the middle of the logs,
+    // flickering in clumps so the flames come and go.
+    function seed() {
+      for (var x = 0; x < W; x += 3) {
+        var u = (x / (W - 1)) * 2 - 1;
+        var hump = Math.max(0, 1 - u * u * 1.7);
+        var v = hump * (Math.random() < 0.55 ? 1 : 0.35);
+        for (var k = 0; k < 3 && x + k < W; k++) heat[H * W + x + k] = heat[(H + 1) * W + x + k] = v;
+      }
+    }
+    function step() {
+      scroll = (scroll + 1) % CH;
+      for (var y = 0; y < H; y++) {
+        var cy = ((y + scroll) % CH) * W;
+        for (var x = 0; x < W; x++) {
+          var b = (y + 1) * W + x;
+          var l = x > 0 ? heat[b - 1] : 0, r = x < W - 1 ? heat[b + 1] : 0;
+          var v = (l + heat[b] + r + heat[b + W]) * 0.25 - (0.006 + coolMap[cy + x] * 0.03);
+          next[y * W + x] = v > 0 ? v : 0;
+        }
+      }
+      for (var i = 0; i < W * H; i++) heat[i] = next[i];
+    }
+    function draw() {
+      var d = img.data, sum = 0;
+      for (var i = 0; i < W * H; i++) {
+        var v = Math.min(1, heat[i] * 1.25), c = PAL[Math.round(v * TOP)], j = i * 4;
+        d[j] = c[0]; d[j + 1] = c[1]; d[j + 2] = c[2];
+        d[j + 3] = Math.min(255, v * 900); // fade the edges into the dark firebox
+        sum += v;
+      }
+      ctx.putImageData(img, 0, 0);
+      out.clearRect(0, 0, cv.width, cv.height);
+      out.drawImage(sim, 0, 0, cv.width, cv.height);
+      var glow = Math.min(1, 0.55 + sum / (W * H * 0.5)) - Math.random() * 0.08;
+      box.style.setProperty("--glow", glow.toFixed(2));
+    }
+    function frame(ts) {
+      if (!running) return;
+      if (stopAt && Date.now() > stopAt) { running = false; return; }
+      requestAnimationFrame(frame);
+      if (ts - last < 33) return; // ~30 fps is plenty
+      last = ts;
+      seed(); step(); draw();
+    }
+    for (var i = 0; i < 90; i++) { seed(); step(); } // light it before anyone looks
+    draw();
+    return {
+      run: function (on) {
+        if (on) { stopAt = 0; if (!running) { running = true; requestAnimationFrame(frame); } }
+        else if (running && !stopAt) stopAt = Date.now() + 1800; // keep burning while the card flips away
+      },
+    };
+  })();
 
   // ------------------------------------------------------------- the turntable (Spotify)
 
@@ -940,13 +1071,29 @@
     ] };
   }
 
-  function demoNews() {
+  function demoHeadlines() {
     var now = Date.now();
-    return { articles: [
-      { key: "bears", name: "Bears", headline: "Bears' defense forces three turnovers in first half against Green Bay", published: now - 40 * MIN },
-      { key: "cubs", name: "Cubs", headline: "Cubs even NLCS behind six scoreless innings from the bullpen", published: now - 3 * HOUR },
-      { key: "blackhawks", name: "Blackhawks", headline: "Blackhawks recall forward from Rockford ahead of road trip", published: now - 6 * HOUR },
-      { key: "nu-football", name: "Northwestern", headline: "Northwestern prepares for Iowa's top-ranked run defense", published: now - 20 * HOUR },
+    return { sections: [
+      { key: "sports", items: [
+        { key: "bears", headline: "Bears' defense forces three turnovers in first half against Green Bay", published: now - 40 * MIN },
+        { key: "cubs", headline: "Cubs even NLCS behind six scoreless innings from the bullpen", published: now - 3 * HOUR },
+        { key: "blackhawks", headline: "Blackhawks recall forward from Rockford ahead of road trip", published: now - 6 * HOUR },
+      ] },
+      { key: "news", items: [
+        { source: "NPR", headline: "Senate reaches deal on spending bill ahead of Friday deadline", published: now - 25 * MIN },
+        { source: "NPR", headline: "Early frost expected across the upper Midwest this weekend", published: now - 2 * HOUR },
+        { source: "BBC", headline: "Markets steady as investors await central bank decision", published: now - 4 * HOUR },
+      ] },
+      { key: "celebrity", items: [
+        { source: "Us Weekly", headline: "Beloved sitcom cast reunites for a charity table read", published: now - HOUR },
+        { source: "E! News", headline: "Award-season buzz builds for this fall's festival favorite", published: now - 5 * HOUR },
+        { source: "Us Weekly", headline: "Inside the star-studded premiere that had everyone talking", published: now - 8 * HOUR },
+      ] },
+      { key: "good", items: [
+        { source: "Good News Network", headline: "Retired teacher's free tutoring program reaches its 1,000th student", published: now - 3 * HOUR },
+        { source: "Positive News", headline: "Volunteers plant 5,000 trees along a restored river corridor", published: now - 9 * HOUR },
+        { source: "Good News Network", headline: "Lost dog finds its way home after 40 miles and three weeks", published: now - 20 * HOUR },
+      ] },
     ] };
   }
 
@@ -976,7 +1123,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadAirQuality(), loadCalendar(), loadSports(), loadNews(), loadSpotify()]).then(renderStatus);
+    return Promise.all([loadWeather(), loadAirQuality(), loadCalendar(), loadSports(), loadHeadlines(), loadSpotify()]).then(renderStatus);
   }
 
   renderStatus();
@@ -988,7 +1135,9 @@
   setInterval(loadCalendar, 5 * MIN);
   setInterval(loadWeather, 15 * MIN);
   setInterval(loadAirQuality, 30 * MIN);
-  setInterval(loadNews, 15 * MIN);
+  setInterval(loadHeadlines, 15 * MIN);
+  setInterval(turnPage, 40 * 1000);
+  setInterval(function () { showFire = !showFire; updateFlip(); }, 45 * 1000);
   var sportsTicks = 0;
   setInterval(function () { sportsTicks++; if (sportsLive() || sportsTicks % 5 === 0) loadSports(); }, 60 * 1000);
   setInterval(function () { spotifyPolls++; if ((spotify && spotify.playing) || spotifyPolls % 3 === 0) loadSpotify(); }, 10 * 1000);

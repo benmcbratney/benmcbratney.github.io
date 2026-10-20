@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Oswald:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=UnifrakturMaguntia&display=swap">
-  <link rel="stylesheet" href="study.css?v=2026-10-20.1">
+  <link rel="stylesheet" href="study.css?v=2026-10-20.2">
 </head>
 <body>
   <!-- Mahogany, drawn once: stretched noise for the grain, then a vignette. -->
@@ -87,17 +87,55 @@
       </section>
 
       <div class="bottom">
-        <section id="scoreboard" class="scoreboard" hidden>
-          <div class="sb-head">
-            <span>Chicago Scoreboard</span>
-            <span id="flag" class="flag" hidden></span>
+        <!-- Flips between the scoreboard and a fire in the grate (stays on the scores during a game). -->
+        <div id="flip" class="flip">
+          <div id="flip-inner" class="flip-inner">
+            <section id="scoreboard" class="face scoreboard">
+              <div class="sb-head">
+                <span>Chicago Scoreboard</span>
+                <span id="flag" class="flag" hidden></span>
+              </div>
+              <div id="sb-live" class="sb-live" hidden></div>
+              <div id="sb-rows" class="sb-rows"></div>
+            </section>
+            <section class="face back fireplace" aria-hidden="true">
+              <div class="mantel"></div>
+              <div class="surround">
+                <div class="firebox">
+                  <div id="fire-glow" class="fire-glow"></div>
+                  <canvas id="fire" class="fire" width="400" height="280"></canvas>
+                  <div class="sparks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <svg class="logs" viewBox="0 0 300 80" preserveAspectRatio="xMidYMax meet">
+                    <defs>
+                      <linearGradient id="bark" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#5a3a24"/><stop offset="0.5" stop-color="#3a2416"/><stop offset="1" stop-color="#1c110a"/>
+                      </linearGradient>
+                      <radialGradient id="ring" cx="50%" cy="50%" r="50%">
+                        <stop offset="0" stop-color="#ffb347"/><stop offset="0.35" stop-color="#c8641e"/><stop offset="0.75" stop-color="#6b3418"/><stop offset="1" stop-color="#2a170c"/>
+                      </radialGradient>
+                    </defs>
+                    <g transform="rotate(-8 150 52)">
+                      <rect x="40" y="38" width="190" height="28" rx="14" fill="url(#bark)"/>
+                      <ellipse cx="228" cy="52" rx="9" ry="14" fill="url(#ring)"/>
+                    </g>
+                    <g transform="rotate(9 150 56)">
+                      <rect x="70" y="44" width="190" height="26" rx="13" fill="url(#bark)"/>
+                      <ellipse cx="72" cy="57" rx="8" ry="13" fill="url(#ring)"/>
+                    </g>
+                    <rect x="95" y="28" width="120" height="22" rx="11" fill="url(#bark)"/>
+                    <ellipse cx="213" cy="39" rx="7" ry="11" fill="url(#ring)"/>
+                    <path class="embers" d="M60 70 Q150 62 250 72" />
+                  </svg>
+                  <div class="grate"></div>
+                </div>
+              </div>
+              <div class="hearth"></div>
+            </section>
           </div>
-          <div id="sb-live" class="sb-live" hidden></div>
-          <div id="sb-rows" class="sb-rows"></div>
-        </section>
+        </div>
 
         <section id="paper" class="paper" hidden>
-          <div class="masthead">The Sports Page</div>
+          <div id="masthead" class="masthead">The Sports Page</div>
           <div id="paper-dateline" class="paper-dateline"></div>
           <div id="stories" class="stories"></div>
         </section>
@@ -116,7 +154,7 @@
 
   <!-- Bump this version (here, on both asset URLs, in ../index.html, ../tv/index.html and
        ../version.json) with every change so the TV and the iPad don't keep a cached copy. -->
-  <script>window.HUB_VERSION = "2026-10-20.1";</script>
-  <script src="study.js?v=2026-10-20.1"></script>
+  <script>window.HUB_VERSION = "2026-10-20.2";</script>
+  <script src="study.js?v=2026-10-20.2"></script>
 </body>
 </html>

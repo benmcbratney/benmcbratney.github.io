@@ -28,6 +28,7 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `GROCERY_PROJECT` | Text | Todoist project name, default `Groceries` |
    | `FAMILY` | Secret | optional, picks out family birthdays for the countdowns (see below) |
    | `KIDS_QUICK_ADD` | Text | optional JSON list of one-tap buttons for the Kids list, e.g. `["Kid One school clothes","More pull-ups"]` |
+   | `NEWS_FEEDS` | Text | optional, RSS feeds for The Study's paper (see [The Study](#the-study-fire-tv-retro)) |
    | `TV_CALENDARS` | Text | optional, which calendars the office TV shows, e.g. `Work` (see [Office TV](#office-tv-fire-tv)) |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
@@ -175,8 +176,17 @@ up just needs the new address (or use the same `#worker=…&key=…` link with `
   stretch (an hour or more) marked Focus.
 - **Chicago Scoreboard** in Wrigley green with numbers on tiles, a big panel when a game is
   on (visitors on top, with ESPN's win chance), and Wrigley's flag after a Cubs game: white
-  W for a win, blue L for a loss.
-- **The Sports Page:** team headlines as a newspaper clipping.
+  W for a win, blue L for a loss. Every 45 seconds the card flips over to **a fire in the
+  grate** (a little flame simulation over brick, with firelight on the bricks) and back. It
+  stays on the scores while a game is on, and on the fire when there are no scores.
+- **The paper:** a newspaper clipping that turns to a new section every 40 seconds, each with
+  its own masthead: *The Sports Page* (ESPN stories about your teams), *The Daily Dispatch*
+  (top news: NPR, BBC), *The Society Pages* (celebrity: Us Weekly, E! News) and *The Good
+  News Gazette* (Good News Network, Positive News). The Worker reads those as RSS feeds; a
+  section whose feeds don't answer is skipped. To change the sources, set a `NEWS_FEEDS`
+  Text variable on the Worker, e.g.
+  `{"news":["https://feeds.npr.org/1001/rss.xml"],"celebrity":["https://…/feed/"]}`
+  (sections you leave out keep the defaults).
 - **Turntable:** Spotify as a spinning record with the album art on the label; the tonearm
   creeps across as the song plays. The remote's ⏯ ⏪ ⏩ work here too.
 

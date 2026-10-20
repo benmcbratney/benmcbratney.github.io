@@ -280,7 +280,61 @@ body::after {
 .lv-meta { display: flex; justify-content: space-between; font: 500 20px/1 var(--block); letter-spacing: 3px; text-transform: uppercase; color: #cfe0c8; margin-top: 8px; }
 .lv-meta .live { color: #fff; background: var(--red); padding: 3px 8px; border-radius: 2px; margin-right: 8px; letter-spacing: 2px; }
 
-/* The Sports Page: a newspaper clipping. */
+/* The scoreboard's card flips over to a fire in the grate now and then. */
+.flip { position: relative; min-height: 0; perspective: 1800px; }
+.flip-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 1.6s cubic-bezier(0.6, 0.05, 0.3, 1); }
+.flip-inner.show-back { transform: rotateY(180deg); }
+.face { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.face.back { transform: rotateY(180deg); }
+
+.fireplace {
+  display: flex; flex-direction: column; border-radius: 6px; overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(10, 4, 2, 0.35), rgba(10, 4, 2, 0.6)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='40'%3E%3Crect width='64' height='40' fill='%23231410'/%3E%3Crect x='1' y='1' width='62' height='18' rx='1.5' fill='%23683022'/%3E%3Crect x='-31' y='21' width='62' height='18' rx='1.5' fill='%235a281c'/%3E%3Crect x='33' y='21' width='62' height='18' rx='1.5' fill='%23733727'/%3E%3C/svg%3E");
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+}
+/* Firelight on the bricks; study.js nudges --glow every frame. */
+.fireplace::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 72%, rgba(255, 130, 40, 0.42), rgba(255, 110, 30, 0.12) 45%, transparent 75%);
+  opacity: var(--glow, 0.8);
+}
+.mantel {
+  flex: none; height: 34px; position: relative; z-index: 1;
+  background: linear-gradient(180deg, #7b3a24, #5a2614 55%, #3c180c);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 200, 160, 0.3);
+}
+.surround { flex: 1; min-height: 0; display: flex; justify-content: center; align-items: flex-end; padding: 22px 70px 0; }
+.firebox {
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+  border: 12px solid #3a2a22; border-bottom: 0;
+  border-radius: 48% 48% 0 0 / 26% 26% 0 0;
+  background: radial-gradient(ellipse at 50% 100%, #2a1209, #0d0705 60%, #080403);
+  box-shadow: inset 0 10px 30px rgba(0, 0, 0, 0.9);
+}
+.fire-glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 95%, rgba(255, 150, 50, 0.55), transparent 65%); opacity: var(--glow, 0.8); }
+.fire { position: absolute; left: 8%; bottom: 14px; width: 84%; height: 92%; }
+.logs { position: absolute; left: 12%; bottom: 6px; width: 76%; height: auto; }
+.logs .embers { fill: none; stroke: #ff8a2a; stroke-width: 3; opacity: var(--glow, 0.8); filter: blur(1.5px); }
+.grate { position: absolute; left: 10%; right: 10%; bottom: 0; height: 10px; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, #4a4038, #1a1512); }
+.hearth { flex: none; height: 28px; background: linear-gradient(180deg, #6b5a4c, #4a3d33 40%, #2e2620); box-shadow: inset 0 2px 0 rgba(255, 230, 200, 0.18); position: relative; z-index: 1; }
+.sparks i { position: absolute; bottom: 28%; width: 4px; height: 4px; border-radius: 50%; background: #ffb347; box-shadow: 0 0 6px #ff8a2a; opacity: 0; animation: spark 4.2s linear infinite; }
+.sparks i:nth-child(1) { left: 42%; animation-delay: 0s; }
+.sparks i:nth-child(2) { left: 55%; animation-delay: 1.3s; animation-duration: 3.6s; }
+.sparks i:nth-child(3) { left: 48%; animation-delay: 2.1s; animation-duration: 5s; }
+.sparks i:nth-child(4) { left: 61%; animation-delay: 0.7s; }
+.sparks i:nth-child(5) { left: 37%; animation-delay: 2.9s; animation-duration: 3.9s; }
+.sparks i:nth-child(6) { left: 51%; animation-delay: 3.5s; animation-duration: 4.6s; }
+.sparks i:nth-child(7) { left: 45%; animation-delay: 1.8s; animation-duration: 3.3s; }
+@keyframes spark {
+  0% { opacity: 0; transform: translate(0, 0); }
+  10% { opacity: 1; }
+  60% { opacity: 0.8; transform: translate(12px, -110px); }
+  100% { opacity: 0; transform: translate(-8px, -190px); }
+}
+
+/* The paper: a newspaper clipping that turns to a new section every so often. */
 .paper {
   min-height: 0; overflow: hidden; display: flex; flex-direction: column;
   background:
@@ -291,7 +345,10 @@ body::after {
   transform: rotate(0.6deg);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(120, 90, 40, 0.2);
 }
-.masthead { font: 400 50px/1 "UnifrakturMaguntia", var(--serif); text-align: center; }
+.paper > * { transition: opacity 0.6s ease; }
+.paper.turning > * { opacity: 0; }
+.masthead { font: 400 50px/1 "UnifrakturMaguntia", var(--serif); text-align: center; white-space: nowrap; }
+.masthead.long { font-size: 42px; }
 .paper-dateline { display: flex; justify-content: space-between; font: 500 15px/1 var(--book); font-variant: small-caps; letter-spacing: 1.5px; border-top: 2px solid #19140f; border-bottom: 1px solid #19140f; padding: 5px 0 4px; margin: 8px 0 8px; }
 .stories { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .story { padding: 7px 0 8px; border-bottom: 1px solid rgba(25, 20, 15, 0.35); }
