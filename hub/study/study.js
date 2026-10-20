@@ -278,7 +278,7 @@
     toastTimer = setTimeout(function () { t.hidden = true; }, 2500);
   }
 
-  // ------------------------------------------------------------- the almanac: weather, sky, air
+  // ------------------------------------------------------------- the almanac: weather and sky
 
   // Engraving-style line icons, so the almanac doesn't depend on the TV's emoji font.
   var ICONS = {
@@ -334,7 +334,7 @@
       '<circle cx="38" cy="38" r="30" fill="none" stroke="#1d140e" stroke-width="1.5"/></svg>';
   }
 
-  var wx = null, aqi = null;
+  var wx = null;
 
   function loadWeather() {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(settings.lat) +
@@ -347,20 +347,6 @@
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) { wx = d; storePrecip(d); renderAlmanac(); setProblem("weather", null); })
       .catch(function (e) { setProblem("weather", e.message); });
-  }
-
-  function loadAirQuality() {
-    var url = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + encodeURIComponent(settings.lat) +
-      "&longitude=" + encodeURIComponent(settings.lon) + "&current=us_aqi&timezone=auto";
-    return fetch(url, { cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (d) { aqi = d.current && typeof d.current.us_aqi === "number" ? Math.round(d.current.us_aqi) : null; renderAlmanac(); })
-      .catch(function () { aqi = null; renderAlmanac(); });
-  }
-
-  function aqiLevel(v) {
-    return v <= 50 ? ["Good", "#00e400"] : v <= 100 ? ["Moderate", "#ffff00"] : v <= 150 ? ["Poor for some", "#ff7e00"]
-      : v <= 200 ? ["Unhealthy", "#ff0000"] : v <= 300 ? ["Very unhealthy", "#8f3f97"] : ["Hazardous", "#7e0023"];
   }
 
   function renderAlmanac() {
@@ -398,7 +384,7 @@
       days.appendChild(cell);
     }
 
-    // Sun, daylight, air, moon.
+    // Sun and daylight.
     var sky = $("alm-sky");
     sky.innerHTML = "";
     var line = function (label, text) {
@@ -419,14 +405,6 @@
         var a = Math.abs(diff);
         line("Tomorrow", (a >= 60 ? Math.floor(a / 60) + "m " : "") + (a % 60) + "s " + (diff < 0 ? "less" : "more"));
       }
-    }
-    if (aqi != null) {
-      var lvl = aqiLevel(aqi);
-      var l = line("Air", "");
-      var dot = el("span", "aqi-dot");
-      dot.style.background = lvl[1];
-      l.appendChild(dot);
-      l.appendChild(document.createTextNode(aqi + " · " + lvl[0]));
     }
   }
 
@@ -1237,7 +1215,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadAirQuality(), loadCalendar(), loadSports(), loadHeadlines(), loadSpotify(), loadCountdowns()]).then(renderStatus);
+    return Promise.all([loadWeather(), loadCalendar(), loadSports(), loadHeadlines(), loadSpotify(), loadCountdowns()]).then(renderStatus);
   }
 
   renderStatus();
@@ -1249,7 +1227,6 @@
   setInterval(loadCountdowns, 60 * MIN);
   setInterval(loadCalendar, 5 * MIN);
   setInterval(loadWeather, 15 * MIN);
-  setInterval(loadAirQuality, 30 * MIN);
   setInterval(loadHeadlines, 15 * MIN);
   setInterval(turnPage, 40 * 1000);
   setInterval(function () { showFire = !showFire; updateFlip(); }, 45 * 1000);

@@ -133,7 +133,6 @@ body::after {
 .alm-sky { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; padding: 8px 6px 0; }
 .alm-sky .line { font: 400 21px/1.28 var(--book); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alm-sky .line i { color: var(--ink-soft); }
-.aqi-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin: 0 7px 0 2px; vertical-align: 1px; box-shadow: 0 0 0 1.5px var(--ink); }
 
 /* ---------------------------------------------------------------- countdowns (desk-calendar pages) */
 
