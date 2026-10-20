@@ -164,10 +164,13 @@ room with a mahogany bookcase wall: the same data as the Office TV page, drawn a
 you'd find in an old study. It shares the Office TV's settings, so a TV that's already set
 up just needs the new address (or use the same `#worker=…&key=…` link with `/study/`).
 
-- **Brass clock** with Roman numerals, plus the day and time in type.
+- **Brass clock**, plus the day and time in type.
 - **The Almanac** (weather) on parchment: conditions, a 5-day row, sunrise/sunset, how long
   the day is and how much daylight tomorrow gains or loses, air quality, and the moon's
-  phase. A red stamp appears when rain or snow is due within the hour.
+  phase in the corner. A red stamp appears when rain or snow is due within the hour.
+- **Countdowns:** the iPad's "days until", as up to three pages torn from a desk calendar,
+  picked the same way (see [Countdowns](#countdowns)): anything tagged ⏳ or "countdown" in
+  Google Calendar, then family birthdays, then holidays within 60 days.
 - **Departures board:** today's meetings on a split-flap board like the old train-station
   boards (the letters riffle when they change). Status reads DEPARTED, NOW, BOARDING (last
   5 minutes), FINAL (last minute) or IN 42 MIN. The big counter above counts down to the next

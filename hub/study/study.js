@@ -202,12 +202,10 @@
       var t = svgEl("line", { x1: 150, y1: hr ? 12 : 12, x2: 150, y2: hr ? 26 : 19, class: "tick" + (hr ? " hour" : ""), transform: "rotate(" + i * 6 + " 150 150)" });
       c.appendChild(t);
     }
-    var ROMAN = ["XII", "I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "IX", "X", "XI"];
     for (var h = 0; h < 12; h++) {
       var a = (h * 30 - 90) * Math.PI / 180;
-      var n = svgEl("text", { x: 150 + 104 * Math.cos(a), y: 150 + 104 * Math.sin(a), class: "num" });
-      n.textContent = ROMAN[h];
-      if (ROMAN[h].length > 2) n.setAttribute("style", "font-size:19px");
+      var n = svgEl("text", { x: 150 + 102 * Math.cos(a), y: 150 + 102 * Math.sin(a), class: "num" });
+      n.textContent = String(h || 12);
       c.appendChild(n);
     }
     var maker = svgEl("text", { x: 150, y: 205, class: "maker" });
@@ -361,12 +359,15 @@
   }
 
   function aqiLevel(v) {
-    return v <= 50 ? ["Good", "#00e400"] : v <= 100 ? ["Moderate", "#ffff00"] : v <= 150 ? ["Unhealthy for some", "#ff7e00"]
+    return v <= 50 ? ["Good", "#00e400"] : v <= 100 ? ["Moderate", "#ffff00"] : v <= 150 ? ["Poor for some", "#ff7e00"]
       : v <= 200 ? ["Unhealthy", "#ff0000"] : v <= 300 ? ["Very unhealthy", "#8f3f97"] : ["Hazardous", "#7e0023"];
   }
 
   function renderAlmanac() {
-    $("alm-place").textContent = settings.placeName;
+    // The moon's phase sits in the corner of the header.
+    var mp = moonPhase(new Date()), head = $("alm-place");
+    head.innerHTML = moonSvg(mp.p);
+    head.appendChild(document.createTextNode(mp.name));
     if (!wx) return;
     var c = wx.current, day = wx.daily, now = new Date();
 
@@ -427,11 +428,6 @@
       l.appendChild(dot);
       l.appendChild(document.createTextNode(aqi + " · " + lvl[0]));
     }
-    var mp = moonPhase(now);
-    var moon = el("div", "moon");
-    moon.innerHTML = moonSvg(mp.p);
-    moon.appendChild(document.createTextNode(mp.name));
-    sky.appendChild(moon);
   }
 
   // ------------------------------------------------------------- rain / snow in the next hour
@@ -695,6 +691,116 @@
       line.style.left = pct(nowT);
       box.appendChild(line);
     }
+  }
+
+  // ------------------------------------------------------------- countdowns ("days until")
+  // The same three sources as the iPad, in the same priority order:
+  //   1. Calendar events tagged with ⏳ or "countdown" in the title (the Worker looks a year ahead)
+  //   2. Family birthdays (all-day "birthday" events naming someone in the Worker's FAMILY)
+  //   3. Built-in holidays, once they're within 60 days
+  // Up to three, soonest first, each on a page torn from a desk calendar.
+
+  var MAX_COUNTDOWNS = 3, HOLIDAY_WINDOW = 60, BIRTHDAY_WINDOW = 60;
+  var calCountdowns = [], fam = null;
+
+  function nthWeekday(year, month, weekday, n) {
+    var first = new Date(year, month, 1).getDay();
+    return 1 + ((weekday - first + 7) % 7) + (n - 1) * 7;
+  }
+  function easter(year) {
+    // Anonymous Gregorian algorithm.
+    var a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4;
+    var f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+    var h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+    var l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    var month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+  function holidays(year) {
+    return [
+      ["New Year's", new Date(year, 0, 1)],
+      ["Valentine's Day", new Date(year, 1, 14)],
+      ["St. Patrick's Day", new Date(year, 2, 17)],
+      ["Easter", easter(year)],
+      ["Mother's Day", new Date(year, 4, nthWeekday(year, 4, 0, 2))],
+      ["Father's Day", new Date(year, 5, nthWeekday(year, 5, 0, 3))],
+      ["Fourth of July", new Date(year, 6, 4)],
+      ["Halloween", new Date(year, 9, 31)],
+      ["Thanksgiving", new Date(year, 10, nthWeekday(year, 10, 4, 4))],
+      ["Christmas", new Date(year, 11, 25)],
+    ];
+  }
+
+  // "🏖️ Florida trip ⏳" → "Florida trip". (The iPad shows the emoji; paper pages don't.)
+  var LEAD_EMOJI = /^((?:\p{Extended_Pictographic}|\p{Regional_Indicator})(?:\uFE0F|\u200D|\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator})*)\s*/u;
+  function cleanCountdownTitle(title) {
+    var t = title.replace(/⏳\uFE0F?/g, "").replace(/\bcountdown\b\s*:?/ig, "")
+      .replace(/\s{2,}/g, " ").replace(/^[\s:–—-]+|[\s:–—-]+$/g, "");
+    var m = LEAD_EMOJI.exec(t);
+    return (m ? t.slice(m[0].length) : t) || title;
+  }
+
+  function daysUntil(date, today) {
+    var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return Math.round((d - today) / DAY_MS); // round() absorbs DST's 23/25-hour days
+  }
+
+  function familyName(title) {
+    if (!fam) return null;
+    var everyone = (fam.parents || []).concat(fam.kids || [], fam.dog ? [fam.dog] : []);
+    return everyone.filter(function (n) { return title.toLowerCase().indexOf(n.toLowerCase()) >= 0; })[0] || null;
+  }
+
+  function countdownItems(now) {
+    var today = startOfDay(now), tagged = [], bdays = [], hols = [];
+    calCountdowns.forEach(function (e) {
+      if (!e.allDay && e.end <= now) return; // already over
+      var days = Math.max(0, daysUntil(e.start, today));
+      if (/⏳|\bcountdown\b/i.test(e.title)) tagged.push({ label: cleanCountdownTitle(e.title), days: days });
+      else {
+        var who = familyName(e.title);
+        if (who && days <= BIRTHDAY_WINDOW) bdays.push({ label: who + "'s birthday", days: days });
+      }
+    });
+    [now.getFullYear(), now.getFullYear() + 1].forEach(function (y) {
+      holidays(y).forEach(function (h) {
+        var days = daysUntil(h[1], today);
+        if (days >= 0 && days <= HOLIDAY_WINDOW) hols.push({ label: h[0], days: days });
+      });
+    });
+    var byDays = function (a, b) { return a.days - b.days; };
+    [tagged, bdays, hols].forEach(function (g) { g.sort(byDays); });
+    return tagged.concat(bdays, hols).slice(0, MAX_COUNTDOWNS).sort(byDays);
+  }
+
+  function loadCountdowns() {
+    var fp = demo ? Promise.resolve({ family: null }) : api("/family").catch(function () { return {}; });
+    var cp = demo ? Promise.resolve(demoCountdowns()) : api("/countdowns");
+    return fp.then(function (f) { fam = f.family || null; return cp; }).then(function (data) {
+      calCountdowns = (data.events || []).map(function (e) {
+        return { title: e.title, allDay: e.allDay, start: parseWall(e.start), end: parseWall(e.end || e.start) };
+      });
+      renderCountdowns();
+    }).catch(function (e) {
+      // An older Worker without /countdowns still gets the built-in holidays.
+      if (!/HTTP 404/.test(e.message)) setProblem("countdowns", e.message);
+      renderCountdowns();
+    });
+  }
+
+  function renderCountdowns() {
+    var box = $("countdowns"), items = countdownItems(new Date());
+    box.innerHTML = "";
+    box.hidden = !items.length;
+    items.forEach(function (c) {
+      var page = el("div", "cd-page" + (c.days === 0 ? " today" : ""));
+      var band = el("div", "cd-band");
+      band.appendChild(el("span", null, c.label));
+      page.appendChild(band);
+      page.appendChild(el("div", "cd-num", c.days === 0 ? "Today!" : String(c.days)));
+      page.appendChild(el("div", "cd-unit", c.days === 0 ? "it's here" : c.days === 1 ? "day to go" : "days to go"));
+      box.appendChild(page);
+    });
   }
 
   // ------------------------------------------------------------- scoreboard (Wrigley style)
@@ -1071,6 +1177,14 @@
     ] };
   }
 
+  function demoCountdowns() {
+    var d = new Date();
+    return { events: [
+      { title: "🏖️ Florida trip ⏳", allDay: true, start: ymd(addDays(d, 38)), end: ymd(addDays(d, 45)) },
+      { title: "Countdown: Last day of school", allDay: true, start: ymd(addDays(d, 12)), end: ymd(addDays(d, 13)) },
+    ] };
+  }
+
   function demoHeadlines() {
     var now = Date.now();
     return { sections: [
@@ -1123,7 +1237,7 @@
   // ------------------------------------------------------------- boot + refresh loop
 
   function refreshAll() {
-    return Promise.all([loadWeather(), loadAirQuality(), loadCalendar(), loadSports(), loadHeadlines(), loadSpotify()]).then(renderStatus);
+    return Promise.all([loadWeather(), loadAirQuality(), loadCalendar(), loadSports(), loadHeadlines(), loadSpotify(), loadCountdowns()]).then(renderStatus);
   }
 
   renderStatus();
@@ -1131,7 +1245,8 @@
   refreshAll();
 
   setInterval(function () { tick(); renderSpotifyProgress(); }, 1000);
-  setInterval(function () { renderBoard(); renderRuler(); renderStatus(); renderAlmanac(); }, 60 * 1000);
+  setInterval(function () { renderBoard(); renderRuler(); renderStatus(); renderAlmanac(); renderCountdowns(); }, 60 * 1000);
+  setInterval(loadCountdowns, 60 * MIN);
   setInterval(loadCalendar, 5 * MIN);
   setInterval(loadWeather, 15 * MIN);
   setInterval(loadAirQuality, 30 * MIN);
