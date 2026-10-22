@@ -13,6 +13,7 @@
     nightStart: "22",
     nightEnd: "6",
     days: "5",
+    calendarStyle: "list",
     photoUrl: "",
   };
   var STORE = "homehub.settings";
@@ -783,7 +784,179 @@
     }).catch(function (e) { setProblem("calendar", e.message); });
   }
 
+  // ---- calendar layouts (⚙︎ Settings → Calendar style)
+
+  function eventsOn(day) {
+    var next = addDays(day, 1);
+    return events.filter(function (e) {
+      return e.allDay ? e.start < next && e.end > day : e.start >= day && e.start < next;
+    }).sort(function (a, b) { return (b.allDay - a.allDay) || (a.start - b.start); });
+  }
+
+  function tint(hex, alpha) {
+    var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "");
+    return m ? "rgba(" + parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16) + "," + alpha + ")" : "rgba(120,120,120," + alpha + ")";
+  }
+
+  function untilText(ms) {
+    var min = Math.max(1, Math.round(ms / 60000));
+    if (min < 60) return "in " + min + " min";
+    var h = Math.floor(min / 60), m = min % 60;
+    return "in " + h + " hr" + (m ? " " + m + " min" : "");
+  }
+
+  // Week: one column per day, events as colored chips (a Skylight-style week view).
+  function renderWeek(box, now, today, days) {
+    var grid = el("div", "wk");
+    grid.style.gridTemplateColumns = "repeat(" + Math.min(days, 5) + ", minmax(0, 1fr))";
+    for (var i = 0; i < Math.min(days, 5); i++) {
+      var day = addDays(today, i);
+      var col = el("div", "wk-col" + (i === 0 ? " today" : ""));
+      var head = el("div", "wk-head");
+      head.appendChild(el("div", "wk-dow", i === 0 ? "Today" : DAY_NAMES[day.getDay()].slice(0, 3)));
+      head.appendChild(el("div", "wk-date", String(day.getDate())));
+      col.appendChild(head);
+      var list = eventsOn(day);
+      if (!list.length) col.appendChild(el("div", "wk-free", "Free"));
+      list.forEach(function (e) {
+        var chip = el("div", "wk-chip" + (e.allDay ? " allday" : "") + (!e.allDay && e.end <= now ? " past" : ""));
+        chip.style.borderLeftColor = e.color || "#8a8076";
+        chip.style.background = tint(e.color, e.allDay ? 0.55 : 0.18);
+        if (!e.allDay) chip.appendChild(el("div", "wk-time", fmtTime(e.start)));
+        chip.appendChild(el("div", "wk-title", e.title));
+        col.appendChild(chip);
+      });
+      grid.appendChild(col);
+    }
+    box.appendChild(grid);
+  }
+
+  // Timeline: today on an hour ruler with a "now" line, then a one-line peek at the next days.
+  function renderTimeline(box, now, today, days) {
+    var PX = 34, startH = Math.max(6, Math.min(now.getHours() - 1, 15)), endH = startH + 8;
+    var todays = eventsOn(today);
+    var allDay = todays.filter(function (e) { return e.allDay; });
+    var head = el("div", "tl-headline");
+    head.appendChild(el("b", null, "Today"));
+    allDay.forEach(function (e) {
+      var p = el("span", "tl-allday", e.title);
+      p.style.background = tint(e.color, 0.55);
+      head.appendChild(p);
+    });
+    box.appendChild(head);
+
+    var track = el("div", "tl");
+    track.style.height = (endH - startH) * PX + "px";
+    for (var h = startH; h <= endH; h++) {
+      var line = el("div", "tl-hour");
+      line.style.top = (h - startH) * PX + "px";
+      line.appendChild(el("span", null, (h % 12 || 12) + (h < 12 || h === 24 ? "a" : "p")));
+      track.appendChild(line);
+    }
+    var y = function (d) { return ((d.getHours() + d.getMinutes() / 60) - startH) * PX; };
+    todays.filter(function (e) { return !e.allDay; }).forEach(function (e) {
+      var top = y(e.start), bottom = y(e.end);
+      if (bottom <= 0 || top >= (endH - startH) * PX) return;
+      top = Math.max(0, top);
+      var b = el("div", "tl-event" + (e.end <= now ? " past" : ""));
+      b.style.top = top + "px";
+      b.style.height = Math.max(24, Math.min(bottom, (endH - startH) * PX) - top - 2) + "px";
+      b.style.borderLeftColor = e.color || "#8a8076";
+      b.style.background = tint(e.color, 0.35);
+      b.appendChild(el("b", null, e.title));
+      b.appendChild(el("span", null, " " + fmtTime(e.start) + (e.location ? " · " + e.location : "")));
+      track.appendChild(b);
+    });
+    var ny = y(now);
+    if (ny >= 0 && ny <= (endH - startH) * PX) {
+      var nl = el("div", "tl-now");
+      nl.style.top = ny + "px";
+      track.appendChild(nl);
+    }
+    box.appendChild(track);
+
+    var peek = el("div", "tl-peek");
+    for (var i = 1; i < Math.min(days, 5); i++) {
+      var day = addDays(today, i), list = eventsOn(day);
+      var row = el("div", "tl-peek-row");
+      row.appendChild(el("b", null, i === 1 ? "Tomorrow" : DAY_NAMES[day.getDay()].slice(0, 3)));
+      row.appendChild(el("span", null, list.length ? list.slice(0, 2).map(function (e) {
+        return (e.allDay ? "" : fmtTime(e.start) + " ") + e.title;
+      }).join(" · ") + (list.length > 2 ? "  +" + (list.length - 2) : "") : "Free"));
+      peek.appendChild(row);
+    }
+    box.appendChild(peek);
+  }
+
+  // Focus: a big "up next" card with a countdown, the rest of today as chips, then a compact week.
+  function renderFocus(box, now, today, days) {
+    var upcoming = events.filter(function (e) { return !e.allDay && e.end > now; }).sort(function (a, b) { return a.start - b.start; });
+    var next = upcoming[0];
+    var hero = el("div", "fx-hero");
+    if (next) {
+      hero.style.background = "linear-gradient(135deg, " + tint(next.color, 0.85) + ", " + tint(next.color, 0.55) + ")";
+      var live = next.start <= now;
+      hero.appendChild(el("div", "fx-kicker", live ? "Happening now" : sameDate(next.start, now) ? "Up next" : "Next up · " + DAY_NAMES[next.start.getDay()]));
+      hero.appendChild(el("div", "fx-title", next.title));
+      hero.appendChild(el("div", "fx-meta", fmtTime(next.start) + "–" + fmtTime(next.end) + (next.location ? " · " + next.location : "")));
+      hero.appendChild(el("div", "fx-count", live ? "until " + fmtTime(next.end) : untilText(next.start - now)));
+    } else {
+      hero.appendChild(el("div", "fx-kicker", "All clear"));
+      hero.appendChild(el("div", "fx-title", "Nothing else on the calendar"));
+    }
+    box.appendChild(hero);
+
+    var rest = eventsOn(today).filter(function (e) { return e !== next && (e.allDay || e.start > now); });
+    if (rest.length) {
+      var chips = el("div", "fx-chips");
+      chips.appendChild(el("span", "fx-label", "Later today"));
+      rest.forEach(function (e) {
+        var c = el("span", "fx-chip", (e.allDay ? "" : fmtTime(e.start) + " ") + e.title);
+        c.style.background = tint(e.color, 0.25);
+        chips.appendChild(c);
+      });
+      box.appendChild(chips);
+    }
+
+    var wk = el("div", "fx-week");
+    for (var i = 1; i < Math.min(days, 5); i++) {
+      var day = addDays(today, i), list = eventsOn(day);
+      var row = el("div", "fx-day");
+      var d = el("div", "fx-daylabel");
+      d.appendChild(el("b", null, i === 1 ? "Tmrw" : DAY_NAMES[day.getDay()].slice(0, 3)));
+      d.appendChild(el("span", null, String(day.getDate())));
+      row.appendChild(d);
+      var evs = el("div", "fx-dayevents");
+      if (!list.length) evs.appendChild(el("span", "fx-free", "Free"));
+      list.forEach(function (e) {
+        var c = el("span", "fx-dot-item");
+        var dot = el("i", "fx-dot");
+        dot.style.background = e.color || "#8a8076";
+        c.appendChild(dot);
+        c.appendChild(document.createTextNode((e.allDay ? "" : fmtTime(e.start) + " ") + e.title));
+        evs.appendChild(c);
+      });
+      row.appendChild(evs);
+      wk.appendChild(row);
+    }
+    box.appendChild(wk);
+  }
+
+  function sameDate(a, b) { return a.toDateString() === b.toDateString(); }
+
   function renderAgenda() {
+    var style = settings.calendarStyle || "list";
+    $("agenda").className = "agenda-list cal-" + style;
+    if (style !== "list") {
+      var bx = $("agenda");
+      bx.innerHTML = "";
+      var n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+      var nd = Math.max(1, Math.min(14, +settings.days || 5));
+      if (style === "week") renderWeek(bx, n, t, nd);
+      else if (style === "timeline") renderTimeline(bx, n, t, nd);
+      else renderFocus(bx, n, t, nd);
+      return;
+    }
     var box = $("agenda");
     box.innerHTML = "";
     var now = new Date();
