@@ -374,7 +374,7 @@
     else if (code >= 51)
       body = SVG_CLOUD_DARK + '<g stroke="#4a90d9" stroke-width="2" stroke-linecap="round"><path d="M11 26l-1.2 3M17 26l-1.2 3M23 26l-1.2 3"/></g>';
     else body = SVG_CLOUD;
-    return '<svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">' + body + '</svg>';
+    return '<svg viewBox="0 0 32 32" width="40" height="40" aria-hidden="true">' + body + '</svg>';
   }
 
   function wmo(code, isDay) {
@@ -427,24 +427,26 @@
           strip.appendChild(cell);
         }
 
-        var detail = el("div", "wx-detail");
-        detail.appendChild(el("b", null, now[1]));
-        detail.appendChild(el("div", null, "Feels " + Math.round(c.apparent_temperature) + "° · wind " + Math.round(c.wind_speed_10m)));
-        if (sun) {
-          var t = new Date();
-          var sunLine = t < sun.rise ? "Sunrise " + fmtTime(sun.rise) : t < sun.set ? "Sunset " + fmtTime(sun.set) : settings.placeName;
-          detail.appendChild(el("div", null, sunLine));
-        }
-
+        // Left: big icon + temperature with the details underneath. Right: the 5-day strip.
         var nowBox = el("div", "wx-now");
         nowBox.appendChild(el("span", "wx-icon", now[0]));
         nowBox.appendChild(el("span", "wx-temp", Math.round(c.temperature_2m) + "°"));
 
-        var main = el("div", "wx-main");
-        main.appendChild(detail);
-        main.appendChild(nowBox);
-        main.appendChild(strip);
-        box.appendChild(main);
+        var detail = el("div", "wx-detail");
+        detail.appendChild(el("b", null, now[1]));
+        detail.appendChild(document.createTextNode(" · feels " + Math.round(c.apparent_temperature) + "°"));
+        var line2 = "Wind " + Math.round(c.wind_speed_10m) + " mph";
+        if (sun) {
+          var t = new Date();
+          line2 += " · " + (t < sun.rise ? "Sunrise " + fmtTime(sun.rise) : t < sun.set ? "Sunset " + fmtTime(sun.set) : settings.placeName);
+        }
+        detail.appendChild(el("div", null, line2));
+
+        var left = el("div", "wx-left");
+        left.appendChild(nowBox);
+        left.appendChild(detail);
+        box.appendChild(left);
+        box.appendChild(strip);
         renderWearCard();
         if (!$("hourly").hidden) renderHourly();
         setProblem("weather", null);
