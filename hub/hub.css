@@ -89,7 +89,7 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 #hub.right-empty .col-right { display: none; }
 
 @media (orientation: portrait) {
-  .time { font-size: 68px; }
+  .time { font-size: 62px; }
   .wx-temp { font-size: 50px; }
   .wx-icon { font-size: 44px; }
   .weather { gap: 14px; }
@@ -106,12 +106,52 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 /* ---------------------------------------------------------------- header */
 
 .top { grid-area: top; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; padding: 0 4px; row-gap: 8px; }
-.time { font-size: 84px; font-weight: 200; letter-spacing: -2px; line-height: 0.95; font-variant-numeric: tabular-nums; }
+/* Time + date share one shaded panel so they read as a single unit. */
+.clock-unit {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 18px;
+  background: rgba(10, 14, 22, 0.42); border: 1px solid rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.time { font-size: 80px; display: flex; gap: 10px; }
+
+/* Flip clock. A card's font-size sets the digit size; the card is 1.2em tall and its
+   two halves each show half of the number, split by a thin dark line. */
+.flip {
+  position: relative; height: 1.2em; min-width: 1.45em; padding: 0 0.2em; border-radius: 0.12em;
+  font-weight: 700; letter-spacing: -0.02em; line-height: 1.2em; text-align: center; color: #f4f1ea; text-shadow: none;
+  background: #26272b; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  -webkit-perspective: 4em; perspective: 4em; font-variant-numeric: tabular-nums;
+}
+.fl-half { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: inherit; border-radius: inherit; }
+.fl-top { top: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; background: linear-gradient(#2c2d32, #232428); }
+.fl-bot { bottom: 0; border-top-left-radius: 0; border-top-right-radius: 0; background: linear-gradient(#1f2024, #26272b); }
+.fl-half span { display: block; height: 1.2em; }
+.fl-bot span { margin-top: -0.6em; }
+.flip::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: rgba(0, 0, 0, 0.55); z-index: 3; }
+.fl-flap { z-index: 2; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.fl-down { -webkit-transform-origin: 50% 100%; transform-origin: 50% 100%; animation: flip-down 0.32s ease-in both; }
+.fl-up { -webkit-transform-origin: 50% 0; transform-origin: 50% 0; animation: flip-up 0.32s 0.3s ease-out both; }
+@keyframes flip-down { from { transform: rotateX(0); } to { transform: rotateX(-90deg); } }
+@keyframes flip-up { from { transform: rotateX(90deg); } to { transform: rotateX(0); } }
+.flip-ampm {
+  position: absolute; left: 0.4em; bottom: 0.35em; z-index: 4; font-size: 0.14em; line-height: 1;
+  font-weight: 800; letter-spacing: 0.06em; color: rgba(244, 241, 234, 0.7);
+}
+
+/* Date as split-flap letter tiles */
+.date { display: flex; gap: 10px; white-space: nowrap; }
+.tile-word { display: flex; gap: 3px; }
+.tile {
+  position: relative; width: 1.15em; height: 1.45em; line-height: 1.45em; text-align: center; border-radius: 4px;
+  font-size: 20px; font-weight: 700; color: #f4f1ea; text-shadow: none;
+  background: linear-gradient(#2c2d32 50%, #1f2024 50%); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+.tile::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(0, 0, 0, 0.6); }
 .top { color: var(--on-photo); text-shadow: var(--photo-shadow); gap: 24px; }
 .clock { flex: 1; min-width: 0; }
 .weather { flex: none; }
-.time .ampm { font-size: 28px; font-weight: 400; letter-spacing: 0; margin-left: 6px; color: var(--on-photo-muted); }
-.date { font-size: 24px; color: var(--on-photo); margin-top: 6px; white-space: nowrap; font-weight: 500; }
 .precip-alert[hidden] { display: none; }
 .precip-alert {
   display: inline-block; margin-top: 6px; padding: 5px 14px; border-radius: 999px;
@@ -428,9 +468,13 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 }
 .night[hidden] { display: none; }
 body.is-night #hub { visibility: hidden; }
-.night-time { font-size: 180px; font-weight: 100; letter-spacing: -4px; font-variant-numeric: tabular-nums; }
+.night-time { font-size: 160px; display: flex; gap: 18px; justify-content: center; margin-bottom: 30px; }
+.night-time .flip { color: #e8d6c0; background: #1a1a1d; }
+.night-time .fl-top { background: linear-gradient(#1f1f23, #18181b); }
+.night-time .fl-bot { background: linear-gradient(#151518, #1a1a1d); }
 .night-next { font-size: 22px; opacity: 0.7; margin-top: 8px; }
-.night-wx { font-size: 22px; opacity: 0.7; margin-top: 14px; }
+.night-wx { font-size: 22px; opacity: 0.7; margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+.night-wx-icon svg { display: block; width: 32px; height: 32px; }
 .night-wx:empty, .night-next:empty { display: none; }
 
 /* ---------------------------------------------------------------- settings */

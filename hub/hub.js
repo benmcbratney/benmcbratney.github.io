@@ -128,14 +128,79 @@
     return a < b ? h >= a && h < b : h >= a || h < b;
   }
 
+  // Flip clock: hours and minutes on dark split cards that flip down when they change,
+  // and the date as split-flap letter tiles. Plain bold text, no fonts or images to load.
+  function flipCard(cls) {
+    var card = el("div", "flip " + (cls || ""));
+    card.innerHTML = '<div class="fl-half fl-top"><span></span></div><div class="fl-half fl-bot"><span></span></div>';
+    return card;
+  }
+
+  function setFlip(card, value, animate) {
+    var old = card.getAttribute("data-v");
+    if (old === value) return;
+    card.setAttribute("data-v", value);
+    var top = card.querySelector(".fl-top span"), bot = card.querySelector(".fl-bot span");
+    var flaps = card.querySelectorAll(".fl-flap");
+    for (var i = 0; i < flaps.length; i++) flaps[i].remove();
+    if (!animate || old == null || document.hidden) { top.textContent = bot.textContent = value; return; }
+    // New value shows on the top half right away; the old top half folds down over the
+    // bottom, then the new bottom half unfolds to cover the old one.
+    top.textContent = value;
+    var down = el("div", "fl-half fl-top fl-flap fl-down");
+    down.appendChild(el("span", null, old));
+    var up = el("div", "fl-half fl-bot fl-flap fl-up");
+    up.appendChild(el("span", null, value));
+    card.appendChild(down);
+    card.appendChild(up);
+    setTimeout(function () {
+      if (card.getAttribute("data-v") !== value) return;
+      bot.textContent = value;
+      if (down.parentNode) down.remove();
+      if (up.parentNode) up.remove();
+    }, 700);
+  }
+
+  // Builds (once) and updates a clock: [hours card][minutes card], AM/PM tucked in a corner.
+  function renderFlipClock(box, hours, minutes, ampm, animate) {
+    if (!box.firstChild || !box.querySelector(".flip-h")) {
+      box.innerHTML = "";
+      var h = flipCard("flip-h"), m = flipCard("flip-m");
+      h.appendChild(el("span", "flip-ampm"));
+      box.appendChild(h);
+      box.appendChild(m);
+    }
+    box.querySelector(".flip-ampm").textContent = ampm;
+    setFlip(box.querySelector(".flip-h"), hours, animate);
+    setFlip(box.querySelector(".flip-m"), minutes, animate);
+  }
+
+  // Date as small split-flap tiles: THU · OCT · 22.
+  function renderFlipDate(box, words) {
+    var key = words.join(" ");
+    if (box.getAttribute("data-v") === key) return;
+    box.setAttribute("data-v", key);
+    box.innerHTML = "";
+    words.forEach(function (w) {
+      var group = el("span", "tile-word");
+      w.split("").forEach(function (ch) { group.appendChild(el("span", "tile", ch)); });
+      box.appendChild(group);
+    });
+  }
+
+  var clockReady = false;
+
   function tickClock() {
     var now = new Date();
     var h = now.getHours();
     var timeText = (h % 12 || 12) + ":" + pad(now.getMinutes());
-    var t = $("time");
-    t.textContent = timeText;
-    t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
-    $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
+    var hh = String(h % 12 || 12), mm = pad(now.getMinutes()), ap = h < 12 ? "AM" : "PM";
+    renderFlipClock($("time"), hh, mm, ap, clockReady);
+    renderFlipClock($("night-time"), hh, mm, ap, clockReady && !$("night").hidden);
+    clockReady = true;
+    $("time").setAttribute("aria-label", timeText + " " + ap);
+    renderFlipDate($("date"), [DAY_NAMES[now.getDay()].slice(0, 3), MONTHS[now.getMonth()].slice(0, 3), String(now.getDate())].map(function (w) { return w.toUpperCase(); }));
+    $("date").setAttribute("aria-label", DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate());
     renderPrecipAlert(now);
     updateBackdrop();
 
@@ -143,9 +208,8 @@
     $("night").hidden = !night;
     document.body.classList.toggle("is-night", night);
     if (night) {
-      $("night-time").textContent = timeText;
       $("night-next").textContent = nextEventLine(now);
-      $("night-wx").textContent = nightForecastLine(now);
+      renderNightForecast($("night-wx"), now);
     }
 
     // Reload once a night to keep an old iPad's memory tidy and pick up code updates.
@@ -265,6 +329,32 @@
     85: ["🌨️", "Snow showers"], 86: ["❄️", "Snow showers"],
     95: ["⛈️", "Thunderstorms"], 96: ["⛈️", "T-storms + hail"], 99: ["⛈️", "T-storms + hail"],
   };
+  // The icon for day i of the daily forecast, judged from its daytime hours (7am–7pm).
+  // Open-Meteo's daily code is the most severe condition at any hour, so a little fog
+  // at 5am or late at night would label a sunny day "fog". Here: rain/snow/storms win
+  // if they cover 2+ daytime hours (worst one shown); otherwise the sky condition that
+  // covers the most of the day.
+  function daytimeCode(i) {
+    var fallback = dailyWx.weather_code[i];
+    if (!hourlyWx || !hourlyWx.time || !hourlyWx.weather_code) return fallback;
+    var key = dailyWx.time[i], counts = {}, wet = [];
+    hourlyWx.time.forEach(function (t, j) {
+      if (t.slice(0, 10) !== key) return;
+      var hr = +t.slice(11, 13);
+      if (hr < 7 || hr >= 19) return;
+      var c = hourlyWx.weather_code[j];
+      if (c >= 51) wet.push(c);
+      else counts[c] = (counts[c] || 0) + 1;
+    });
+    if (wet.length >= 2) return Math.max.apply(null, wet);
+    var best = null;
+    Object.keys(counts).forEach(function (c) {
+      // Ties go to the cloudier/foggier code, so the icon doesn't oversell the sun.
+      if (best === null || counts[c] > counts[best] || (counts[c] === counts[best] && +c > +best)) best = c;
+    });
+    return best === null ? fallback : +best;
+  }
+
   // Drawn icons for the 5-day strip. On the wall iPad some emoji (☀️ in particular) came
   // out as blank boxes in that strip only, so it uses these instead of the emoji font.
   var SVG_SUN = '<circle cx="12" cy="12" r="5" fill="#ffc531"/><g stroke="#ffc531" stroke-width="2" stroke-linecap="round">' +
@@ -324,8 +414,9 @@
           var cell = el("div", "fc-day" + (i === 0 ? " today" : ""));
           cell.appendChild(el("div", "fc-name", i === 0 ? "Today" : DAY_NAMES[dd.getDay()].slice(0, 3)));
           var ic = el("div", "fc-icon");
-          ic.innerHTML = wxSvg(day.weather_code[i]);
-          ic.title = wmo(day.weather_code[i], 1)[1];
+          var dc = daytimeCode(i);
+          ic.innerHTML = wxSvg(dc);
+          ic.title = wmo(dc, 1)[1];
           cell.appendChild(ic);
           var temps = el("div", "fc-temp");
           temps.appendChild(el("b", null, Math.round(day.temperature_2m_max[i]) + "°"));
@@ -1000,15 +1091,22 @@
 
   // Before midnight the next day is "tomorrow" (daily[1]); after midnight it's today (daily[0]).
   var dailyWx = null;
-  function nightForecastLine(now) {
-    if (!dailyWx || !dailyWx.time) return "";
+  // Night screen forecast: a drawn icon (emoji drew as blank boxes on the wall iPad)
+  // followed by "Tomorrow: Clear · 66° / 41° · 10% precip".
+  function renderNightForecast(box, now) {
+    box.innerHTML = "";
+    if (!dailyWx || !dailyWx.time) return;
     var target = now.getHours() < 12 ? now : addDays(now, 1);
     var i = dailyWx.time.indexOf(ymd(target));
-    if (i < 0) return "";
+    if (i < 0) return;
     var label = now.getHours() < 12 ? "Today" : "Tomorrow";
-    return label + ": " + wmo(dailyWx.weather_code[i], 1)[0] + " " + wmo(dailyWx.weather_code[i], 1)[1] + " · " +
+    var icon = el("span", "night-wx-icon");
+    var dc = daytimeCode(i);
+    icon.innerHTML = wxSvg(dc);
+    box.appendChild(icon);
+    box.appendChild(document.createTextNode(label + ": " + wmo(dc, 1)[1] + " · " +
       Math.round(dailyWx.temperature_2m_max[i]) + "° / " + Math.round(dailyWx.temperature_2m_min[i]) + "° · " +
-      dailyWx.precipitation_probability_max[i] + "% precip";
+      dailyWx.precipitation_probability_max[i] + "% precip"));
   }
 
   function nextEventLine(now) {
