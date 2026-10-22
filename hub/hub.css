@@ -116,8 +116,11 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .top { color: var(--on-photo); text-shadow: var(--photo-shadow); gap: 24px; }
 .clock { flex: 1; min-width: 0; }
 .weather { flex: none; }
-.time .ampm { font-size: 26px; font-weight: 700; letter-spacing: 1px; margin-left: 12px; line-height: 1; color: var(--on-photo-muted); }
-.date { font-size: 24px; color: var(--on-photo); margin-top: 6px; white-space: nowrap; font-weight: 500; }
+.time .ampm { font-size: 30px; margin-left: 14px; margin-bottom: 2px; line-height: 1; color: var(--on-photo-muted); }
+.time .ampm .seg-off { display: none; }
+.date { font-size: 32px; color: var(--on-photo); line-height: 1; white-space: nowrap; }
+.date .seg-off { display: none; } /* ghost segments are just noise at this size */
+.seg line.seg-on, .seg line.seg-off { stroke: currentColor; fill: none; }
 .precip-alert[hidden] { display: none; }
 .precip-alert {
   display: inline-block; margin-top: 6px; padding: 5px 14px; border-radius: 999px;

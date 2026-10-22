@@ -162,6 +162,54 @@
     return '<svg class="seg" viewBox="-2 -2 ' + (vbw + 4) + ' 104" style="width:' + ((vbw + 4) / 104).toFixed(3) + 'em" role="img" aria-label="' + text + '">' + parts.join("") + "</svg>";
   }
 
+  // 14-segment letters for the date ("THU OCT 22"): the same bars as the clock plus a
+  // center column and four diagonals, so it can spell words.
+  //   a/d top/bottom, b/c right, f/e left, g1/g2 middle halves, tc/bc center column,
+  //   tl/tr/bl/br diagonals toward the middle
+  var SEG14 = {
+    A: "a b c e f g1 g2", B: "a b c d g2 tc bc", C: "a d e f", D: "a b c d tc bc", E: "a d e f g1 g2",
+    F: "a e f g1", G: "a c d e f g2", H: "b c e f g1 g2", I: "a d tc bc", J: "b c d e", L: "d e f",
+    M: "b c e f tl tr", N: "b c e f tl br", O: "a b c d e f", P: "a b e f g1 g2", R: "a b e f g1 g2 br",
+    S: "a c d f g1 g2", T: "a tc bc", U: "b c d e f", V: "e f bl tr", W: "b c e f bl br", Y: "tl tr bc",
+    0: "a b c d e f", 1: "b c", 2: "a b d e g1 g2", 3: "a b c d g1 g2", 4: "b c f g1 g2", 5: "a c d f g1 g2",
+    6: "a c d e f g1 g2", 7: "a b c", 8: "a b c d e f g1 g2", 9: "a b c d f g1 g2",
+  };
+  var SEG14_SHAPES = (function () {
+    var t = 14, k = t / 2, w = 60, h = 100, m = h / 2, cx = w / 2, g = 2;
+    function hbar(x1, x2, y) { return [[x1 + g, y], [x1 + g + k, y - k], [x2 - g - k, y - k], [x2 - g, y], [x2 - g - k, y + k], [x1 + g + k, y + k]]; }
+    function vbar(x, y1, y2) { return [[x, y1 + g], [x + k, y1 + g + k], [x + k, y2 - g - k], [x, y2 - g], [x - k, y2 - g - k], [x - k, y1 + g + k]]; }
+    var poly = {
+      a: hbar(k, w - k, k), d: hbar(k, w - k, h - k), g1: hbar(k, cx, m), g2: hbar(cx, w - k, m),
+      b: vbar(w - k, k, m), c: vbar(w - k, m, h - k), f: vbar(k, k, m), e: vbar(k, m, h - k), tc: vbar(cx, k, m), bc: vbar(cx, m, h - k),
+    };
+    var out = {};
+    Object.keys(poly).forEach(function (n) {
+      out[n] = '<polygon class="%" points="' + poly[n].map(function (p) { return p.join(","); }).join(" ") + '"/>';
+    });
+    var d = t + 4;
+    var lines = { tl: [d, d, cx - k - 3, m - k - 3], tr: [w - d, d, cx + k + 3, m - k - 3], bl: [d, h - d, cx - k - 3, m + k + 3], br: [w - d, h - d, cx + k + 3, m + k + 3] };
+    Object.keys(lines).forEach(function (n) {
+      var L = lines[n];
+      out[n] = '<line class="%" x1="' + L[0] + '" y1="' + L[1] + '" x2="' + L[2] + '" y2="' + L[3] + '" stroke-width="' + (t * 0.75) + '" stroke-linecap="round"/>';
+    });
+    return out;
+  })();
+
+  function segmentWords(text) {
+    var x = 0, parts = [];
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (ch === " ") { x += 34; continue; }
+      var lit = " " + (SEG14[ch] || "") + " ";
+      parts.push('<g transform="translate(' + x + ' 0)">' + Object.keys(SEG14_SHAPES).map(function (n) {
+        return SEG14_SHAPES[n].replace("%", lit.indexOf(" " + n + " ") >= 0 ? "seg-on" : "seg-off");
+      }).join("") + "</g>");
+      x += 72;
+    }
+    var vbw = x - 12;
+    return '<svg class="seg" viewBox="-2 -2 ' + (vbw + 4) + ' 104" style="width:' + ((vbw + 4) / 104).toFixed(3) + 'em" role="img" aria-label="' + text + '">' + parts.join("") + "</svg>";
+  }
+
   var lastClockText = "";
 
   function tickClock() {
@@ -173,10 +221,14 @@
       lastClockText = clockKey;
       var t = $("time");
       t.innerHTML = segmentDigits(timeText);
-      t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
+      var ap = el("span", "ampm");
+      ap.innerHTML = segmentWords(h < 12 ? "AM" : "PM");
+      t.appendChild(ap);
       $("night-time").innerHTML = segmentDigits(timeText);
+      var dateText = DAY_NAMES[now.getDay()].slice(0, 3) + " " + MONTHS[now.getMonth()].slice(0, 3) + " " + now.getDate();
+      $("date").innerHTML = segmentWords(dateText.toUpperCase());
+      $("date").setAttribute("aria-label", DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate());
     }
-    $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
     renderPrecipAlert(now);
     updateBackdrop();
 
