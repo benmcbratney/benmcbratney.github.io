@@ -93,7 +93,7 @@ be in the Google Home app (not an old Nest account), on a personal Gmail account
 
 Adds a card under the calendar with album art, the song and artist, a progress bar,
 and ⏮ ⏯ ⏭ for whatever's playing on your Spotify account (phone, speaker, Echo, …).
-When nothing's playing it says so. **Tap the card** for a music picker: choose a
+When nothing's playing the card hides and a **🎵 Music** button appears in the footer. **Tap the card (or 🎵 Music)** for a music picker: choose a
 speaker under "Play on" and tap a playlist (yours and ones you follow, up to 100).
 Tapping a different speaker while music is playing moves it there. Smart speakers
 like Echo only appear while they're awake, so say "Alexa, open Spotify" (or play

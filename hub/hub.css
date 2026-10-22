@@ -437,9 +437,6 @@ body.is-night #hub { visibility: hidden; }
 .sp-ctrl button:active { transform: scale(0.92); }
 .spotify.paused .sp-title, .spotify.paused .sp-artist { opacity: 0.6; }
 .spotify { cursor: pointer; }
-.spotify.idle .sp-ctrl, .spotify.idle .sp-bar { display: none; }
-.spotify.idle .sp-art::after { content: "🎵"; display: flex; height: 100%; align-items: center; justify-content: center; font-size: 30px; }
-.spotify.idle .sp-artist { color: var(--muted); }
 
 /* Music picker */
 .music-card { width: 860px; max-height: calc(100% - 40px); display: flex; flex-direction: column; }

@@ -1587,16 +1587,17 @@
 
   // Once Spotify is set up the card stays put, so there's always something to tap
   // for the music picker; when nothing's playing it just says so.
+  // The card only shows while something's loaded on Spotify (playing or paused). With
+  // nothing playing it hides, and a 🎵 Music button in the footer opens the picker instead.
   function renderSpotify() {
-    var show = !!spotify;
+    var show = !!(spotify && spotify.active);
     $("spotify-card").hidden = !show;
+    $("open-music").hidden = !spotify || show;
     if (!show) return;
-    var idle = !spotify.active;
-    $("spotify-card").classList.toggle("idle", idle);
-    $("sp-title").textContent = idle ? "Nothing playing" : spotify.title || "";
-    $("sp-artist").textContent = idle ? "Tap to pick a playlist and speaker" : spotify.artist || "";
-    $("sp-art").style.backgroundImage = !idle && spotify.art ? "url(\"" + spotify.art + "\")" : "";
-    $("spotify-card").classList.toggle("paused", !idle && !spotify.playing);
+    $("sp-title").textContent = spotify.title || "";
+    $("sp-artist").textContent = spotify.artist || "";
+    $("sp-art").style.backgroundImage = spotify.art ? "url(\"" + spotify.art + "\")" : "";
+    $("spotify-card").classList.toggle("paused", !spotify.playing);
     $("sp-icon-play").style.display = spotify.playing ? "none" : "";
     $("sp-icon-pause").style.display = spotify.playing ? "" : "none";
     renderSpotifyProgress();
@@ -1747,6 +1748,7 @@
     if (!ev.target.closest(".sp-ctrl")) openMusic();
   });
   $("music-done").addEventListener("click", closeMusic);
+  $("open-music").addEventListener("click", openMusic);
   $("music-refresh").addEventListener("click", function () { loadLibrary(); });
 
   function demoLibrary() {
