@@ -473,7 +473,8 @@ body.is-night #hub { visibility: hidden; }
 .night-time .fl-top { background: linear-gradient(#1f1f23, #18181b); }
 .night-time .fl-bot { background: linear-gradient(#151518, #1a1a1d); }
 .night-next { font-size: 22px; opacity: 0.7; margin-top: 8px; }
-.night-wx { font-size: 22px; opacity: 0.7; margin-top: 14px; }
+.night-wx { font-size: 22px; opacity: 0.7; margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+.night-wx-icon svg { display: block; width: 32px; height: 32px; }
 .night-wx:empty, .night-next:empty { display: none; }
 
 /* ---------------------------------------------------------------- settings */

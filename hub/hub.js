@@ -209,7 +209,7 @@
     document.body.classList.toggle("is-night", night);
     if (night) {
       $("night-next").textContent = nextEventLine(now);
-      $("night-wx").textContent = nightForecastLine(now);
+      renderNightForecast($("night-wx"), now);
     }
 
     // Reload once a night to keep an old iPad's memory tidy and pick up code updates.
@@ -1064,15 +1064,21 @@
 
   // Before midnight the next day is "tomorrow" (daily[1]); after midnight it's today (daily[0]).
   var dailyWx = null;
-  function nightForecastLine(now) {
-    if (!dailyWx || !dailyWx.time) return "";
+  // Night screen forecast: a drawn icon (emoji drew as blank boxes on the wall iPad)
+  // followed by "Tomorrow: Clear · 66° / 41° · 10% precip".
+  function renderNightForecast(box, now) {
+    box.innerHTML = "";
+    if (!dailyWx || !dailyWx.time) return;
     var target = now.getHours() < 12 ? now : addDays(now, 1);
     var i = dailyWx.time.indexOf(ymd(target));
-    if (i < 0) return "";
+    if (i < 0) return;
     var label = now.getHours() < 12 ? "Today" : "Tomorrow";
-    return label + ": " + wmo(dailyWx.weather_code[i], 1)[0] + " " + wmo(dailyWx.weather_code[i], 1)[1] + " · " +
+    var icon = el("span", "night-wx-icon");
+    icon.innerHTML = wxSvg(dailyWx.weather_code[i]);
+    box.appendChild(icon);
+    box.appendChild(document.createTextNode(label + ": " + wmo(dailyWx.weather_code[i], 1)[1] + " · " +
       Math.round(dailyWx.temperature_2m_max[i]) + "° / " + Math.round(dailyWx.temperature_2m_min[i]) + "° · " +
-      dailyWx.precipitation_probability_max[i] + "% precip";
+      dailyWx.precipitation_probability_max[i] + "% precip"));
   }
 
   function nextEventLine(now) {
