@@ -28,6 +28,7 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `GROCERY_PROJECT` | Text | Todoist project name, default `Groceries` |
    | `FAMILY` | Secret | optional, picks out family birthdays for the countdowns (see below) |
    | `KIDS_QUICK_ADD` | Text | optional JSON list of one-tap buttons for the Kids list, e.g. `["Kid One school clothes","More pull-ups"]` |
+   | `NEWS_FEEDS` | Text | optional, RSS feeds for The Study's paper (see [The Study](#the-study-fire-tv-retro)) |
    | `TV_CALENDARS` | Text | optional, which calendars the office TV shows, e.g. `Work` (see [Office TV](#office-tv-fire-tv)) |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
@@ -126,8 +127,7 @@ app's **User Management** in the Spotify dashboard (new apps start in developmen
 A second, look-only board at `https://benmcbratney.com/hub/tv/` for the Fire TV in the
 office, built for a 1080p/4K TV read from the desk. It uses the same Worker:
 
-- **Clock, weather and air quality:** current conditions, sunset (sunrise after dark), the
-  US air quality index from Open-Meteo with the EPA's color, a 5-day strip, and the same
+- **Clock and weather:** current conditions, sunset (sunrise after dark), a 5-day strip, and the same
   rain/snow heads-up as the iPad.
 - **Today timeline:** the work day left to right (default 8a–6p, stretched for anything
   earlier or later) with meetings as blocks, overlaps stacked, a red "now" line, and open
@@ -155,6 +155,44 @@ TV shows every calendar. The iPad isn't affected.
 Optional extras: `&work=8-18` (timeline hours), `&on=7-20` (when the screen is lit),
 `&place=…&lat=…&lon=…` (weather location; defaults to Lake Forest). Without a Worker it
 runs on demo data.
+
+## The Study (Fire TV, retro)
+
+A second take on the office TV at `https://benmcbratney.com/hub/study/`, dressed for a
+room with a mahogany bookcase wall: the same data as the Office TV page, drawn as things
+you'd find in an old study. It shares the Office TV's settings, so a TV that's already set
+up just needs the new address (or use the same `#worker=…&key=…` link with `/study/`).
+
+- **Brass clock**, plus the day and time in type.
+- **Countdowns** under the clock: the iPad's "days until", as up to three pages torn from a
+  desk calendar, picked the same way (see [Countdowns](#countdowns)): anything tagged ⏳ or
+  "countdown" in Google Calendar, then family birthdays, then holidays within 60 days.
+- **The Almanac** (weather) on parchment: conditions, a 5-day row, sunrise/sunset, how long
+  the day is and how much daylight tomorrow gains or loses, and the moon's
+  phase in the corner. A red stamp appears when rain or snow is due within the hour.
+- **Departures board:** today's meetings on a split-flap board like the old train-station
+  boards (the letters riffle when they change). Status reads DEPARTED, NOW, BOARDING (last
+  5 minutes), FINAL (last minute) or IN 42 MIN. The big counter above counts down to the next
+  one, with a lamp that blinks amber when boarding and red on the final call.
+- **The day as a brass rule:** meetings inlaid in oxblood, open time in green, the longest
+  stretch (an hour or more) marked Focus.
+- **Chicago Scoreboard** in Wrigley green with numbers on tiles, a big panel when a game is
+  on (visitors on top, with ESPN's win chance), and Wrigley's flag after a Cubs game: white
+  W for a win, blue L for a loss. Every 45 seconds the card flips over to **a fire in the
+  grate** (a little flame simulation over brick, with firelight on the bricks) and back. It
+  stays on the scores while a game is on, and on the fire when there are no scores.
+- **The paper:** a newspaper clipping that turns to a new section every 40 seconds, each with
+  its own masthead: *The Sports Page* (ESPN stories about your teams), *The Daily Dispatch*
+  (top news: NPR, BBC), *The Society Pages* (celebrity: Us Weekly, E! News) and *The Good
+  News Gazette* (Good News Network, Positive News). The Worker reads those as RSS feeds; a
+  section whose feeds don't answer is skipped. To change the sources, set a `NEWS_FEEDS`
+  Text variable on the Worker, e.g.
+  `{"news":["https://feeds.npr.org/1001/rss.xml"],"celebrity":["https://…/feed/"]}`
+  (sections you leave out keep the defaults).
+- **Turntable:** Spotify as a spinning record with the album art on the label; the tonearm
+  creeps across as the song plays. The remote's ⏯ ⏪ ⏩ work here too.
+
+Fonts are Playfair Display, EB Garamond, Oswald and UnifrakturMaguntia from Google Fonts.
 
 ## Smart home (later)
 
@@ -230,8 +268,8 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Updates itself: every 10 minutes (and whenever it's reopened) it checks `version.json`; when a
   newer version is published it reloads through a fresh URL, so the iPad never sticks on cached files.
   **When changing the hub, bump the version** in `version.json`, in `index.html` (the
-  `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`) and in `tv/index.html` (same
-  idea), since the iPad and the TV share `version.json`.
+  `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`) and in `tv/index.html` and
+  `study/index.html` (same idea), since the iPad and the TV pages share `version.json`.
 - Weather comes from Open-Meteo (free, no key).
 - Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
   "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
