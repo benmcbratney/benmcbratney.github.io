@@ -128,107 +128,79 @@
     return a < b ? h >= a && h < b : h >= a || h < b;
   }
 
-  // Seven-segment digits (alarm-clock style), drawn as SVG so the bars can be thick
-  // enough to read across the room without loading a font. Unlit segments show faintly.
-  //   a = top, b = top right, c = bottom right, d = bottom, e = bottom left, f = top left, g = middle
-  var SEGS = { 0: "abcdef", 1: "bc", 2: "abdeg", 3: "abcdg", 4: "bcfg", 5: "acdfg", 6: "acdefg", 7: "abc", 8: "abcdefg", 9: "abcdfg" };
-  var SEG_SHAPES = (function () {
-    // A 60×100 cell, bars 14 thick with angled ends and small gaps between them.
-    var t = 14, w = 60, h = 100, m = h / 2, k = t / 2, g = 2;
-    function hbar(y) { return [[k + g, y], [k + g + k, y - k], [w - k - g - k, y - k], [w - k - g, y], [w - k - g - k, y + k], [k + g + k, y + k]]; }
-    function vbar(x, y1, y2) { return [[x, y1 + g], [x + k, y1 + g + k], [x + k, y2 - g - k], [x, y2 - g], [x - k, y2 - g - k], [x - k, y1 + g + k]]; }
-    var shapes = { a: hbar(k), d: hbar(h - k), g: hbar(m), b: vbar(w - k, k, m), c: vbar(w - k, m, h - k), f: vbar(k, k, m), e: vbar(k, m, h - k) };
-    var out = {};
-    Object.keys(shapes).forEach(function (n) { out[n] = shapes[n].map(function (p) { return p.join(","); }).join(" "); });
-    return out;
-  })();
-
-  function segmentDigits(text) {
-    var x = 0, parts = [];
-    for (var i = 0; i < text.length; i++) {
-      var ch = text.charAt(i);
-      if (ch === ":") {
-        parts.push('<g class="seg-on"><rect x="' + (x + 4) + '" y="24" width="14" height="14" rx="3"/><rect x="' + (x + 4) + '" y="62" width="14" height="14" rx="3"/></g>');
-        x += 22;
-        continue;
-      }
-      var lit = SEGS[ch] || "";
-      parts.push('<g transform="translate(' + x + ' 0)">' + "abcdefg".split("").map(function (n) {
-        return '<polygon class="' + (lit.indexOf(n) >= 0 ? "seg-on" : "seg-off") + '" points="' + SEG_SHAPES[n] + '"/>';
-      }).join("") + "</g>");
-      x += 72;
-    }
-    var vbw = x - 12;
-    return '<svg class="seg" viewBox="-2 -2 ' + (vbw + 4) + ' 104" style="width:' + ((vbw + 4) / 104).toFixed(3) + 'em" role="img" aria-label="' + text + '">' + parts.join("") + "</svg>";
+  // Flip clock: hours and minutes on dark split cards that flip down when they change,
+  // and the date as split-flap letter tiles. Plain bold text, no fonts or images to load.
+  function flipCard(cls) {
+    var card = el("div", "flip " + (cls || ""));
+    card.innerHTML = '<div class="fl-half fl-top"><span></span></div><div class="fl-half fl-bot"><span></span></div>';
+    return card;
   }
 
-  // 14-segment letters for the date ("THU OCT 22"): the same bars as the clock plus a
-  // center column and four diagonals, so it can spell words.
-  //   a/d top/bottom, b/c right, f/e left, g1/g2 middle halves, tc/bc center column,
-  //   tl/tr/bl/br diagonals toward the middle
-  var SEG14 = {
-    A: "a b c e f g1 g2", B: "a b c d g2 tc bc", C: "a d e f", D: "a b c d tc bc", E: "a d e f g1 g2",
-    F: "a e f g1", G: "a c d e f g2", H: "b c e f g1 g2", I: "a d tc bc", J: "b c d e", L: "d e f",
-    M: "b c e f tl tr", N: "b c e f tl br", O: "a b c d e f", P: "a b e f g1 g2", R: "a b e f g1 g2 br",
-    S: "a c d f g1 g2", T: "a tc bc", U: "b c d e f", V: "e f bl tr", W: "b c e f bl br", Y: "tl tr bc",
-    0: "a b c d e f", 1: "b c", 2: "a b d e g1 g2", 3: "a b c d g1 g2", 4: "b c f g1 g2", 5: "a c d f g1 g2",
-    6: "a c d e f g1 g2", 7: "a b c", 8: "a b c d e f g1 g2", 9: "a b c d f g1 g2",
-  };
-  var SEG14_SHAPES = (function () {
-    var t = 14, k = t / 2, w = 60, h = 100, m = h / 2, cx = w / 2, g = 2;
-    function hbar(x1, x2, y) { return [[x1 + g, y], [x1 + g + k, y - k], [x2 - g - k, y - k], [x2 - g, y], [x2 - g - k, y + k], [x1 + g + k, y + k]]; }
-    function vbar(x, y1, y2) { return [[x, y1 + g], [x + k, y1 + g + k], [x + k, y2 - g - k], [x, y2 - g], [x - k, y2 - g - k], [x - k, y1 + g + k]]; }
-    var poly = {
-      a: hbar(k, w - k, k), d: hbar(k, w - k, h - k), g1: hbar(k, cx, m), g2: hbar(cx, w - k, m),
-      b: vbar(w - k, k, m), c: vbar(w - k, m, h - k), f: vbar(k, k, m), e: vbar(k, m, h - k), tc: vbar(cx, k, m), bc: vbar(cx, m, h - k),
-    };
-    var out = {};
-    Object.keys(poly).forEach(function (n) {
-      out[n] = '<polygon class="%" points="' + poly[n].map(function (p) { return p.join(","); }).join(" ") + '"/>';
-    });
-    var d = t + 4;
-    var lines = { tl: [d, d, cx - k - 3, m - k - 3], tr: [w - d, d, cx + k + 3, m - k - 3], bl: [d, h - d, cx - k - 3, m + k + 3], br: [w - d, h - d, cx + k + 3, m + k + 3] };
-    Object.keys(lines).forEach(function (n) {
-      var L = lines[n];
-      out[n] = '<line class="%" x1="' + L[0] + '" y1="' + L[1] + '" x2="' + L[2] + '" y2="' + L[3] + '" stroke-width="' + (t * 0.75) + '" stroke-linecap="round"/>';
-    });
-    return out;
-  })();
-
-  function segmentWords(text) {
-    var x = 0, parts = [];
-    for (var i = 0; i < text.length; i++) {
-      var ch = text.charAt(i);
-      if (ch === " ") { x += 34; continue; }
-      var lit = " " + (SEG14[ch] || "") + " ";
-      parts.push('<g transform="translate(' + x + ' 0)">' + Object.keys(SEG14_SHAPES).map(function (n) {
-        return SEG14_SHAPES[n].replace("%", lit.indexOf(" " + n + " ") >= 0 ? "seg-on" : "seg-off");
-      }).join("") + "</g>");
-      x += 72;
-    }
-    var vbw = x - 12;
-    return '<svg class="seg" viewBox="-2 -2 ' + (vbw + 4) + ' 104" style="width:' + ((vbw + 4) / 104).toFixed(3) + 'em" role="img" aria-label="' + text + '">' + parts.join("") + "</svg>";
+  function setFlip(card, value, animate) {
+    var old = card.getAttribute("data-v");
+    if (old === value) return;
+    card.setAttribute("data-v", value);
+    var top = card.querySelector(".fl-top span"), bot = card.querySelector(".fl-bot span");
+    var flaps = card.querySelectorAll(".fl-flap");
+    for (var i = 0; i < flaps.length; i++) flaps[i].remove();
+    if (!animate || old == null || document.hidden) { top.textContent = bot.textContent = value; return; }
+    // New value shows on the top half right away; the old top half folds down over the
+    // bottom, then the new bottom half unfolds to cover the old one.
+    top.textContent = value;
+    var down = el("div", "fl-half fl-top fl-flap fl-down");
+    down.appendChild(el("span", null, old));
+    var up = el("div", "fl-half fl-bot fl-flap fl-up");
+    up.appendChild(el("span", null, value));
+    card.appendChild(down);
+    card.appendChild(up);
+    setTimeout(function () {
+      if (card.getAttribute("data-v") !== value) return;
+      bot.textContent = value;
+      if (down.parentNode) down.remove();
+      if (up.parentNode) up.remove();
+    }, 700);
   }
 
-  var lastClockText = "";
+  // Builds (once) and updates a clock: [hours card][minutes card], AM/PM tucked in a corner.
+  function renderFlipClock(box, hours, minutes, ampm, animate) {
+    if (!box.firstChild || !box.querySelector(".flip-h")) {
+      box.innerHTML = "";
+      var h = flipCard("flip-h"), m = flipCard("flip-m");
+      h.appendChild(el("span", "flip-ampm"));
+      box.appendChild(h);
+      box.appendChild(m);
+    }
+    box.querySelector(".flip-ampm").textContent = ampm;
+    setFlip(box.querySelector(".flip-h"), hours, animate);
+    setFlip(box.querySelector(".flip-m"), minutes, animate);
+  }
+
+  // Date as small split-flap tiles: THU · OCT · 22.
+  function renderFlipDate(box, words) {
+    var key = words.join(" ");
+    if (box.getAttribute("data-v") === key) return;
+    box.setAttribute("data-v", key);
+    box.innerHTML = "";
+    words.forEach(function (w) {
+      var group = el("span", "tile-word");
+      w.split("").forEach(function (ch) { group.appendChild(el("span", "tile", ch)); });
+      box.appendChild(group);
+    });
+  }
+
+  var clockReady = false;
 
   function tickClock() {
     var now = new Date();
     var h = now.getHours();
     var timeText = (h % 12 || 12) + ":" + pad(now.getMinutes());
-    var clockKey = timeText + (h < 12 ? "a" : "p");
-    if (clockKey !== lastClockText) {
-      lastClockText = clockKey;
-      var t = $("time");
-      t.innerHTML = segmentDigits(timeText);
-      var ap = el("span", "ampm");
-      ap.innerHTML = segmentWords(h < 12 ? "AM" : "PM");
-      t.appendChild(ap);
-      $("night-time").innerHTML = segmentDigits(timeText);
-      var dateText = DAY_NAMES[now.getDay()].slice(0, 3) + " " + MONTHS[now.getMonth()].slice(0, 3) + " " + now.getDate();
-      $("date").innerHTML = segmentWords(dateText.toUpperCase());
-      $("date").setAttribute("aria-label", DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate());
-    }
+    var hh = String(h % 12 || 12), mm = pad(now.getMinutes()), ap = h < 12 ? "AM" : "PM";
+    renderFlipClock($("time"), hh, mm, ap, clockReady);
+    renderFlipClock($("night-time"), hh, mm, ap, clockReady && !$("night").hidden);
+    clockReady = true;
+    $("time").setAttribute("aria-label", timeText + " " + ap);
+    renderFlipDate($("date"), [DAY_NAMES[now.getDay()].slice(0, 3), MONTHS[now.getMonth()].slice(0, 3), String(now.getDate())].map(function (w) { return w.toUpperCase(); }));
+    $("date").setAttribute("aria-label", DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate());
     renderPrecipAlert(now);
     updateBackdrop();
 
