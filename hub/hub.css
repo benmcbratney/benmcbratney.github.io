@@ -89,7 +89,7 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 #hub.right-empty .col-right { display: none; }
 
 @media (orientation: portrait) {
-  .time { font-size: 68px; }
+  .time { font-size: 64px; }
   .wx-temp { font-size: 50px; }
   .wx-icon { font-size: 44px; }
   .weather { gap: 14px; }
@@ -106,11 +106,17 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 /* ---------------------------------------------------------------- header */
 
 .top { grid-area: top; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; padding: 0 4px; row-gap: 8px; }
-.time { font-size: 84px; font-weight: 200; letter-spacing: -2px; line-height: 0.95; font-variant-numeric: tabular-nums; }
+.time { font-size: 84px; line-height: 1; display: flex; align-items: flex-end; margin: 4px 0 8px; }
+
+/* Seven-segment clock digits. The svg is 1em tall, so font-size sets the digit height. */
+.seg { height: 1em; display: block; overflow: visible; }
+.seg .seg-on { fill: currentColor; }
+.seg .seg-off { fill: currentColor; opacity: 0.08; }
+.top .seg { filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45)); }
 .top { color: var(--on-photo); text-shadow: var(--photo-shadow); gap: 24px; }
 .clock { flex: 1; min-width: 0; }
 .weather { flex: none; }
-.time .ampm { font-size: 28px; font-weight: 400; letter-spacing: 0; margin-left: 6px; color: var(--on-photo-muted); }
+.time .ampm { font-size: 26px; font-weight: 700; letter-spacing: 1px; margin-left: 12px; line-height: 1; color: var(--on-photo-muted); }
 .date { font-size: 24px; color: var(--on-photo); margin-top: 6px; white-space: nowrap; font-weight: 500; }
 .precip-alert[hidden] { display: none; }
 .precip-alert {
@@ -428,7 +434,8 @@ body.glass-dark .tstat.cooling .t-status, body.glass-dark .tstat.cooling .t-targ
 }
 .night[hidden] { display: none; }
 body.is-night #hub { visibility: hidden; }
-.night-time { font-size: 180px; font-weight: 100; letter-spacing: -4px; font-variant-numeric: tabular-nums; }
+.night-time { font-size: 180px; line-height: 1; display: flex; justify-content: center; margin-bottom: 28px; }
+.night-time .seg-off { opacity: 0.05; }
 .night-next { font-size: 22px; opacity: 0.7; margin-top: 8px; }
 .night-wx { font-size: 22px; opacity: 0.7; margin-top: 14px; }
 .night-wx:empty, .night-next:empty { display: none; }

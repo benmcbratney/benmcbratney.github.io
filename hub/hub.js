@@ -128,13 +128,54 @@
     return a < b ? h >= a && h < b : h >= a || h < b;
   }
 
+  // Seven-segment digits (alarm-clock style), drawn as SVG so the bars can be thick
+  // enough to read across the room without loading a font. Unlit segments show faintly.
+  //   a = top, b = top right, c = bottom right, d = bottom, e = bottom left, f = top left, g = middle
+  var SEGS = { 0: "abcdef", 1: "bc", 2: "abdeg", 3: "abcdg", 4: "bcfg", 5: "acdfg", 6: "acdefg", 7: "abc", 8: "abcdefg", 9: "abcdfg" };
+  var SEG_SHAPES = (function () {
+    // A 60×100 cell, bars 14 thick with angled ends and small gaps between them.
+    var t = 14, w = 60, h = 100, m = h / 2, k = t / 2, g = 2;
+    function hbar(y) { return [[k + g, y], [k + g + k, y - k], [w - k - g - k, y - k], [w - k - g, y], [w - k - g - k, y + k], [k + g + k, y + k]]; }
+    function vbar(x, y1, y2) { return [[x, y1 + g], [x + k, y1 + g + k], [x + k, y2 - g - k], [x, y2 - g], [x - k, y2 - g - k], [x - k, y1 + g + k]]; }
+    var shapes = { a: hbar(k), d: hbar(h - k), g: hbar(m), b: vbar(w - k, k, m), c: vbar(w - k, m, h - k), f: vbar(k, k, m), e: vbar(k, m, h - k) };
+    var out = {};
+    Object.keys(shapes).forEach(function (n) { out[n] = shapes[n].map(function (p) { return p.join(","); }).join(" "); });
+    return out;
+  })();
+
+  function segmentDigits(text) {
+    var x = 0, parts = [];
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (ch === ":") {
+        parts.push('<g class="seg-on"><rect x="' + (x + 4) + '" y="24" width="14" height="14" rx="3"/><rect x="' + (x + 4) + '" y="62" width="14" height="14" rx="3"/></g>');
+        x += 22;
+        continue;
+      }
+      var lit = SEGS[ch] || "";
+      parts.push('<g transform="translate(' + x + ' 0)">' + "abcdefg".split("").map(function (n) {
+        return '<polygon class="' + (lit.indexOf(n) >= 0 ? "seg-on" : "seg-off") + '" points="' + SEG_SHAPES[n] + '"/>';
+      }).join("") + "</g>");
+      x += 72;
+    }
+    var vbw = x - 12;
+    return '<svg class="seg" viewBox="-2 -2 ' + (vbw + 4) + ' 104" style="width:' + ((vbw + 4) / 104).toFixed(3) + 'em" role="img" aria-label="' + text + '">' + parts.join("") + "</svg>";
+  }
+
+  var lastClockText = "";
+
   function tickClock() {
     var now = new Date();
     var h = now.getHours();
     var timeText = (h % 12 || 12) + ":" + pad(now.getMinutes());
-    var t = $("time");
-    t.textContent = timeText;
-    t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
+    var clockKey = timeText + (h < 12 ? "a" : "p");
+    if (clockKey !== lastClockText) {
+      lastClockText = clockKey;
+      var t = $("time");
+      t.innerHTML = segmentDigits(timeText);
+      t.appendChild(el("span", "ampm", h < 12 ? "AM" : "PM"));
+      $("night-time").innerHTML = segmentDigits(timeText);
+    }
     $("date").textContent = DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
     renderPrecipAlert(now);
     updateBackdrop();
@@ -143,7 +184,6 @@
     $("night").hidden = !night;
     document.body.classList.toggle("is-night", night);
     if (night) {
-      $("night-time").textContent = timeText;
       $("night-next").textContent = nextEventLine(now);
       $("night-wx").textContent = nightForecastLine(now);
     }
