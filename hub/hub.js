@@ -329,6 +329,32 @@
     85: ["🌨️", "Snow showers"], 86: ["❄️", "Snow showers"],
     95: ["⛈️", "Thunderstorms"], 96: ["⛈️", "T-storms + hail"], 99: ["⛈️", "T-storms + hail"],
   };
+  // The icon for day i of the daily forecast, judged from its daytime hours (7am–7pm).
+  // Open-Meteo's daily code is the most severe condition at any hour, so a little fog
+  // at 5am or late at night would label a sunny day "fog". Here: rain/snow/storms win
+  // if they cover 2+ daytime hours (worst one shown); otherwise the sky condition that
+  // covers the most of the day.
+  function daytimeCode(i) {
+    var fallback = dailyWx.weather_code[i];
+    if (!hourlyWx || !hourlyWx.time || !hourlyWx.weather_code) return fallback;
+    var key = dailyWx.time[i], counts = {}, wet = [];
+    hourlyWx.time.forEach(function (t, j) {
+      if (t.slice(0, 10) !== key) return;
+      var hr = +t.slice(11, 13);
+      if (hr < 7 || hr >= 19) return;
+      var c = hourlyWx.weather_code[j];
+      if (c >= 51) wet.push(c);
+      else counts[c] = (counts[c] || 0) + 1;
+    });
+    if (wet.length >= 2) return Math.max.apply(null, wet);
+    var best = null;
+    Object.keys(counts).forEach(function (c) {
+      // Ties go to the cloudier/foggier code, so the icon doesn't oversell the sun.
+      if (best === null || counts[c] > counts[best] || (counts[c] === counts[best] && +c > +best)) best = c;
+    });
+    return best === null ? fallback : +best;
+  }
+
   // Drawn icons for the 5-day strip. On the wall iPad some emoji (☀️ in particular) came
   // out as blank boxes in that strip only, so it uses these instead of the emoji font.
   var SVG_SUN = '<circle cx="12" cy="12" r="5" fill="#ffc531"/><g stroke="#ffc531" stroke-width="2" stroke-linecap="round">' +
@@ -388,8 +414,9 @@
           var cell = el("div", "fc-day" + (i === 0 ? " today" : ""));
           cell.appendChild(el("div", "fc-name", i === 0 ? "Today" : DAY_NAMES[dd.getDay()].slice(0, 3)));
           var ic = el("div", "fc-icon");
-          ic.innerHTML = wxSvg(day.weather_code[i]);
-          ic.title = wmo(day.weather_code[i], 1)[1];
+          var dc = daytimeCode(i);
+          ic.innerHTML = wxSvg(dc);
+          ic.title = wmo(dc, 1)[1];
           cell.appendChild(ic);
           var temps = el("div", "fc-temp");
           temps.appendChild(el("b", null, Math.round(day.temperature_2m_max[i]) + "°"));
@@ -1074,9 +1101,10 @@
     if (i < 0) return;
     var label = now.getHours() < 12 ? "Today" : "Tomorrow";
     var icon = el("span", "night-wx-icon");
-    icon.innerHTML = wxSvg(dailyWx.weather_code[i]);
+    var dc = daytimeCode(i);
+    icon.innerHTML = wxSvg(dc);
     box.appendChild(icon);
-    box.appendChild(document.createTextNode(label + ": " + wmo(dailyWx.weather_code[i], 1)[1] + " · " +
+    box.appendChild(document.createTextNode(label + ": " + wmo(dc, 1)[1] + " · " +
       Math.round(dailyWx.temperature_2m_max[i]) + "° / " + Math.round(dailyWx.temperature_2m_min[i]) + "° · " +
       dailyWx.precipitation_probability_max[i] + "% precip"));
   }
