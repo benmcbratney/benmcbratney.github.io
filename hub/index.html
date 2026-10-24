@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#1d2733">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-180.png">
-  <link rel="stylesheet" href="hub.css?v=2026-10-23.1">
+  <link rel="stylesheet" href="hub.css?v=2026-10-24.1">
 </head>
 <body>
   <div class="backdrop" aria-hidden="true">
@@ -34,7 +34,7 @@
 
     <div class="col col-left">
       <section class="card agenda">
-        <h2><span class="icon">📅</span>Coming up</h2>
+        <h2><span class="icon">📅</span>Calendar</h2>
         <div id="agenda" class="agenda-list"></div>
       </section>
       <section id="scores-card" class="card scores" hidden>
@@ -143,6 +143,23 @@
     </div>
   </div>
 
+  <div id="day-modal" class="modal" hidden>
+    <div class="modal-card day-card">
+      <div class="dm-head">
+        <button type="button" id="dm-prev" class="dm-nav" aria-label="Previous day">‹</button>
+        <div class="dm-heading">
+          <h2 id="dm-title"></h2>
+          <p id="dm-sub" class="hint"></p>
+        </div>
+        <button type="button" id="dm-next" class="dm-nav" aria-label="Next day">›</button>
+      </div>
+      <div id="dm-list" class="dm-list"></div>
+      <div class="actions">
+        <button type="button" id="dm-close" class="primary">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div id="tstat-modal" class="modal" hidden>
     <div class="modal-card tstat-card">
       <h2 id="tm-name"></h2>
@@ -216,7 +233,7 @@
 
   <!-- Bump this version (here, on both asset URLs, and in version.json) with every
        change so wall displays pick it up instead of a cached copy. -->
-  <script>window.HUB_VERSION = "2026-10-23.1";</script>
-  <script src="hub.js?v=2026-10-23.1"></script>
+  <script>window.HUB_VERSION = "2026-10-24.1";</script>
+  <script src="hub.js?v=2026-10-24.1"></script>
 </body>
 </html>
