@@ -232,6 +232,9 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Refreshes chores/groceries every minute, thermostats every 2 min, calendar every 5 min, weather every 15 min,
   Spotify every 10 s while playing (30 s otherwise).
 - Header shows current conditions plus a 5-day forecast strip (rain chance shown when it's 20% or more).
+- Calendar: tap any day (in any Calendar style) for a big pop-up of that day: each event's full time range,
+  location, which calendar it's on, and its notes (from the event description, with HTML and Meet links stripped).
+  ‹ › step through the loaded days.
 - Layout: calendar, Scores and Spotify on the left; thermostats and a big "What to wear" card on the right;
   Kids and Groceries as pills in the footer.
 - Sports: the Scores card has one line per team with a game yesterday, today or tomorrow (Bears, Cubs, Bulls,

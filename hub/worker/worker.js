@@ -902,11 +902,12 @@ function expandCalendar(text, startDay, days, tz, keep) {
       if (!overlaps) return;
       if (ev.start.allDay) {
         const endWall = addDays(startWall, Math.max(1, Math.round(durMs / 864e5)));
-        out.push({ title: ev.summary, location: ev.location, allDay: true, start: fmtDate(startWall), end: fmtDate(endWall) });
+        out.push({ title: ev.summary, location: ev.location, description: ev.description, allDay: true, start: fmtDate(startWall), end: fmtDate(endWall) });
       } else {
         out.push({
           title: ev.summary,
           location: ev.location,
+          description: ev.description,
           allDay: false,
           start: fmtWall(wallParts(new Date(startInstant), tz)),
           end: fmtWall(wallParts(new Date(endInstant), tz)),
@@ -961,6 +962,7 @@ function parseIcs(text) {
       case "UID": cur.uid = value; break;
       case "SUMMARY": cur.summary = unescape(value); break;
       case "LOCATION": cur.location = unescape(value) || null; break;
+      case "DESCRIPTION": cur.description = cleanDescription(value); break;
       case "STATUS": cur.status = value.toUpperCase(); break;
       case "DTSTART": cur.start = parseDate(value, params); break;
       case "DTEND": cur.end = parseDate(value, params); break;
@@ -979,6 +981,19 @@ function parseIcs(text) {
     if (!ev.summary) ev.summary = "(busy)";
   }
   return events;
+}
+
+// Event notes for the hub's day pop-up: keep line breaks, drop HTML tags and Google's
+// "Join with Google Meet" footer, and cap the length so the payload stays small.
+function cleanDescription(value) {
+  let s = value.replace(/\\n/gi, "\n").replace(/\\([,;\\])/g, "$1");
+  s = s.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li)>/gi, "\n").replace(/<[^>]+>/g, "");
+  s = s.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  const cut = s.search(/-::~:~::~|Join with Google Meet|Join Zoom Meeting/);
+  if (cut >= 0) s = s.slice(0, cut);
+  s = s.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  if (s.length > 600) s = s.slice(0, 597).trimEnd() + "…";
+  return s || null;
 }
 
 function unescape(s) {

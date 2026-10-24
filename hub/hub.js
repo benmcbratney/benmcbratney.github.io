@@ -868,14 +868,106 @@
       events = data.events.map(function (e) {
         return {
           title: e.title, location: e.location, allDay: e.allDay, color: e.color, calendar: e.calendar,
+          description: e.description || null,
           start: parseWall(e.start), end: parseWall(e.end || e.start),
         };
       });
       renderAgenda();
+      if (!$("day-modal").hidden) renderDay();
       tickClock(); // refresh the night screen's "Next:" line
       setProblem("calendar", data.errors && data.errors.length ? data.errors.join("; ") : null);
     }).catch(function (e) { setProblem("calendar", e.message); });
   }
+
+  // ---- day pop-up: tap a day in any calendar style for a big view with every detail
+
+  var dayModalDate = null;
+
+  function dayTap(elem, day) {
+    elem.classList.add("tappable");
+    elem.addEventListener("click", function () { openDay(day); });
+  }
+
+  function calendarDays() { return Math.max(1, Math.min(14, +settings.days || 5)); }
+
+  function openDay(day) {
+    dayModalDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    $("day-modal").hidden = false;
+    renderDay();
+  }
+  function closeDay() { dayModalDate = null; $("day-modal").hidden = true; }
+
+  function shiftDay(delta) {
+    if (!dayModalDate) return;
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var next = addDays(dayModalDate, delta);
+    var offset = Math.round((next - today) / 864e5);
+    if (offset < 0 || offset >= calendarDays()) return; // only the days that are loaded
+    dayModalDate = next;
+    renderDay();
+  }
+
+  function renderDay() {
+    var day = dayModalDate;
+    if (!day) return;
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var offset = Math.round((day - today) / 864e5);
+    var rel = offset === 0 ? "Today · " : offset === 1 ? "Tomorrow · " : "";
+    $("dm-title").textContent = rel + DAY_NAMES[day.getDay()] + ", " + MONTHS[day.getMonth()] + " " + day.getDate();
+    $("dm-prev").disabled = offset <= 0;
+    $("dm-next").disabled = offset >= calendarDays() - 1;
+
+    var list = eventsOn(day);
+    $("dm-sub").textContent = list.length ? list.length + (list.length === 1 ? " event" : " events") : "";
+    var box = $("dm-list");
+    box.innerHTML = "";
+    if (!list.length) {
+      box.appendChild(el("div", "dm-empty", offset === 0 ? "Nothing on the calendar today 🎉" : "Nothing on the calendar. Free day!"));
+      return;
+    }
+    list.forEach(function (e) {
+      var live = !e.allDay && e.start <= now && e.end > now, past = !e.allDay && e.end <= now;
+      var row = el("div", "dm-event" + (live ? " now" : "") + (past ? " past" : ""));
+      var bar = el("span", "dm-bar");
+      bar.style.background = e.color || "#8a8076";
+      row.appendChild(bar);
+
+      var when = el("div", "dm-when");
+      if (e.allDay) {
+        when.appendChild(el("b", null, "All day"));
+        var lastDay = addDays(e.end, -1);
+        if (!sameDate(lastDay, e.start)) when.appendChild(el("span", null, "through " + DAY_NAMES[lastDay.getDay()].slice(0, 3) + " " + MONTHS[lastDay.getMonth()].slice(0, 3) + " " + lastDay.getDate()));
+      } else {
+        when.appendChild(el("b", null, fmtTime(e.start)));
+        when.appendChild(el("span", null, "to " + fmtTime(e.end)));
+        var mins = Math.round((e.end - e.start) / 60000);
+        if (mins > 0) when.appendChild(el("span", "dm-dur", mins < 60 ? mins + " min" : (Math.round(mins / 30) / 2) + " hr"));
+      }
+      row.appendChild(when);
+
+      var info = el("div", "dm-info");
+      var title = el("div", "dm-title", e.title);
+      if (live) title.appendChild(el("span", "pill", "Now"));
+      else if (!e.allDay && e.start > now && e.start - now <= 3600e3) title.appendChild(el("span", "pill", untilText(e.start - now)));
+      info.appendChild(title);
+      if (e.location) info.appendChild(el("div", "dm-where", "📍 " + e.location));
+      if (e.calendar) {
+        var cal = el("div", "dm-cal");
+        var dot = el("i", "fx-dot");
+        dot.style.background = e.color || "#8a8076";
+        cal.appendChild(dot);
+        cal.appendChild(document.createTextNode(e.calendar));
+        info.appendChild(cal);
+      }
+      if (e.description) info.appendChild(el("div", "dm-notes", e.description));
+      row.appendChild(info);
+      box.appendChild(row);
+    });
+  }
+
+  $("dm-close").addEventListener("click", closeDay);
+  $("dm-prev").addEventListener("click", function () { shiftDay(-1); });
+  $("dm-next").addEventListener("click", function () { shiftDay(1); });
 
   // ---- calendar layouts (⚙︎ Settings → Calendar style)
 
@@ -905,6 +997,7 @@
     for (var i = 0; i < Math.min(days, 5); i++) {
       var day = addDays(today, i);
       var col = el("div", "wk-col" + (i === 0 ? " today" : ""));
+      dayTap(col, day);
       var head = el("div", "wk-head");
       head.appendChild(el("div", "wk-dow", i === 0 ? "Today" : DAY_NAMES[day.getDay()].slice(0, 3)));
       head.appendChild(el("div", "wk-date", String(day.getDate())));
@@ -930,6 +1023,7 @@
     var todays = eventsOn(today);
     var allDay = todays.filter(function (e) { return e.allDay; });
     var head = el("div", "tl-headline");
+    dayTap(head, today);
     head.appendChild(el("b", null, "Today"));
     allDay.forEach(function (e) {
       var p = el("span", "tl-allday", e.title);
@@ -939,6 +1033,7 @@
     box.appendChild(head);
 
     var track = el("div", "tl");
+    dayTap(track, today);
     track.style.height = (endH - startH) * PX + "px";
     for (var h = startH; h <= endH; h++) {
       var line = el("div", "tl-hour");
@@ -972,6 +1067,7 @@
     for (var i = 1; i < Math.min(days, 5); i++) {
       var day = addDays(today, i), list = eventsOn(day);
       var row = el("div", "tl-peek-row");
+      dayTap(row, day);
       row.appendChild(el("b", null, i === 1 ? "Tomorrow" : DAY_NAMES[day.getDay()].slice(0, 3)));
       row.appendChild(el("span", null, list.length ? list.slice(0, 2).map(function (e) {
         return (e.allDay ? "" : fmtTime(e.start) + " ") + e.title;
@@ -986,6 +1082,7 @@
     var upcoming = events.filter(function (e) { return !e.allDay && e.end > now; }).sort(function (a, b) { return a.start - b.start; });
     var next = upcoming[0];
     var hero = el("div", "fx-hero");
+    dayTap(hero, next ? new Date(next.start.getFullYear(), next.start.getMonth(), next.start.getDate()) : today);
     if (next) {
       hero.style.background = "linear-gradient(135deg, " + tint(next.color, 0.85) + ", " + tint(next.color, 0.55) + ")";
       var live = next.start <= now;
@@ -1002,6 +1099,7 @@
     var rest = eventsOn(today).filter(function (e) { return e !== next && (e.allDay || e.start > now); });
     if (rest.length) {
       var chips = el("div", "fx-chips");
+      dayTap(chips, today);
       chips.appendChild(el("span", "fx-label", "Later today"));
       rest.forEach(function (e) {
         var c = el("span", "fx-chip", (e.allDay ? "" : fmtTime(e.start) + " ") + e.title);
@@ -1015,6 +1113,7 @@
     for (var i = 1; i < Math.min(days, 5); i++) {
       var day = addDays(today, i), list = eventsOn(day);
       var row = el("div", "fx-day");
+      dayTap(row, day);
       var d = el("div", "fx-daylabel");
       d.appendChild(el("b", null, i === 1 ? "Tmrw" : DAY_NAMES[day.getDay()].slice(0, 3)));
       d.appendChild(el("span", null, String(day.getDate())));
@@ -1064,6 +1163,7 @@
       }).sort(function (a, b) { return (b.allDay - a.allDay) || (a.start - b.start); });
 
       var wrap = el("div", "day");
+      dayTap(wrap, day);
       var name = el("h3", "day-name", i === 0 ? "Today" : i === 1 ? "Tomorrow" : DAY_NAMES[day.getDay()]);
       name.appendChild(el("span", null, MONTHS[day.getMonth()].slice(0, 3) + " " + day.getDate()));
       wrap.appendChild(name);
