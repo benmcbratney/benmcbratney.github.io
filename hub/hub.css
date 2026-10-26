@@ -37,7 +37,7 @@ button, input { font: inherit; color: inherit; }
 /* Stop long-presses from selecting text on the display, but keep this off every
    ancestor of a text box (the settings form): iPadOS home-screen apps can refuse
    to show the keyboard for inputs inside user-select: none. */
-.top, .status, .night, .agenda, .nest, .scores, .wear, .spotify, .timers, .timer-card, .grocery-card, .tstat-card, .music-card, .hourly-card, .scores-card {
+.top, .status, .night, .agenda, .nest, .scores, .wear, .spotify, .timers, .timer-card, .grocery-card, .tstat-card, .music-card, .hourly-card, .scores-card, .day-card {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -223,6 +223,41 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 body.glass-dark .sm-wl.win { color: #7fd69a; }
 .sm-result .sc-badge { font-size: 11px; min-width: 0; padding: 1px 5px; vertical-align: 1px; }
 .sm-muted { color: var(--muted); }
+
+/* Calendar: tap a day for the day pop-up */
+.tappable { cursor: pointer; }
+.day.tappable:active, .wk-col.tappable:active, .tl-peek-row.tappable:active, .fx-day.tappable:active { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+/* Day pop-up */
+.modal-card.day-card { width: 780px; max-height: calc(100% - 32px); display: flex; flex-direction: column; }
+.dm-head { display: flex; align-items: center; gap: 14px; }
+.dm-heading { flex: 1; min-width: 0; text-align: center; }
+.dm-heading h2 { font-size: 26px; }
+.dm-heading .hint { margin: 2px 0 0; }
+.dm-nav {
+  width: 52px; height: 52px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--bg);
+  font-size: 32px; line-height: 1; padding: 0 0 4px; color: var(--ink);
+}
+.dm-nav:disabled { opacity: 0.25; }
+.dm-nav:active:not(:disabled) { background: var(--accent-soft); }
+.dm-list { overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 120px; margin: 16px 0; flex: 1; }
+.dm-empty { text-align: center; color: var(--muted); font-size: 20px; padding: 40px 0; }
+.dm-event { display: flex; gap: 16px; padding: 14px 6px; border-top: 1px solid var(--line); }
+.dm-event:first-child { border-top: 0; }
+.dm-event.past { opacity: 0.45; }
+.dm-event.now { background: var(--accent-soft); border-radius: 12px; }
+.dm-bar { width: 6px; flex: none; border-radius: 3px; }
+.dm-when { width: 104px; flex: none; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.dm-when b { font-size: 20px; }
+.dm-when span { font-size: 14px; color: var(--muted); }
+.dm-when .dm-dur { margin-top: 2px; font-size: 12px; }
+.dm-info { flex: 1; min-width: 0; }
+.dm-title { font-size: 22px; font-weight: 700; line-height: 1.25; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dm-title .pill { font-size: 13px; font-weight: 600; border-radius: 999px; padding: 3px 10px; color: var(--accent); background: rgba(255, 255, 255, 0.7); }
+.dm-event.now .dm-title .pill { color: #fff; background: var(--accent); }
+.dm-where { font-size: 16px; color: var(--muted); margin-top: 4px; }
+.dm-cal { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.dm-notes { font-size: 15px; line-height: 1.45; margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: var(--bg); white-space: pre-line; word-wrap: break-word; }
 
 /* Scores pop-up */
 .modal-card.scores-card { width: 860px; }

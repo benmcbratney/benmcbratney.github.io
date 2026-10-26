@@ -334,23 +334,42 @@
   // at 5am or late at night would label a sunny day "fog". Here: rain/snow/storms win
   // if they cover 2+ daytime hours (worst one shown); otherwise the sky condition that
   // covers the most of the day.
+  // Clear vs. cloudy by cloud cover, not Open-Meteo's label: its cloud cover counts thin
+  // high cirrus too, so sunny days often came back "overcast". Only over 90% is Cloudy.
+  // Fog, drizzle, rain, snow and storms keep their own codes.
+  function skyCode(code, cover) {
+    if (code > 3 || cover == null) return code;
+    return cover > 90 ? 3 : cover > 60 ? 2 : cover > 25 ? 1 : 0;
+  }
+
+  // The icon for day i of the daily forecast, judged from its daytime hours (7am–7pm).
+  // Open-Meteo's daily code is the most severe condition at any hour, so a little fog
+  // at 5am or late at night would label a sunny day "fog". Here: rain/snow/storms win
+  // if they cover 2+ daytime hours (worst one shown); fog if it covers half the day;
+  // otherwise clear/cloudy from the average daytime cloud cover (skyCode).
   function daytimeCode(i) {
     var fallback = dailyWx.weather_code[i];
     if (!hourlyWx || !hourlyWx.time || !hourlyWx.weather_code) return fallback;
-    var key = dailyWx.time[i], counts = {}, wet = [];
+    var key = dailyWx.time[i], wet = [], fog = 0, hours = 0, cover = 0, coverN = 0, sky = {};
     hourlyWx.time.forEach(function (t, j) {
       if (t.slice(0, 10) !== key) return;
       var hr = +t.slice(11, 13);
       if (hr < 7 || hr >= 19) return;
       var c = hourlyWx.weather_code[j];
+      hours++;
       if (c >= 51) wet.push(c);
-      else counts[c] = (counts[c] || 0) + 1;
+      else if (c === 45 || c === 48) fog++;
+      else sky[c] = (sky[c] || 0) + 1;
+      if (hourlyWx.cloud_cover && hourlyWx.cloud_cover[j] != null) { cover += hourlyWx.cloud_cover[j]; coverN++; }
     });
+    if (!hours) return fallback;
     if (wet.length >= 2) return Math.max.apply(null, wet);
+    if (fog * 2 >= hours) return 45;
+    if (coverN) return skyCode(0, cover / coverN);
+    // No cloud-cover data: the most common sky code (ties go cloudier).
     var best = null;
-    Object.keys(counts).forEach(function (c) {
-      // Ties go to the cloudier/foggier code, so the icon doesn't oversell the sun.
-      if (best === null || counts[c] > counts[best] || (counts[c] === counts[best] && +c > +best)) best = c;
+    Object.keys(sky).forEach(function (c) {
+      if (best === null || sky[c] > sky[best] || (sky[c] === sky[best] && +c > +best)) best = c;
     });
     return best === null ? fallback : +best;
   }
@@ -386,14 +405,19 @@
   function loadWeather() {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(settings.lat) +
       "&longitude=" + encodeURIComponent(settings.lon) +
-      "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
+      "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,cloud_cover" +
       "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max" +
-      "&hourly=precipitation_probability,temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
+      "&hourly=precipitation_probability,temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,cloud_cover&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
       "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
+        // Re-label clear/cloudy codes by cloud-cover % (see skyCode) everywhere they're shown.
+        c.weather_code = skyCode(c.weather_code, c.cloud_cover);
+        if (d.hourly && d.hourly.weather_code && d.hourly.cloud_cover) {
+          d.hourly.weather_code = d.hourly.weather_code.map(function (code, j) { return skyCode(code, d.hourly.cloud_cover[j]); });
+        }
         dailyWx = day;
         hourlyWx = d.hourly;
         currentWx = { code: c.weather_code, isDay: !!c.is_day, tempF: c.temperature_2m };
@@ -868,14 +892,106 @@
       events = data.events.map(function (e) {
         return {
           title: e.title, location: e.location, allDay: e.allDay, color: e.color, calendar: e.calendar,
+          description: e.description || null,
           start: parseWall(e.start), end: parseWall(e.end || e.start),
         };
       });
       renderAgenda();
+      if (!$("day-modal").hidden) renderDay();
       tickClock(); // refresh the night screen's "Next:" line
       setProblem("calendar", data.errors && data.errors.length ? data.errors.join("; ") : null);
     }).catch(function (e) { setProblem("calendar", e.message); });
   }
+
+  // ---- day pop-up: tap a day in any calendar style for a big view with every detail
+
+  var dayModalDate = null;
+
+  function dayTap(elem, day) {
+    elem.classList.add("tappable");
+    elem.addEventListener("click", function () { openDay(day); });
+  }
+
+  function calendarDays() { return Math.max(1, Math.min(14, +settings.days || 5)); }
+
+  function openDay(day) {
+    dayModalDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    $("day-modal").hidden = false;
+    renderDay();
+  }
+  function closeDay() { dayModalDate = null; $("day-modal").hidden = true; }
+
+  function shiftDay(delta) {
+    if (!dayModalDate) return;
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var next = addDays(dayModalDate, delta);
+    var offset = Math.round((next - today) / 864e5);
+    if (offset < 0 || offset >= calendarDays()) return; // only the days that are loaded
+    dayModalDate = next;
+    renderDay();
+  }
+
+  function renderDay() {
+    var day = dayModalDate;
+    if (!day) return;
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var offset = Math.round((day - today) / 864e5);
+    var rel = offset === 0 ? "Today · " : offset === 1 ? "Tomorrow · " : "";
+    $("dm-title").textContent = rel + DAY_NAMES[day.getDay()] + ", " + MONTHS[day.getMonth()] + " " + day.getDate();
+    $("dm-prev").disabled = offset <= 0;
+    $("dm-next").disabled = offset >= calendarDays() - 1;
+
+    var list = eventsOn(day);
+    $("dm-sub").textContent = list.length ? list.length + (list.length === 1 ? " event" : " events") : "";
+    var box = $("dm-list");
+    box.innerHTML = "";
+    if (!list.length) {
+      box.appendChild(el("div", "dm-empty", offset === 0 ? "Nothing on the calendar today 🎉" : "Nothing on the calendar. Free day!"));
+      return;
+    }
+    list.forEach(function (e) {
+      var live = !e.allDay && e.start <= now && e.end > now, past = !e.allDay && e.end <= now;
+      var row = el("div", "dm-event" + (live ? " now" : "") + (past ? " past" : ""));
+      var bar = el("span", "dm-bar");
+      bar.style.background = e.color || "#8a8076";
+      row.appendChild(bar);
+
+      var when = el("div", "dm-when");
+      if (e.allDay) {
+        when.appendChild(el("b", null, "All day"));
+        var lastDay = addDays(e.end, -1);
+        if (!sameDate(lastDay, e.start)) when.appendChild(el("span", null, "through " + DAY_NAMES[lastDay.getDay()].slice(0, 3) + " " + MONTHS[lastDay.getMonth()].slice(0, 3) + " " + lastDay.getDate()));
+      } else {
+        when.appendChild(el("b", null, fmtTime(e.start)));
+        when.appendChild(el("span", null, "to " + fmtTime(e.end)));
+        var mins = Math.round((e.end - e.start) / 60000);
+        if (mins > 0) when.appendChild(el("span", "dm-dur", mins < 60 ? mins + " min" : (Math.round(mins / 30) / 2) + " hr"));
+      }
+      row.appendChild(when);
+
+      var info = el("div", "dm-info");
+      var title = el("div", "dm-title", e.title);
+      if (live) title.appendChild(el("span", "pill", "Now"));
+      else if (!e.allDay && e.start > now && e.start - now <= 3600e3) title.appendChild(el("span", "pill", untilText(e.start - now)));
+      info.appendChild(title);
+      if (e.location) info.appendChild(el("div", "dm-where", "📍 " + e.location));
+      if (e.calendar) {
+        var cal = el("div", "dm-cal");
+        var dot = el("i", "fx-dot");
+        dot.style.background = e.color || "#8a8076";
+        cal.appendChild(dot);
+        cal.appendChild(document.createTextNode(e.calendar));
+        info.appendChild(cal);
+      }
+      if (e.description) info.appendChild(el("div", "dm-notes", e.description));
+      row.appendChild(info);
+      box.appendChild(row);
+    });
+  }
+
+  $("dm-close").addEventListener("click", closeDay);
+  $("dm-prev").addEventListener("click", function () { shiftDay(-1); });
+  $("dm-next").addEventListener("click", function () { shiftDay(1); });
 
   // ---- calendar layouts (⚙︎ Settings → Calendar style)
 
@@ -905,6 +1021,7 @@
     for (var i = 0; i < Math.min(days, 5); i++) {
       var day = addDays(today, i);
       var col = el("div", "wk-col" + (i === 0 ? " today" : ""));
+      dayTap(col, day);
       var head = el("div", "wk-head");
       head.appendChild(el("div", "wk-dow", i === 0 ? "Today" : DAY_NAMES[day.getDay()].slice(0, 3)));
       head.appendChild(el("div", "wk-date", String(day.getDate())));
@@ -930,6 +1047,7 @@
     var todays = eventsOn(today);
     var allDay = todays.filter(function (e) { return e.allDay; });
     var head = el("div", "tl-headline");
+    dayTap(head, today);
     head.appendChild(el("b", null, "Today"));
     allDay.forEach(function (e) {
       var p = el("span", "tl-allday", e.title);
@@ -939,6 +1057,7 @@
     box.appendChild(head);
 
     var track = el("div", "tl");
+    dayTap(track, today);
     track.style.height = (endH - startH) * PX + "px";
     for (var h = startH; h <= endH; h++) {
       var line = el("div", "tl-hour");
@@ -972,6 +1091,7 @@
     for (var i = 1; i < Math.min(days, 5); i++) {
       var day = addDays(today, i), list = eventsOn(day);
       var row = el("div", "tl-peek-row");
+      dayTap(row, day);
       row.appendChild(el("b", null, i === 1 ? "Tomorrow" : DAY_NAMES[day.getDay()].slice(0, 3)));
       row.appendChild(el("span", null, list.length ? list.slice(0, 2).map(function (e) {
         return (e.allDay ? "" : fmtTime(e.start) + " ") + e.title;
@@ -986,6 +1106,7 @@
     var upcoming = events.filter(function (e) { return !e.allDay && e.end > now; }).sort(function (a, b) { return a.start - b.start; });
     var next = upcoming[0];
     var hero = el("div", "fx-hero");
+    dayTap(hero, next ? new Date(next.start.getFullYear(), next.start.getMonth(), next.start.getDate()) : today);
     if (next) {
       hero.style.background = "linear-gradient(135deg, " + tint(next.color, 0.85) + ", " + tint(next.color, 0.55) + ")";
       var live = next.start <= now;
@@ -1002,6 +1123,7 @@
     var rest = eventsOn(today).filter(function (e) { return e !== next && (e.allDay || e.start > now); });
     if (rest.length) {
       var chips = el("div", "fx-chips");
+      dayTap(chips, today);
       chips.appendChild(el("span", "fx-label", "Later today"));
       rest.forEach(function (e) {
         var c = el("span", "fx-chip", (e.allDay ? "" : fmtTime(e.start) + " ") + e.title);
@@ -1015,6 +1137,7 @@
     for (var i = 1; i < Math.min(days, 5); i++) {
       var day = addDays(today, i), list = eventsOn(day);
       var row = el("div", "fx-day");
+      dayTap(row, day);
       var d = el("div", "fx-daylabel");
       d.appendChild(el("b", null, i === 1 ? "Tmrw" : DAY_NAMES[day.getDay()].slice(0, 3)));
       d.appendChild(el("span", null, String(day.getDate())));
@@ -1064,6 +1187,7 @@
       }).sort(function (a, b) { return (b.allDay - a.allDay) || (a.start - b.start); });
 
       var wrap = el("div", "day");
+      dayTap(wrap, day);
       var name = el("h3", "day-name", i === 0 ? "Today" : i === 1 ? "Tomorrow" : DAY_NAMES[day.getDay()]);
       name.appendChild(el("span", null, MONTHS[day.getMonth()].slice(0, 3) + " " + day.getDate()));
       wrap.appendChild(name);
