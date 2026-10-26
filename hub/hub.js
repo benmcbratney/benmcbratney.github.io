@@ -334,23 +334,42 @@
   // at 5am or late at night would label a sunny day "fog". Here: rain/snow/storms win
   // if they cover 2+ daytime hours (worst one shown); otherwise the sky condition that
   // covers the most of the day.
+  // Clear vs. cloudy by cloud cover, not Open-Meteo's label: its cloud cover counts thin
+  // high cirrus too, so sunny days often came back "overcast". Only over 90% is Cloudy.
+  // Fog, drizzle, rain, snow and storms keep their own codes.
+  function skyCode(code, cover) {
+    if (code > 3 || cover == null) return code;
+    return cover > 90 ? 3 : cover > 60 ? 2 : cover > 25 ? 1 : 0;
+  }
+
+  // The icon for day i of the daily forecast, judged from its daytime hours (7am–7pm).
+  // Open-Meteo's daily code is the most severe condition at any hour, so a little fog
+  // at 5am or late at night would label a sunny day "fog". Here: rain/snow/storms win
+  // if they cover 2+ daytime hours (worst one shown); fog if it covers half the day;
+  // otherwise clear/cloudy from the average daytime cloud cover (skyCode).
   function daytimeCode(i) {
     var fallback = dailyWx.weather_code[i];
     if (!hourlyWx || !hourlyWx.time || !hourlyWx.weather_code) return fallback;
-    var key = dailyWx.time[i], counts = {}, wet = [];
+    var key = dailyWx.time[i], wet = [], fog = 0, hours = 0, cover = 0, coverN = 0, sky = {};
     hourlyWx.time.forEach(function (t, j) {
       if (t.slice(0, 10) !== key) return;
       var hr = +t.slice(11, 13);
       if (hr < 7 || hr >= 19) return;
       var c = hourlyWx.weather_code[j];
+      hours++;
       if (c >= 51) wet.push(c);
-      else counts[c] = (counts[c] || 0) + 1;
+      else if (c === 45 || c === 48) fog++;
+      else sky[c] = (sky[c] || 0) + 1;
+      if (hourlyWx.cloud_cover && hourlyWx.cloud_cover[j] != null) { cover += hourlyWx.cloud_cover[j]; coverN++; }
     });
+    if (!hours) return fallback;
     if (wet.length >= 2) return Math.max.apply(null, wet);
+    if (fog * 2 >= hours) return 45;
+    if (coverN) return skyCode(0, cover / coverN);
+    // No cloud-cover data: the most common sky code (ties go cloudier).
     var best = null;
-    Object.keys(counts).forEach(function (c) {
-      // Ties go to the cloudier/foggier code, so the icon doesn't oversell the sun.
-      if (best === null || counts[c] > counts[best] || (counts[c] === counts[best] && +c > +best)) best = c;
+    Object.keys(sky).forEach(function (c) {
+      if (best === null || sky[c] > sky[best] || (sky[c] === sky[best] && +c > +best)) best = c;
     });
     return best === null ? fallback : +best;
   }
@@ -386,14 +405,19 @@
   function loadWeather() {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(settings.lat) +
       "&longitude=" + encodeURIComponent(settings.lon) +
-      "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
+      "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,cloud_cover" +
       "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max" +
-      "&hourly=precipitation_probability,temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
+      "&hourly=precipitation_probability,temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,cloud_cover&minutely_15=precipitation,snowfall&forecast_minutely_15=8" +
       "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5";
     return fetch(url, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         var c = d.current, day = d.daily;
+        // Re-label clear/cloudy codes by cloud-cover % (see skyCode) everywhere they're shown.
+        c.weather_code = skyCode(c.weather_code, c.cloud_cover);
+        if (d.hourly && d.hourly.weather_code && d.hourly.cloud_cover) {
+          d.hourly.weather_code = d.hourly.weather_code.map(function (code, j) { return skyCode(code, d.hourly.cloud_cover[j]); });
+        }
         dailyWx = day;
         hourlyWx = d.hourly;
         currentWx = { code: c.weather_code, isDay: !!c.is_day, tempF: c.temperature_2m };
