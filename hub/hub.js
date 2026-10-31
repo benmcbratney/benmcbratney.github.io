@@ -957,6 +957,13 @@
       box.textContent = msg.text;
       box.className = "precip-alert" + (msg.snow ? " snow" : "");
     }
+    syncPillRow();
+  }
+
+  // The pill row under the header holds the rain heads-up and the countdowns; hide
+  // it (and its gap) when both are empty.
+  function syncPillRow() {
+    $("pill-row").hidden = $("precip-alert").hidden && $("countdowns").hidden;
   }
 
   // ------------------------------------------------------------- sports scores
@@ -1600,6 +1607,7 @@
       pill.appendChild(el("b", null, c.days === 0 ? "Today!" : c.days === 1 ? "Tomorrow" : c.days + " days"));
       box.appendChild(pill);
     });
+    syncPillRow();
   }
 
   // ------------------------------------------------------------- Todoist lists
