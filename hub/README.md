@@ -277,14 +277,25 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
   "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
 
-## Halloween
+## Holidays
 
-On October 31 (by the iPad's own clock) the hub dresses up for the day: a moonlit night sky
-replaces the weather photo, the panels turn smoky purple with orange trim, the flip clock glows
-jack-o'-lantern orange, the card icons swap to 🦇 💀 🕸️ 🎃, bats flap across now and then, cobwebs
-hang in the corners and a spider bobs on its thread. A "🎃 Happy Halloween!" pill sits in the
-footer. It switches off by itself at midnight. Add `?halloween` to the address to preview it on
-any other day.
+The hub dresses up for a few holidays, going by the iPad's own date, and switches back by
+itself at midnight. Each one swaps the weather photo for its own sky, tints the panels, recolors
+the flip clock (on the night screen too), swaps the card icons and puts a greeting in the footer.
+
+| Holiday | When | Look | Icons | Footer |
+|---|---|---|---|---|
+| Halloween | Oct 31 | Moonlit purple sky, orange clock, bats, cobwebs, a dangling spider | 🦇 💀 🕸️ 🎃 | Happy Halloween! |
+| Thanksgiving | Wed–Fri of Thanksgiving week | Autumn sunset, amber clock, falling maple leaves | 🦃 🏈 🍂 🥧 | Thanksgiving tomorrow! / Happy Thanksgiving! / Happy Thanksgiving weekend! |
+| Christmas | All of December | Snowy night sky, red clock with green date tiles, falling snow, twinkling string lights | 🎄 ⭐ 🔥 🧣 | Happy holidays! / Merry Christmas Eve! / Merry Christmas! / Happy New Year's Eve! |
+| New Year's | Jan 1 | Midnight sky, gold clock, gold fireworks | 🎆 🏆 ❄️ 🎩 | Happy New Year 2027! (the new year) |
+| Valentine's Day | Feb 14 | Rosy sky, pink clock, floating hearts | 💌 💘 💗 🌹 | Happy Valentine's Day! |
+| St. Patrick's Day | Mar 17 | Emerald sky with a soft rainbow, green clock with gold date tiles, drifting shamrocks | ☘️ 🍀 🌈 🎩 | Happy St. Patrick's Day! |
+| 4th of July | Jul 4 | Starry navy sky, red clock, red/white/blue fireworks, bunting along the top | 🇺🇸 ⚾ 🎆 🌭 | Happy 4th of July! |
+
+To preview one on any day, add `?halloween`, `?thanksgiving`, `?christmas`, `?newyear`,
+`?valentines`, `?stpatricks` or `?july4` to the address.
+The themes live in the `HOLIDAYS` table in `hub.js` and the holidays section of `hub.css`.
 
 ## Background photos
 

@@ -202,7 +202,7 @@
     renderFlipDate($("date"), [DAY_NAMES[now.getDay()].slice(0, 3), MONTHS[now.getMonth()].slice(0, 3), String(now.getDate())].map(function (w) { return w.toUpperCase(); }));
     $("date").setAttribute("aria-label", DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate());
     renderPrecipAlert(now);
-    updateHalloween(now);
+    updateHoliday(now);
     updateBackdrop();
 
     var night = isNightHour(h) && Date.now() > wakeUntil && $("settings").hidden;
@@ -222,64 +222,250 @@
     tickClock();
   });
 
-  // ------------------------------------------------------------- Halloween
-  // On October 31 (the iPad's own date) the hub dresses up: a moonlit night sky
-  // instead of the weather photo, orange-and-purple glass, bats, cobwebs and a
-  // dangling spider. It switches itself off at midnight. Add ?halloween to the
-  // address to preview it on any other day.
+  // ------------------------------------------------------------- holidays
+  // The hub dresses up for a few holidays (by the iPad's own date), then switches
+  // itself back at midnight:
+  //   Halloween     Oct 31: moonlit sky, bats, cobwebs and a dangling spider
+  //   Thanksgiving  Wed–Fri of Thanksgiving week: autumn sunset and falling leaves
+  //   Christmas     all of December: snowy night sky and twinkling string lights
+  //   New Year's    Jan 1: midnight sky and gold fireworks
+  //   Valentine's   Feb 14: rosy sky and floating hearts
+  //   St. Patrick's Mar 17: emerald sky, a rainbow and drifting shamrocks
+  //   4th of July   Jul 4: red, white and blue fireworks under bunting
+  // Each one swaps in its own sky for the weather photo, tints the glass, recolors
+  // the flip clock, swaps the card icons and puts a greeting in the footer. Add
+  // ?halloween, ?thanksgiving, ?christmas, ?newyear, ?valentines, ?stpatricks or
+  // ?july4 to the address to preview one.
 
-  var halloweenPreview = /(^|[?&])halloween\b/.test(location.search.slice(1));
-  var halloweenOn = false;
-  var HALLOWEEN_ICONS = { agenda: "🦇", scores: "💀", nest: "🕸️", wear: "🎃" };
+  var holidayPreview = (location.search.match(/(?:^|[?&])(halloween|thanksgiving|christmas|newyear|valentines|stpatricks|july4)\b/) || [])[1] || "";
+  var holidayOn = ""; // name of the holiday showing, or ""
   var BAT_SVG = '<svg viewBox="0 0 100 34"><path d="M50 30C46 25 44 23 41 26C38 21 32 20 28 24C26 19 20 17 14 20C16 14 14 9 8 6C22 2 36 4 43 12L45 6L48 10L52 10L55 6L57 12C64 4 78 2 92 6C86 9 84 14 86 20C80 17 74 19 72 24C68 20 62 21 59 26C56 23 54 25 50 30Z"/></svg>';
   var WEB_SVG = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.2">' +
     '<path d="M0 0L100 0M0 0L96 40M0 0L72 72M0 0L40 96M0 0L0 100"/>' +
     '<path d="M24 0Q20 8 23 10Q18 16 17 17Q12 19 10 23Q6 22 0 24"/>' +
     '<path d="M50 0Q42 14 46 20Q37 30 34 34Q24 38 20 46Q12 44 0 50"/>' +
     '<path d="M78 0Q66 22 70 30Q56 46 52 52Q36 58 30 70Q18 66 0 78"/></svg>';
+  var LEAF_SVG = '<svg viewBox="0 0 100 100"><path d="M50 4L56 20L63 16L61 33L73 23L77 30L87 28L83 41L93 45L79 55L83 61L64 61L66 71L53 64L52 94L48 94L47 64L34 71L36 61L17 61L21 55L7 45L17 41L13 28L23 30L27 23L39 33L37 16L44 20Z"/>' +
+    '<path d="M50 30V92M50 60L30 48M50 60L70 48" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="2"/></svg>';
+  var HEART_SVG = '<svg viewBox="0 0 100 92"><path d="M50 88C20 66 4 48 4 30C4 16 15 6 28 6C38 6 46 12 50 20C54 12 62 6 72 6C85 6 96 16 96 30C96 48 80 66 50 88Z"/></svg>';
+  var SHAMROCK_LEAF = '<path d="M50 50C40 42 30 36 30 26C30 18 36 13 42 13C46 13 49 16 50 19C51 16 54 13 58 13C64 13 70 18 70 26C70 36 60 42 50 50Z"/>';
+  var SHAMROCK_SVG = '<svg viewBox="0 0 100 100"><path d="M50 50Q54 72 64 92" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>' +
+    SHAMROCK_LEAF + '<g transform="rotate(120 50 50)">' + SHAMROCK_LEAF + '</g><g transform="rotate(240 50 50)">' + SHAMROCK_LEAF + '</g></svg>';
 
-  function buildHalloween() {
-    var scene = el("div", "spooky-scene");
-    scene.setAttribute("aria-hidden", "true");
-    scene.appendChild(el("div", "spooky-moon"));
-    document.body.insertBefore(scene, $("hub"));
-
-    var front = el("div", "spooky-front");
-    front.setAttribute("aria-hidden", "true");
-    for (var i = 0; i < 4; i++) {
-      var bat = el("div", "bat bat-" + i);
-      var wings = el("div", "bat-wings");
-      wings.innerHTML = BAT_SVG;
-      bat.appendChild(wings);
-      front.appendChild(bat);
+  // Leaves, hearts, shamrocks: drawn shapes that fall (or rise) across the screen,
+  // swaying as they go. Negative delays mean they're already on their way at load.
+  function addDrifters(front, svg, colors, count, minSize, maxSize, rise) {
+    for (var i = 0; i < count; i++) {
+      var d = el("div", "drift" + (rise ? " rise" : ""));
+      var dur = 16 + Math.random() * 10;
+      d.style.left = (i * (100 / count) + Math.random() * 6) + "%";
+      d.style.width = (minSize + Math.random() * (maxSize - minSize)) + "px";
+      d.style.animationDuration = dur + "s";
+      d.style.animationDelay = (-Math.random() * dur) + "s";
+      var sway = el("div", "drift-sway");
+      sway.style.animationDuration = (3 + Math.random() * 2) + "s";
+      sway.style.color = colors[i % colors.length];
+      sway.innerHTML = svg;
+      d.appendChild(sway);
+      front.appendChild(d);
     }
-    ["web web-l", "web web-r"].forEach(function (cls) {
-      var web = el("div", cls);
-      web.innerHTML = WEB_SVG;
-      front.appendChild(web);
-    });
-    var spider = el("div", "spider");
-    spider.appendChild(el("div", "spider-thread"));
-    spider.appendChild(el("div", "spider-body", "🕷️"));
-    front.appendChild(spider);
-    document.body.appendChild(front);
-
-    var boo = el("span", "boo", "🎃");
-    boo.appendChild(el("span", "boo-text", " Happy Halloween!"));
-    $("status-text").parentNode.insertBefore(boo, $("status-text"));
   }
 
-  function updateHalloween(now) {
-    var on = halloweenPreview || (now.getMonth() === 9 && now.getDate() === 31);
-    if (on === halloweenOn) return;
-    halloweenOn = on;
-    if (on && !document.querySelector(".spooky-scene")) buildHalloween();
-    document.body.classList.toggle("halloween", on);
-    Object.keys(HALLOWEEN_ICONS).forEach(function (card) {
+  // Fireworks: a few bursts of sparks, each popping somewhere new every cycle.
+  function addFireworks(front, colors) {
+    for (var b = 0; b < 4; b++) {
+      var burst = el("div", "burst");
+      var place = function (node) {
+        node.style.left = (12 + Math.random() * 76) + "%";
+        node.style.top = (10 + Math.random() * 50) + "%";
+      };
+      place(burst);
+      var color = colors[b % colors.length];
+      var size = 0.8 + Math.random() * 0.5;
+      for (var k = 0; k < 20; k++) {
+        var spark = el("span", "spark");
+        spark.style.setProperty("--a", (k * 18) + "deg");
+        spark.style.setProperty("--r", Math.round((k % 2 ? 90 : 66) * size) + "px"); // two rings
+        spark.style.background = spark.style.color = k % 2 ? color : colors[(b + 1) % colors.length];
+        spark.style.animationDelay = (b * 1.2) + "s";
+        burst.appendChild(spark);
+      }
+      burst.firstChild.addEventListener("animationiteration", place.bind(null, burst));
+      front.appendChild(burst);
+    }
+  }
+
+  function thanksgivingDay(year) { return nthWeekday(year, 10, 4, 4); } // 4th Thursday of November
+
+  var HOLIDAYS = {
+    halloween: {
+      on: function (d) { return d.getMonth() === 9 && d.getDate() === 31; },
+      icons: { agenda: "🦇", scores: "💀", nest: "🕸️", wear: "🎃" },
+      greeting: function () { return ["🎃", " Happy Halloween!"]; },
+      confetti: ["#ff7a1a", "#8e44ad", "#1b1b1f", "#9be15d", "#ffb347", "#ffffff"],
+      build: function (scene, front) {
+        scene.appendChild(el("div", "hd-moon"));
+        for (var i = 0; i < 4; i++) {
+          var bat = el("div", "bat bat-" + i);
+          var wings = el("div", "bat-wings");
+          wings.innerHTML = BAT_SVG;
+          bat.appendChild(wings);
+          front.appendChild(bat);
+        }
+        ["web web-l", "web web-r"].forEach(function (cls) {
+          var web = el("div", cls);
+          web.innerHTML = WEB_SVG;
+          front.appendChild(web);
+        });
+        var spider = el("div", "spider");
+        spider.appendChild(el("div", "spider-thread"));
+        spider.appendChild(el("div", "spider-body", "🕷️"));
+        front.appendChild(spider);
+      },
+    },
+    thanksgiving: {
+      on: function (d) {
+        if (d.getMonth() !== 10) return false;
+        var t = thanksgivingDay(d.getFullYear());
+        return d.getDate() >= t - 1 && d.getDate() <= t + 1;
+      },
+      icons: { agenda: "🦃", scores: "🏈", nest: "🍂", wear: "🥧" },
+      greeting: function (d) {
+        var diff = d.getDate() - thanksgivingDay(d.getFullYear());
+        if (diff < 0) return ["🦃", " Thanksgiving tomorrow!"];
+        if (diff > 0) return ["🥧", " Happy Thanksgiving weekend!"];
+        return ["🦃", " Happy Thanksgiving!"];
+      },
+      confetti: ["#d9541e", "#e8a323", "#b5381f", "#c7782a", "#7a5230", "#f6e3b4"],
+      build: function (scene, front) {
+        addDrifters(front, LEAF_SVG, ["#d9541e", "#e8a323", "#b5381f", "#c7782a", "#e06d2c", "#a8322a"], 9, 38, 56);
+      },
+    },
+    christmas: {
+      on: function (d) { return d.getMonth() === 11; },
+      icons: { agenda: "🎄", scores: "⭐", nest: "🔥", wear: "🧣" },
+      greeting: function (d) {
+        var day = d.getDate();
+        if (day === 24) return ["🎅", " Merry Christmas Eve!"];
+        if (day === 25) return ["🎄", " Merry Christmas!"];
+        if (day === 31) return ["🎉", " Happy New Year's Eve!"];
+        return ["🎄", " Happy holidays!"];
+      },
+      confetti: ["#d6303a", "#1f8a4c", "#f4c95d", "#ffffff", "#2a6fdb", "#e9e9e9"],
+      build: function (scene, front) {
+        scene.appendChild(el("div", "hd-stars"));
+        for (var i = 0; i < 28; i++) {
+          var flake = el("div", "flake");
+          var size = 3 + Math.random() * 5;
+          var dur = 10 + Math.random() * 12;
+          flake.style.left = Math.random() * 100 + "%";
+          flake.style.width = flake.style.height = size + "px";
+          flake.style.opacity = 0.45 + Math.random() * 0.5;
+          flake.style.animationDuration = dur + "s";
+          flake.style.animationDelay = (-Math.random() * dur) + "s";
+          front.appendChild(flake);
+        }
+        // String lights along the top edge, sagging between hooks.
+        var lights = el("div", "lights");
+        lights.innerHTML = '<svg viewBox="0 0 300 30" preserveAspectRatio="none"><path d="M0 2Q50 30 100 2Q150 30 200 2Q250 30 300 2"/></svg>';
+        var colors = ["#ff4b4b", "#ffd34d", "#4bd16f", "#4b9bff", "#ff8ad8"];
+        var n = 18;
+        for (var j = 0; j < n; j++) {
+          var bulb = el("span", "bulb");
+          var x = (j + 0.5) / n;
+          var t = (x * 3) % 1; // position within its scallop
+          bulb.style.left = x * 100 + "%";
+          bulb.style.top = (2 + 56 * t * (1 - t)) + "px"; // on the wire's curve
+          bulb.style.background = bulb.style.color = colors[j % colors.length];
+          bulb.style.animationDelay = (-Math.random() * 3) + "s";
+          lights.appendChild(bulb);
+        }
+        front.appendChild(lights);
+      },
+    },
+    newyear: {
+      on: function (d) { return d.getMonth() === 0 && d.getDate() === 1; },
+      icons: { agenda: "🎆", scores: "🏆", nest: "❄️", wear: "🎩" },
+      greeting: function (d) { return ["🥂", " Happy New Year " + d.getFullYear() + "!"]; },
+      confetti: ["#f4c95d", "#ffffff", "#c9a227", "#b9c3d6", "#ffe8a3", "#1b1b2a"],
+      build: function (scene, front) {
+        scene.appendChild(el("div", "hd-stars"));
+        addFireworks(front, ["#ffd66b", "#ffffff", "#ffb347", "#f9e7b0"]);
+      },
+    },
+    valentines: {
+      on: function (d) { return d.getMonth() === 1 && d.getDate() === 14; },
+      icons: { agenda: "💌", scores: "💘", nest: "💗", wear: "🌹" },
+      greeting: function () { return ["💝", " Happy Valentine's Day!"]; },
+      confetti: ["#ff4f7b", "#ff9fbf", "#d81b4a", "#ffffff", "#ffc2d4", "#a3123a"],
+      build: function (scene, front) {
+        addDrifters(front, HEART_SVG, ["#ff4f7b", "#ff8fb1", "#e0245e", "#ffc2d4", "#ff6b9a"], 10, 22, 44, true);
+      },
+    },
+    stpatricks: {
+      on: function (d) { return d.getMonth() === 2 && d.getDate() === 17; },
+      icons: { agenda: "☘️", scores: "🍀", nest: "🌈", wear: "🎩" },
+      greeting: function () { return ["☘️", " Happy St. Patrick's Day!"]; },
+      confetti: ["#2fa84f", "#7fdc8e", "#f4c95d", "#ffffff", "#1b6e34", "#ffd34d"],
+      build: function (scene, front) {
+        scene.appendChild(el("div", "hd-rainbow"));
+        addDrifters(front, SHAMROCK_SVG, ["#3fbf5f", "#2fa84f", "#7fdc8e", "#25913f"], 9, 30, 48);
+      },
+    },
+    july4: {
+      on: function (d) { return d.getMonth() === 6 && d.getDate() === 4; },
+      icons: { agenda: "🇺🇸", scores: "⚾", nest: "🎆", wear: "🌭" },
+      greeting: function () { return ["🎆", " Happy 4th of July!"]; },
+      confetti: ["#c81e2c", "#ffffff", "#1e3a8a", "#ff5a5a", "#9cc4ff", "#f4c95d"],
+      build: function (scene, front) {
+        scene.appendChild(el("div", "hd-stars"));
+        addFireworks(front, ["#ff4d4d", "#ffffff", "#5b8cff"]);
+        // Bunting along the top edge.
+        var bunting = el("div", "bunting");
+        for (var i = 0; i < 5; i++) bunting.appendChild(el("span", "drape"));
+        front.appendChild(bunting);
+      },
+    },
+  };
+
+  function activeHoliday(now) {
+    if (holidayPreview) return holidayPreview;
+    for (var name in HOLIDAYS) if (HOLIDAYS[name].on(now)) return name;
+    return "";
+  }
+
+  function updateHoliday(now) {
+    var name = activeHoliday(now);
+    if (name && !document.querySelector(".hd-scene.hd-" + name)) {
+      var scene = el("div", "hd-scene hd-" + name), front = el("div", "hd-front hd-" + name);
+      scene.setAttribute("aria-hidden", "true");
+      front.setAttribute("aria-hidden", "true");
+      HOLIDAYS[name].build(scene, front);
+      document.body.insertBefore(scene, $("hub"));
+      document.body.appendChild(front);
+    }
+    if (name && !$("hd-pill")) {
+      var pill = el("span", "hd-pill");
+      pill.id = "hd-pill";
+      pill.appendChild(el("span", "hd-pill-icon"));
+      pill.appendChild(el("span", "hd-pill-text"));
+      $("status-text").parentNode.insertBefore(pill, $("status-text"));
+    }
+    if (name) {
+      var g = HOLIDAYS[name].greeting(now);
+      $("hd-pill").firstChild.textContent = g[0];
+      $("hd-pill").lastChild.textContent = g[1];
+    }
+    if (name === holidayOn) return;
+    if (holidayOn) document.body.classList.remove(holidayOn);
+    if (name) document.body.classList.add(name);
+    document.body.classList.toggle("holiday", !!name);
+    holidayOn = name;
+    ["agenda", "scores", "nest", "wear"].forEach(function (card) {
       var icon = document.querySelector("." + card + " h2 .icon");
       if (!icon) return;
       if (!icon.getAttribute("data-icon")) icon.setAttribute("data-icon", icon.textContent);
-      icon.textContent = on ? HALLOWEEN_ICONS[card] : icon.getAttribute("data-icon");
+      icon.textContent = name ? HOLIDAYS[name].icons[card] : icon.getAttribute("data-icon");
     });
   }
 
@@ -1505,7 +1691,7 @@
 
   function celebrate() {
     var card = document.querySelector(".list-card");
-    var colors = halloweenOn ? ["#ff7a1a", "#8e44ad", "#1b1b1f", "#9be15d", "#ffb347", "#ffffff"] :
+    var colors = holidayOn ? HOLIDAYS[holidayOn].confetti :
       ["#c8553d", "#f2b134", "#4f8cff", "#7a9e7e", "#b07cc6", "#ffffff"];
     for (var i = 0; i < 36; i++) {
       var c = el("span", "confetti");

@@ -717,64 +717,68 @@ body.is-night #hub { visibility: hidden; }
 .chip.busy { opacity: 0.55; }
 .chip.on { background: var(--done); border-color: var(--done); color: #fff; }
 
-/* ---------------------------------------------------------------- Halloween */
-/* Switched on by hub.js on October 31 only (or with ?halloween in the address). */
+/* ---------------------------------------------------------------- holidays */
+/* hub.js puts the holiday's name on <body> (halloween, thanksgiving, christmas, newyear,
+   valentines, stpatricks, july4) plus "holiday", and adds two layers per holiday: .hd-scene, a still sky drawn
+   behind the panels in place of the weather photo, and .hd-front, the moving
+   decorations over everything (taps go straight through). Anything that moves sits
+   in front, so the iPad never has to re-blur the glass for it. */
 
-body.halloween { --accent: #f07a16; --accent-soft: rgba(240, 122, 22, 0.28); }
+.hd-scene, .hd-front, .hd-pill { display: none; }
+body.halloween .hd-halloween, body.thanksgiving .hd-thanksgiving, body.christmas .hd-christmas,
+body.newyear .hd-newyear, body.valentines .hd-valentines, body.stpatricks .hd-stpatricks, body.july4 .hd-july4 { display: block; }
+.hd-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.hd-front { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
 
-/* A moonlit night sky over the weather photo, all day. */
-.spooky-scene { display: none; }
-body.halloween .spooky-scene {
-  display: block; position: fixed; inset: 0; z-index: 0; overflow: hidden;
+/* Shared: dark tinted glass with warm text, day or night. Each holiday sets the colors. */
+body.holiday .card {
+  --glass: var(--hd-glass);
+  --glass-border: var(--hd-trim);
+  --ink: #fbefe2;
+  --muted: rgba(251, 232, 214, 0.74);
+  --line: rgba(255, 220, 180, 0.2);
+  --control-bg: rgba(255, 220, 180, 0.14);
+  box-shadow: var(--shadow), 0 0 22px var(--hd-glow);
+}
+body.holiday .card h2 { color: var(--hd-head); }
+body.holiday .task .due, body.holiday .event .pill { color: var(--hd-head); }
+body.holiday .event.now .pill { color: #fff; }
+body.holiday .clock-unit, body.holiday .weather { background: var(--hd-glass); border-color: var(--hd-trim); }
+body.holiday .flip, body.holiday .night-time .flip { color: var(--hd-digits); text-shadow: 0 0 10px var(--hd-digits-glow); }
+body.holiday .tile { color: var(--hd-tiles); text-shadow: 0 0 8px var(--hd-digits-glow); }
+body.holiday .night { color: var(--hd-night-ink); }
+body.holiday .cd-pill { background: var(--hd-glass); }
+body.holiday .cd-pill.today { background: var(--accent); }
+body.holiday .hd-pill {
+  display: inline-block; flex: none; white-space: nowrap; padding: 4px 12px; border-radius: 999px;
+  font-size: 15px; font-weight: 700; background: var(--hd-pill-bg); color: var(--hd-pill-ink); text-shadow: none;
+}
+@media (orientation: portrait) { .hd-pill-text { display: none; } }
+
+/* ---- Halloween (Oct 31): moonlit sky, bats, cobwebs, a dangling spider */
+
+body.halloween {
+  --accent: #f07a16; --accent-soft: rgba(240, 122, 22, 0.28);
+  --hd-glass: rgba(26, 12, 40, 0.6); --hd-trim: rgba(240, 122, 22, 0.45); --hd-glow: rgba(240, 122, 22, 0.18);
+  --hd-head: #ffa24d; --hd-digits: #ff8a1f; --hd-tiles: #ff8a1f; --hd-digits-glow: rgba(255, 120, 20, 0.55);
+  --hd-night-ink: #f3c79a; --hd-pill-bg: rgba(240, 122, 22, 0.9); --hd-pill-ink: #1b0d24;
+}
+.hd-scene.hd-halloween {
   background:
     radial-gradient(ellipse 90% 45% at 50% 105%, rgba(240, 110, 20, 0.55), transparent 70%),
     linear-gradient(to bottom, #120a24 0%, #2a1240 45%, #4a1d3f 75%, #6b2a1c 100%);
 }
-.spooky-moon {
+.hd-moon {
   position: absolute; top: 7%; left: 60%; width: 210px; height: 210px; border-radius: 50%;
   background: radial-gradient(circle at 38% 36%, #fffbe6 0%, #f6e7b0 55%, #e2c97a 100%);
   box-shadow: 0 0 60px 20px rgba(255, 236, 170, 0.35), 0 0 160px 60px rgba(255, 200, 120, 0.18);
 }
-/* A couple of craters */
-.spooky-moon::before, .spooky-moon::after { content: ""; position: absolute; border-radius: 50%; background: rgba(190, 160, 90, 0.35); }
-.spooky-moon::before { width: 44px; height: 44px; top: 58%; left: 22%; }
-.spooky-moon::after { width: 26px; height: 26px; top: 30%; left: 62%; }
+.hd-moon::before, .hd-moon::after { content: ""; position: absolute; border-radius: 50%; background: rgba(190, 160, 90, 0.35); }
+.hd-moon::before { width: 44px; height: 44px; top: 58%; left: 22%; }
+.hd-moon::after { width: 26px; height: 26px; top: 30%; left: 62%; }
 /* Softer behind the panels so it doesn't fight the text; full glow on the night clock. */
-body.halloween:not(.is-night) .spooky-moon { opacity: 0.45; }
+body.halloween:not(.is-night) .hd-moon { opacity: 0.45; }
 
-/* Smoky purple glass with warm text, day or night. */
-body.halloween .card {
-  --glass: rgba(26, 12, 40, 0.6);
-  --glass-border: rgba(240, 122, 22, 0.45);
-  --ink: #fbefe2;
-  --muted: rgba(251, 225, 200, 0.74);
-  --line: rgba(255, 190, 140, 0.2);
-  --control-bg: rgba(255, 160, 80, 0.16);
-  box-shadow: var(--shadow), 0 0 22px rgba(240, 122, 22, 0.18);
-}
-body.halloween .card h2 { color: #ffa24d; }
-body.halloween .task .due, body.halloween .event .pill { color: #ffc28a; }
-body.halloween .event.now .pill { color: #fff; }
-body.halloween .clock-unit, body.halloween .weather {
-  background: rgba(26, 12, 40, 0.5); border-color: rgba(240, 122, 22, 0.45);
-}
-
-/* Jack-o'-lantern orange on the flip clock and date tiles. */
-body.halloween .flip, body.halloween .tile { color: #ff8a1f; text-shadow: 0 0 10px rgba(255, 120, 20, 0.55); }
-body.halloween .night-time .flip { color: #ff8a1f; }
-body.halloween .night { color: #f3c79a; }
-body.halloween .cd-pill { background: rgba(40, 16, 60, 0.6); }
-body.halloween .cd-pill.today { background: rgba(240, 122, 22, 0.92); }
-
-.boo { display: none; }
-body.halloween .boo {
-  display: inline-block; flex: none; white-space: nowrap; padding: 4px 12px; border-radius: 999px; font-size: 15px; font-weight: 700;
-  background: rgba(240, 122, 22, 0.9); color: #1b0d24; text-shadow: none;
-}
-
-/* Bats, cobwebs and a spider over everything (taps go straight through). */
-.spooky-front { display: none; }
-body.halloween .spooky-front { display: block; position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
 .bat { position: absolute; left: 0; width: 70px; opacity: 0; animation: bat-fly 34s linear infinite; }
 .bat-wings { animation: bat-flap 0.28s ease-in-out infinite alternate; -webkit-transform-origin: 50% 70%; transform-origin: 50% 70%; }
 .bat svg { display: block; width: 100%; fill: #120818; filter: drop-shadow(0 0 4px rgba(255, 170, 90, 0.5)); }
@@ -802,8 +806,166 @@ body.halloween .spooky-front { display: block; position: fixed; inset: 0; z-inde
 .spider { position: absolute; top: 0; right: 2px; display: flex; flex-direction: column; align-items: center; animation: spider-drop 9s ease-in-out infinite; }
 .spider-thread { width: 1px; height: 70px; background: rgba(255, 255, 255, 0.55); }
 .spider-body { font-size: 26px; line-height: 1; margin-top: -4px; }
-@media (orientation: portrait) { body.halloween .boo-text { display: none; } }
 @keyframes spider-drop {
   0%, 100% { transform: translateY(-40px); }
   50% { transform: translateY(14px); }
+}
+
+/* ---- Thanksgiving (Wed–Fri of Thanksgiving week): autumn sunset, falling leaves */
+
+body.thanksgiving {
+  --accent: #d9822b; --accent-soft: rgba(217, 130, 43, 0.28);
+  --hd-glass: rgba(46, 22, 12, 0.6); --hd-trim: rgba(232, 163, 35, 0.45); --hd-glow: rgba(232, 163, 35, 0.16);
+  --hd-head: #f2b45a; --hd-digits: #ffb347; --hd-tiles: #ffb347; --hd-digits-glow: rgba(255, 170, 60, 0.5);
+  --hd-night-ink: #f1cf9e; --hd-pill-bg: rgba(232, 163, 35, 0.92); --hd-pill-ink: #2a140a;
+}
+.hd-scene.hd-thanksgiving {
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 108%, rgba(255, 196, 90, 0.5), transparent 70%),
+    linear-gradient(to bottom, #2a1630 0%, #5a2430 35%, #8a3a1e 70%, #b8611f 100%);
+}
+
+/* Shared by leaves, hearts and shamrocks (see addDrifters in hub.js). */
+.drift { position: absolute; top: 0; width: 32px; animation: drift-fall 20s linear infinite; }
+.drift.rise { animation-name: drift-rise; }
+.drift-sway { animation: drift-sway 4s ease-in-out infinite alternate; }
+.drift.rise .drift-sway { animation-name: drift-bob; }
+.drift svg { display: block; width: 100%; fill: currentColor; opacity: 0.9; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
+@keyframes drift-fall {
+  from { transform: translate3d(0, -60px, 0); }
+  to { transform: translate3d(0, calc(100vh + 60px), 0); }
+}
+@keyframes drift-rise {
+  from { transform: translate3d(0, calc(100vh + 60px), 0); }
+  to { transform: translate3d(0, -60px, 0); }
+}
+@keyframes drift-sway {
+  from { transform: translateX(-30px) rotate(-35deg); }
+  to { transform: translateX(30px) rotate(40deg); }
+}
+@keyframes drift-bob {
+  from { transform: translateX(-18px) rotate(-10deg); }
+  to { transform: translateX(18px) rotate(10deg); }
+}
+
+/* ---- Christmas (all of December): snowy night sky, twinkling string lights */
+
+body.christmas {
+  --accent: #d6303a; --accent-soft: rgba(214, 48, 58, 0.28);
+  --hd-glass: rgba(8, 32, 30, 0.6); --hd-trim: rgba(214, 48, 58, 0.5); --hd-glow: rgba(214, 48, 58, 0.16);
+  --hd-head: #f4c95d; --hd-digits: #ff5a5a; --hd-tiles: #7fe09a; --hd-digits-glow: rgba(255, 70, 70, 0.5);
+  --hd-night-ink: #d9e8f2; --hd-pill-bg: rgba(198, 42, 53, 0.92); --hd-pill-ink: #fff;
+}
+.hd-scene.hd-christmas {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(160, 200, 255, 0.28), transparent 70%),
+    linear-gradient(to bottom, #07112a 0%, #0d2142 45%, #12384a 80%, #1a4a52 100%);
+}
+/* A sprinkle of still stars: one dot, copied around by box-shadow. */
+.hd-stars {
+  position: absolute; top: 0; left: 0; width: 2px; height: 2px; border-radius: 50%; background: #fff;
+  box-shadow: 120px 60px #fff, 300px 140px rgba(255,255,255,0.7), 460px 40px #fff, 640px 110px rgba(255,255,255,0.8),
+    820px 70px #fff, 960px 180px rgba(255,255,255,0.6), 200px 260px rgba(255,255,255,0.7), 560px 230px #fff,
+    760px 300px rgba(255,255,255,0.6), 60px 400px rgba(255,255,255,0.7), 900px 420px #fff, 380px 360px rgba(255,255,255,0.6),
+    700px 520px rgba(255,255,255,0.7), 150px 580px #fff, 980px 620px rgba(255,255,255,0.6), 480px 660px rgba(255,255,255,0.7);
+}
+
+.flake { position: absolute; top: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 4px rgba(255, 255, 255, 0.8); animation: snow-fall 16s linear infinite; }
+@keyframes snow-fall {
+  0% { transform: translate3d(0, -20px, 0); }
+  25% { transform: translate3d(14px, 25vh, 0); }
+  50% { transform: translate3d(-10px, 50vh, 0); }
+  75% { transform: translate3d(12px, 75vh, 0); }
+  100% { transform: translate3d(0, calc(100vh + 20px), 0); }
+}
+
+.lights { position: absolute; top: 0; left: 0; right: 0; height: 30px; }
+.lights svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lights path { fill: none; stroke: #24321f; stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.bulb {
+  position: absolute; width: 9px; height: 13px; margin-left: -4px; border-radius: 50% 50% 45% 45%;
+  box-shadow: 0 0 8px 2px currentColor; animation: twinkle 2.6s ease-in-out infinite alternate;
+}
+.bulb::before { content: ""; position: absolute; top: -3px; left: 2px; width: 5px; height: 4px; border-radius: 1px; background: #3a4a3a; }
+@keyframes twinkle { from { opacity: 1; } to { opacity: 0.35; } }
+
+/* Fireworks for New Year's and the 4th (see addFireworks in hub.js): each spark
+   shoots out from the burst's center along its own angle, then fades. */
+.burst { position: absolute; width: 0; height: 0; }
+.spark {
+  position: absolute; left: -1.5px; top: -9px; width: 3px; height: 18px; border-radius: 2px; opacity: 0;
+  box-shadow: 0 0 8px 2px currentColor; animation: spark 4.8s ease-out infinite;
+}
+@keyframes spark {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scaleY(0.3); }
+  3% { opacity: 1; }
+  28% { opacity: 1; transform: rotate(var(--a)) translateY(calc(-1 * var(--r))) scaleY(1); }
+  48% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1.15 * var(--r) - 10px)) scaleY(0.4); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1.15 * var(--r) - 10px)) scaleY(0.4); }
+}
+
+/* ---- New Year's (Jan 1): midnight sky, gold clock, gold fireworks */
+
+body.newyear {
+  --accent: #c9a227; --accent-soft: rgba(201, 162, 39, 0.28);
+  --hd-glass: rgba(12, 12, 28, 0.62); --hd-trim: rgba(244, 201, 93, 0.5); --hd-glow: rgba(244, 201, 93, 0.16);
+  --hd-head: #f4c95d; --hd-digits: #ffd66b; --hd-tiles: #f2f2f7; --hd-digits-glow: rgba(255, 214, 107, 0.5);
+  --hd-night-ink: #efe3c2; --hd-pill-bg: rgba(244, 201, 93, 0.92); --hd-pill-ink: #1b1b2a;
+}
+.hd-scene.hd-newyear {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(244, 201, 93, 0.3), transparent 70%),
+    linear-gradient(to bottom, #04050e 0%, #0e1230 50%, #221e44 100%);
+}
+
+/* ---- Valentine's Day (Feb 14): rosy sky, pink clock, floating hearts */
+
+body.valentines {
+  --accent: #e0245e; --accent-soft: rgba(224, 36, 94, 0.28);
+  --hd-glass: rgba(48, 10, 28, 0.6); --hd-trim: rgba(255, 120, 160, 0.5); --hd-glow: rgba(255, 90, 140, 0.18);
+  --hd-head: #ff9fbf; --hd-digits: #ff6b9a; --hd-tiles: #ffc2d4; --hd-digits-glow: rgba(255, 90, 140, 0.55);
+  --hd-night-ink: #ffd3e0; --hd-pill-bg: rgba(224, 36, 94, 0.92); --hd-pill-ink: #fff;
+}
+.hd-scene.hd-valentines {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(255, 120, 170, 0.45), transparent 70%),
+    linear-gradient(to bottom, #24081a 0%, #4d1232 45%, #7a2244 80%, #94304f 100%);
+}
+
+/* ---- St. Patrick's Day (Mar 17): emerald sky, a soft rainbow, drifting shamrocks */
+
+body.stpatricks {
+  --accent: #2fa84f; --accent-soft: rgba(47, 168, 79, 0.28);
+  --hd-glass: rgba(6, 34, 20, 0.6); --hd-trim: rgba(244, 201, 93, 0.5); --hd-glow: rgba(90, 220, 130, 0.16);
+  --hd-head: #f4c95d; --hd-digits: #5fe37a; --hd-tiles: #f4c95d; --hd-digits-glow: rgba(95, 227, 122, 0.5);
+  --hd-night-ink: #d4f2d8; --hd-pill-bg: rgba(47, 168, 79, 0.92); --hd-pill-ink: #fff;
+}
+.hd-scene.hd-stpatricks {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(244, 201, 93, 0.35), transparent 70%),
+    linear-gradient(to bottom, #04170e 0%, #0b3420 45%, #145232 80%, #1d6a3e 100%);
+}
+.hd-rainbow {
+  position: absolute; left: 50%; bottom: -560px; width: 1100px; height: 1100px; margin-left: -550px; border-radius: 50%; opacity: 0.4;
+  background: radial-gradient(circle, transparent 56%, #ff3b3b 57%, #ff9a2e 59%, #ffe14d 61%, #43d16a 63%, #3b8cff 65%, #7a4dff 67%, transparent 68.5%);
+}
+body.stpatricks.is-night .hd-rainbow { opacity: 0.2; }
+
+/* ---- 4th of July (Jul 4): starry navy sky, red/white/blue fireworks, bunting */
+
+body.july4 {
+  --accent: #c81e2c; --accent-soft: rgba(200, 30, 44, 0.28);
+  --hd-glass: rgba(8, 16, 44, 0.62); --hd-trim: rgba(255, 90, 90, 0.5); --hd-glow: rgba(120, 160, 255, 0.16);
+  --hd-head: #9cc4ff; --hd-digits: #ff4d4d; --hd-tiles: #ffffff; --hd-digits-glow: rgba(255, 77, 77, 0.5);
+  --hd-night-ink: #dfe8ff; --hd-pill-bg: rgba(200, 30, 44, 0.92); --hd-pill-ink: #fff;
+}
+.hd-scene.hd-july4 {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(200, 30, 44, 0.4), transparent 70%),
+    linear-gradient(to bottom, #040a20 0%, #0c1a44 50%, #1a2558 100%);
+}
+.bunting { position: absolute; top: 0; left: 0; right: 0; display: flex; }
+.drape {
+  flex: 1; height: 26px; border-radius: 0 0 50% 50% / 0 0 100% 100%; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(ellipse 50% 100% at 50% 0, #1e3a8a 0 34%, #fff 34% 52%, #c81e2c 52% 70%, #fff 70% 86%, #c81e2c 86%);
 }
