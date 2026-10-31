@@ -277,6 +277,15 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
   "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
 
+## Halloween
+
+On October 31 (by the iPad's own clock) the hub dresses up for the day: a moonlit night sky
+replaces the weather photo, the panels turn smoky purple with orange trim, the flip clock glows
+jack-o'-lantern orange, the card icons swap to 🦇 💀 🕸️ 🎃, bats flap across now and then, cobwebs
+hang in the corners and a spider bobs on its thread. A "🎃 Happy Halloween!" pill sits in the
+footer. It switches off by itself at midnight. Add `?halloween` to the address to preview it on
+any other day.
+
 ## Background photos
 
 The backdrop matches the current weather, using freely licensed photos from
