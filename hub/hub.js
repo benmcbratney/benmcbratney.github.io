@@ -202,6 +202,7 @@
     renderFlipDate($("date"), [DAY_NAMES[now.getDay()].slice(0, 3), MONTHS[now.getMonth()].slice(0, 3), String(now.getDate())].map(function (w) { return w.toUpperCase(); }));
     $("date").setAttribute("aria-label", DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate());
     renderPrecipAlert(now);
+    updateHalloween(now);
     updateBackdrop();
 
     var night = isNightHour(h) && Date.now() > wakeUntil && $("settings").hidden;
@@ -220,6 +221,67 @@
     wakeUntil = Date.now() + 2 * 60 * 1000;
     tickClock();
   });
+
+  // ------------------------------------------------------------- Halloween
+  // On October 31 (the iPad's own date) the hub dresses up: a moonlit night sky
+  // instead of the weather photo, orange-and-purple glass, bats, cobwebs and a
+  // dangling spider. It switches itself off at midnight. Add ?halloween to the
+  // address to preview it on any other day.
+
+  var halloweenPreview = /(^|[?&])halloween\b/.test(location.search.slice(1));
+  var halloweenOn = false;
+  var HALLOWEEN_ICONS = { agenda: "🦇", scores: "💀", nest: "🕸️", wear: "🎃" };
+  var BAT_SVG = '<svg viewBox="0 0 100 34"><path d="M50 30C46 25 44 23 41 26C38 21 32 20 28 24C26 19 20 17 14 20C16 14 14 9 8 6C22 2 36 4 43 12L45 6L48 10L52 10L55 6L57 12C64 4 78 2 92 6C86 9 84 14 86 20C80 17 74 19 72 24C68 20 62 21 59 26C56 23 54 25 50 30Z"/></svg>';
+  var WEB_SVG = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.2">' +
+    '<path d="M0 0L100 0M0 0L96 40M0 0L72 72M0 0L40 96M0 0L0 100"/>' +
+    '<path d="M24 0Q20 8 23 10Q18 16 17 17Q12 19 10 23Q6 22 0 24"/>' +
+    '<path d="M50 0Q42 14 46 20Q37 30 34 34Q24 38 20 46Q12 44 0 50"/>' +
+    '<path d="M78 0Q66 22 70 30Q56 46 52 52Q36 58 30 70Q18 66 0 78"/></svg>';
+
+  function buildHalloween() {
+    var scene = el("div", "spooky-scene");
+    scene.setAttribute("aria-hidden", "true");
+    scene.appendChild(el("div", "spooky-moon"));
+    document.body.insertBefore(scene, $("hub"));
+
+    var front = el("div", "spooky-front");
+    front.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < 4; i++) {
+      var bat = el("div", "bat bat-" + i);
+      var wings = el("div", "bat-wings");
+      wings.innerHTML = BAT_SVG;
+      bat.appendChild(wings);
+      front.appendChild(bat);
+    }
+    ["web web-l", "web web-r"].forEach(function (cls) {
+      var web = el("div", cls);
+      web.innerHTML = WEB_SVG;
+      front.appendChild(web);
+    });
+    var spider = el("div", "spider");
+    spider.appendChild(el("div", "spider-thread"));
+    spider.appendChild(el("div", "spider-body", "🕷️"));
+    front.appendChild(spider);
+    document.body.appendChild(front);
+
+    var boo = el("span", "boo", "🎃");
+    boo.appendChild(el("span", "boo-text", " Happy Halloween!"));
+    $("status-text").parentNode.insertBefore(boo, $("status-text"));
+  }
+
+  function updateHalloween(now) {
+    var on = halloweenPreview || (now.getMonth() === 9 && now.getDate() === 31);
+    if (on === halloweenOn) return;
+    halloweenOn = on;
+    if (on && !document.querySelector(".spooky-scene")) buildHalloween();
+    document.body.classList.toggle("halloween", on);
+    Object.keys(HALLOWEEN_ICONS).forEach(function (card) {
+      var icon = document.querySelector("." + card + " h2 .icon");
+      if (!icon) return;
+      if (!icon.getAttribute("data-icon")) icon.setAttribute("data-icon", icon.textContent);
+      icon.textContent = on ? HALLOWEEN_ICONS[card] : icon.getAttribute("data-icon");
+    });
+  }
 
   // ------------------------------------------------------------- photo backdrop
   // A freely licensed Wikimedia Commons photo that matches the current weather
@@ -1443,7 +1505,8 @@
 
   function celebrate() {
     var card = document.querySelector(".list-card");
-    var colors = ["#c8553d", "#f2b134", "#4f8cff", "#7a9e7e", "#b07cc6", "#ffffff"];
+    var colors = halloweenOn ? ["#ff7a1a", "#8e44ad", "#1b1b1f", "#9be15d", "#ffb347", "#ffffff"] :
+      ["#c8553d", "#f2b134", "#4f8cff", "#7a9e7e", "#b07cc6", "#ffffff"];
     for (var i = 0; i < 36; i++) {
       var c = el("span", "confetti");
       c.style.left = Math.random() * 100 + "%";
