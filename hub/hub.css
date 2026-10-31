@@ -718,14 +718,15 @@ body.is-night #hub { visibility: hidden; }
 .chip.on { background: var(--done); border-color: var(--done); color: #fff; }
 
 /* ---------------------------------------------------------------- holidays */
-/* hub.js puts the holiday's name on <body> (halloween, thanksgiving, christmas)
-   plus "holiday", and adds two layers per holiday: .hd-scene, a still sky drawn
+/* hub.js puts the holiday's name on <body> (halloween, thanksgiving, christmas, newyear,
+   valentines, stpatricks, july4) plus "holiday", and adds two layers per holiday: .hd-scene, a still sky drawn
    behind the panels in place of the weather photo, and .hd-front, the moving
    decorations over everything (taps go straight through). Anything that moves sits
    in front, so the iPad never has to re-blur the glass for it. */
 
 .hd-scene, .hd-front, .hd-pill { display: none; }
-body.halloween .hd-halloween, body.thanksgiving .hd-thanksgiving, body.christmas .hd-christmas { display: block; }
+body.halloween .hd-halloween, body.thanksgiving .hd-thanksgiving, body.christmas .hd-christmas,
+body.newyear .hd-newyear, body.valentines .hd-valentines, body.stpatricks .hd-stpatricks, body.july4 .hd-july4 { display: block; }
 .hd-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
 .hd-front { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
 
@@ -824,16 +825,27 @@ body.thanksgiving {
     linear-gradient(to bottom, #2a1630 0%, #5a2430 35%, #8a3a1e 70%, #b8611f 100%);
 }
 
-.leaf { position: absolute; top: 0; width: 32px; animation: leaf-fall 20s linear infinite; }
-.leaf-sway { animation: leaf-sway 4s ease-in-out infinite alternate; }
-.leaf svg { display: block; width: 100%; fill: currentColor; opacity: 0.9; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
-@keyframes leaf-fall {
+/* Shared by leaves, hearts and shamrocks (see addDrifters in hub.js). */
+.drift { position: absolute; top: 0; width: 32px; animation: drift-fall 20s linear infinite; }
+.drift.rise { animation-name: drift-rise; }
+.drift-sway { animation: drift-sway 4s ease-in-out infinite alternate; }
+.drift.rise .drift-sway { animation-name: drift-bob; }
+.drift svg { display: block; width: 100%; fill: currentColor; opacity: 0.9; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
+@keyframes drift-fall {
   from { transform: translate3d(0, -60px, 0); }
   to { transform: translate3d(0, calc(100vh + 60px), 0); }
 }
-@keyframes leaf-sway {
+@keyframes drift-rise {
+  from { transform: translate3d(0, calc(100vh + 60px), 0); }
+  to { transform: translate3d(0, -60px, 0); }
+}
+@keyframes drift-sway {
   from { transform: translateX(-30px) rotate(-35deg); }
   to { transform: translateX(30px) rotate(40deg); }
+}
+@keyframes drift-bob {
+  from { transform: translateX(-18px) rotate(-10deg); }
+  to { transform: translateX(18px) rotate(10deg); }
 }
 
 /* ---- Christmas (all of December): snowy night sky, twinkling string lights */
@@ -876,3 +888,84 @@ body.christmas {
 }
 .bulb::before { content: ""; position: absolute; top: -3px; left: 2px; width: 5px; height: 4px; border-radius: 1px; background: #3a4a3a; }
 @keyframes twinkle { from { opacity: 1; } to { opacity: 0.35; } }
+
+/* Fireworks for New Year's and the 4th (see addFireworks in hub.js): each spark
+   shoots out from the burst's center along its own angle, then fades. */
+.burst { position: absolute; width: 0; height: 0; }
+.spark {
+  position: absolute; left: -1.5px; top: -9px; width: 3px; height: 18px; border-radius: 2px; opacity: 0;
+  box-shadow: 0 0 8px 2px currentColor; animation: spark 4.8s ease-out infinite;
+}
+@keyframes spark {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scaleY(0.3); }
+  3% { opacity: 1; }
+  28% { opacity: 1; transform: rotate(var(--a)) translateY(calc(-1 * var(--r))) scaleY(1); }
+  48% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1.15 * var(--r) - 10px)) scaleY(0.4); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1.15 * var(--r) - 10px)) scaleY(0.4); }
+}
+
+/* ---- New Year's (Jan 1): midnight sky, gold clock, gold fireworks */
+
+body.newyear {
+  --accent: #c9a227; --accent-soft: rgba(201, 162, 39, 0.28);
+  --hd-glass: rgba(12, 12, 28, 0.62); --hd-trim: rgba(244, 201, 93, 0.5); --hd-glow: rgba(244, 201, 93, 0.16);
+  --hd-head: #f4c95d; --hd-digits: #ffd66b; --hd-tiles: #f2f2f7; --hd-digits-glow: rgba(255, 214, 107, 0.5);
+  --hd-night-ink: #efe3c2; --hd-pill-bg: rgba(244, 201, 93, 0.92); --hd-pill-ink: #1b1b2a;
+}
+.hd-scene.hd-newyear {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(244, 201, 93, 0.3), transparent 70%),
+    linear-gradient(to bottom, #04050e 0%, #0e1230 50%, #221e44 100%);
+}
+
+/* ---- Valentine's Day (Feb 14): rosy sky, pink clock, floating hearts */
+
+body.valentines {
+  --accent: #e0245e; --accent-soft: rgba(224, 36, 94, 0.28);
+  --hd-glass: rgba(48, 10, 28, 0.6); --hd-trim: rgba(255, 120, 160, 0.5); --hd-glow: rgba(255, 90, 140, 0.18);
+  --hd-head: #ff9fbf; --hd-digits: #ff6b9a; --hd-tiles: #ffc2d4; --hd-digits-glow: rgba(255, 90, 140, 0.55);
+  --hd-night-ink: #ffd3e0; --hd-pill-bg: rgba(224, 36, 94, 0.92); --hd-pill-ink: #fff;
+}
+.hd-scene.hd-valentines {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(255, 120, 170, 0.45), transparent 70%),
+    linear-gradient(to bottom, #24081a 0%, #4d1232 45%, #7a2244 80%, #94304f 100%);
+}
+
+/* ---- St. Patrick's Day (Mar 17): emerald sky, a soft rainbow, drifting shamrocks */
+
+body.stpatricks {
+  --accent: #2fa84f; --accent-soft: rgba(47, 168, 79, 0.28);
+  --hd-glass: rgba(6, 34, 20, 0.6); --hd-trim: rgba(244, 201, 93, 0.5); --hd-glow: rgba(90, 220, 130, 0.16);
+  --hd-head: #f4c95d; --hd-digits: #5fe37a; --hd-tiles: #f4c95d; --hd-digits-glow: rgba(95, 227, 122, 0.5);
+  --hd-night-ink: #d4f2d8; --hd-pill-bg: rgba(47, 168, 79, 0.92); --hd-pill-ink: #fff;
+}
+.hd-scene.hd-stpatricks {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(244, 201, 93, 0.35), transparent 70%),
+    linear-gradient(to bottom, #04170e 0%, #0b3420 45%, #145232 80%, #1d6a3e 100%);
+}
+.hd-rainbow {
+  position: absolute; left: 50%; bottom: -560px; width: 1100px; height: 1100px; margin-left: -550px; border-radius: 50%; opacity: 0.4;
+  background: radial-gradient(circle, transparent 56%, #ff3b3b 57%, #ff9a2e 59%, #ffe14d 61%, #43d16a 63%, #3b8cff 65%, #7a4dff 67%, transparent 68.5%);
+}
+body.stpatricks.is-night .hd-rainbow { opacity: 0.2; }
+
+/* ---- 4th of July (Jul 4): starry navy sky, red/white/blue fireworks, bunting */
+
+body.july4 {
+  --accent: #c81e2c; --accent-soft: rgba(200, 30, 44, 0.28);
+  --hd-glass: rgba(8, 16, 44, 0.62); --hd-trim: rgba(255, 90, 90, 0.5); --hd-glow: rgba(120, 160, 255, 0.16);
+  --hd-head: #9cc4ff; --hd-digits: #ff4d4d; --hd-tiles: #ffffff; --hd-digits-glow: rgba(255, 77, 77, 0.5);
+  --hd-night-ink: #dfe8ff; --hd-pill-bg: rgba(200, 30, 44, 0.92); --hd-pill-ink: #fff;
+}
+.hd-scene.hd-july4 {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 108%, rgba(200, 30, 44, 0.4), transparent 70%),
+    linear-gradient(to bottom, #040a20 0%, #0c1a44 50%, #1a2558 100%);
+}
+.bunting { position: absolute; top: 0; left: 0; right: 0; display: flex; }
+.drape {
+  flex: 1; height: 26px; border-radius: 0 0 50% 50% / 0 0 100% 100%; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(ellipse 50% 100% at 50% 0, #1e3a8a 0 34%, #fff 34% 52%, #c81e2c 52% 70%, #fff 70% 86%, #c81e2c 86%);
+}
