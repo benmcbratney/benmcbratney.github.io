@@ -274,7 +274,7 @@ doesn't have `/countdowns` yet, the holidays still show.
   `HUB_VERSION` line and the `?v=` on `hub.css` / `hub.js`) and in `tv/index.html` and
   `study/index.html` (same idea), since the iPad and the TV pages share `version.json`.
 - Weather comes from Open-Meteo (free, no key).
-- Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears under the date ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
+- Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears first in the row of pills under the clock and weather ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
   "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
 
 ## Holidays
