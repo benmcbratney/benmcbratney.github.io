@@ -1563,7 +1563,8 @@
     calCountdowns.forEach(function (e) {
       if (!e.allDay && e.end <= now) return; // already over
       var days = Math.max(0, daysUntil(e.start, today));
-      if (/⏳|\bcountdown\b/i.test(e.title)) {
+      // Tagged: starts with an emoji ("🏝️ Mexico"), or has ⏳ / "countdown" in it.
+      if (/⏳|\bcountdown\b/i.test(e.title) || LEAD_EMOJI.test(e.title.trim())) {
         var c = cleanCountdownTitle(e.title);
         tagged.push({ icon: c.icon, label: c.label, days: days });
       } else {
@@ -2468,6 +2469,7 @@
       events: [
         { title: "🏖️ Florida trip ⏳", allDay: true, start: ymd(addDays(d, 38)), end: ymd(addDays(d, 45)) },
         { title: "Countdown: Last day of school", allDay: true, start: ymd(addDays(d, 12)), end: ymd(addDays(d, 13)) },
+        { title: "🏝️ Mexico", allDay: true, start: ymd(addDays(d, 52)), end: ymd(addDays(d, 58)) },
       ],
     };
   }
