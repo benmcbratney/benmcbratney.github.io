@@ -32,7 +32,7 @@
 //
 // Routes (all require header  X-Hub-Key: <HUB_KEY>, except the two Nest setup pages):
 //   GET  /calendar?days=7              add &for=tv for just the TV_CALENDARS
-//   GET  /countdowns                   next year of "⏳"-tagged events and birthdays
+//   GET  /countdowns                   next year of emoji-led or "⏳"-tagged events and birthdays
 //   GET  /todoist/lists
 //   POST /todoist/close   {"id": "..."}
 //   POST /todoist/add     {"list": "chores"|"grocery", "content": "..."}
@@ -850,15 +850,18 @@ async function calendar(env, days, keep, only) {
   };
 }
 
-// Countdowns: anything with ⏳ or the word "countdown" in its title, plus all-day
-// birthdays, looking a year ahead. Only matching events are expanded, so the long
-// window stays cheap. The iPad decides which birthdays are family.
+// Countdowns: anything whose title starts with an emoji or has ⏳ or the word
+// "countdown" in it, plus all-day birthdays, looking a year ahead. Only matching
+// events are expanded, so the long window stays cheap. The iPad decides which of
+// these become pills (and which birthdays are family).
 const COUNTDOWN_RE = /⏳|\bcountdown\b/i;
+const LEAD_EMOJI_RE = /^\s*(?:\p{Extended_Pictographic}|\p{Regional_Indicator})/u;
 const BIRTHDAY_RE = /birthday|\bb-?day\b/i;
 
 async function countdowns(env) {
   const data = await calendar(env, 366, (ev) =>
-    COUNTDOWN_RE.test(ev.summary || "") || (ev.start.allDay && BIRTHDAY_RE.test(ev.summary || ""))
+    COUNTDOWN_RE.test(ev.summary || "") || LEAD_EMOJI_RE.test(ev.summary || "") ||
+    (ev.start.allDay && BIRTHDAY_RE.test(ev.summary || ""))
   );
   // Just the next occurrence of each (a weekly tagged event shouldn't fill the list).
   const seen = new Set();

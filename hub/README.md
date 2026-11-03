@@ -215,10 +215,11 @@ Any field can be left out.
 
 "Days until" pills run along the bottom of the header (as many as fit on one line), picked in this order:
 
-1. **Anything you tag in Google Calendar.** Put ⏳ or the word "countdown" in the
-   title, like "🏖️ Florida trip ⏳" or "Countdown: last day of school". The Worker
-   looks a full year ahead for these. A leading emoji becomes the pill's icon, and
-   the ⏳/"countdown" part is hidden.
+1. **Anything you tag in Google Calendar.** Start the title with an emoji, like
+   "🏝️ Mexico", or put ⏳ or the word "countdown" in it, like "Countdown: last day of
+   school". The Worker looks a full year ahead for these. A leading emoji becomes the
+   pill's icon, and the ⏳/"countdown" part is hidden. Recurring events count down to
+   their next occurrence only.
 2. **Family birthdays** in the next 60 days: all-day "birthday" events naming
    someone in `FAMILY`. Other people's birthdays stay off the board unless you tag them.
 3. **Holidays** in the next 60 days: New Year's, Valentine's, St. Patrick's, Easter,
