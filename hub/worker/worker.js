@@ -934,6 +934,7 @@ function expandCalendar(text, startDay, days, tz, keep) {
           title: ev.summary,
           location: ev.location,
           description: ev.description,
+          attendees: ev.attendees,
           allDay: false,
           start: fmtWall(wallParts(new Date(startInstant), tz)),
           end: fmtWall(wallParts(new Date(endInstant), tz)),
@@ -964,7 +965,10 @@ function parseIcs(text) {
   const lines = text.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").split(/\r?\n/);
   const events = [];
   let cur = null;
+  let calName = "";
   for (const line of lines) {
+    // Google names a calendar's feed after its owner's email; used below to leave you off the attendee lists.
+    if (!cur && /^X-WR-CALNAME:/i.test(line)) calName = line.slice(line.indexOf(":") + 1).trim().toLowerCase();
     if (line === "BEGIN:VEVENT") {
       cur = { exdates: [] };
       continue;
@@ -998,6 +1002,15 @@ function parseIcs(text) {
       case "EXDATE":
         for (const v of value.split(",")) cur.exdates.push(parseDate(v, params));
         break;
+      case "ATTENDEE": {
+        // People only (not rooms or other resources), and not anyone who declined.
+        const type = (params.CUTYPE || "INDIVIDUAL").toUpperCase();
+        if (type !== "INDIVIDUAL" && type !== "UNKNOWN") break;
+        if ((params.PARTSTAT || "").toUpperCase() === "DECLINED") break;
+        const email = value.replace(/^mailto:/i, "").trim().toLowerCase();
+        (cur.attendees = cur.attendees || []).push({ name: unescape(params.CN || "") || email, email });
+        break;
+      }
     }
   }
   for (const ev of events) {
@@ -1005,6 +1018,10 @@ function parseIcs(text) {
       ev.end = { instant: ev.start.instant + parseDuration(ev.duration) };
     }
     if (!ev.summary) ev.summary = "(busy)";
+    if (ev.attendees) {
+      const names = ev.attendees.filter((a) => !calName || a.email !== calName).map((a) => a.name);
+      ev.attendees = names.length ? names.slice(0, 12) : undefined;
+    }
   }
   return events;
 }

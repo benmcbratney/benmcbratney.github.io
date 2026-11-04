@@ -235,16 +235,24 @@ body::after {
 
 .board-cols { display: flex; font: 500 15px/1 var(--block); letter-spacing: 3px; text-transform: uppercase; color: #7f7766; margin: 0 0 6px; }
 .board-cols span:nth-child(1) { width: calc(6 * var(--pitch)); }
-.board-cols span:nth-child(2) { width: calc(23 * var(--pitch)); }
-.board-cols span:nth-child(3) { width: calc(6 * var(--pitch)); }
+.board-cols span:nth-child(2) { width: calc(18 * var(--pitch)); }
+.board-cols span:nth-child(3) { flex: 1; }
+.board-cols span:nth-child(4) { width: calc(9 * var(--pitch)); }
 .rows { display: flex; flex-direction: column; gap: 5px; }
 .row { display: flex; gap: var(--pitch); gap: 0; }
 .row .flaps + .flaps { margin-left: var(--pitch); }
-.row.gone .fl { color: #6d675c; }
+/* Who's in the meeting: plain type in the space between the meeting and its status, cut off at the edge. */
+.row .who {
+  flex: 1 1 0; min-width: 0; margin-left: var(--pitch);
+  font: 500 24px/40px var(--block); letter-spacing: 0.5px; color: var(--flap-ink);
+  white-space: nowrap; overflow: hidden;
+}
+.row .who + .flaps { margin-left: var(--pitch); }
+.row.gone .fl, .row.gone .who { color: #6d675c; }
 .row.now .st .fl { background: linear-gradient(180deg, #8a2a22 0 49%, #3a0e0a 49% 51%, #7a231c 51% 100%); color: #fff; }
 .row.boarding .st .fl { color: var(--amber); }
 .row.final .st .fl { color: #ff8f84; }
-.row.tomorrow .fl { color: #a39a86; }
+.row.tomorrow .fl, .row.tomorrow .who { color: #a39a86; }
 
 /* ---------------------------------------------------------------- the day, as a brass rule */
 

@@ -181,9 +181,12 @@ up just needs the new address (or use the same `#worker=…&key=…` link with `
   the day is and how much daylight tomorrow gains or loses, and the moon's
   phase in the corner. A red stamp appears when rain or snow is due within the hour.
 - **Departures board:** today's meetings on a split-flap board like the old train-station
-  boards (the letters riffle when they change). Status reads DEPARTED, NOW, BOARDING (last
-  5 minutes), FINAL (last minute) or IN 42 MIN. The big counter above counts down to the next
-  one, with a lamp that blinks amber when boarding and red on the final call.
+  boards (the letters riffle when they change), with who's in each one by first name (cut off
+  when there's no more room; you, people who declined and rooms are left out). Status reads
+  DEPARTED, NOW, BOARDING (last 5 minutes), FINAL (last minute) or IN 42 MIN. The big counter
+  above counts down to the next one in hours and minutes, with a lamp that blinks amber when
+  boarding and red on the final call. Attendees come from the calendar feed: Google's secret
+  iCal address includes them; an Outlook published calendar may not.
 - **The day as a brass rule:** meetings inlaid in oxblood, open time in green, the longest
   stretch (an hour or more) marked Focus.
 - **Chicago Scoreboard** in Wrigley green with numbers on tiles, a big panel when a game is
