@@ -29,7 +29,8 @@ With no backend configured the hub runs on demo data, so you can try it right aw
    | `FAMILY` | Secret | optional, picks out family birthdays for the countdowns (see below) |
    | `KIDS_QUICK_ADD` | Text | optional JSON list of one-tap buttons for the Kids list, e.g. `["Kid One school clothes","More pull-ups"]` |
    | `NEWS_FEEDS` | Text | optional, RSS feeds for The Study's paper (see [The Study](#the-study-fire-tv-retro)) |
-   | `TV_CALENDARS` | Text | optional, which calendars the office TV shows, e.g. `Work` (see [Office TV](#office-tv-fire-tv)) |
+   | `WORK_CALENDARS` | Secret | optional, your work calendar's ICS link; only the office TV shows it (see [Office TV](#office-tv-fire-tv)) |
+   | `TV_CALENDARS` | Text | optional, which of `CALENDARS` the office TV also shows, e.g. `Ben` |
 
    `CALENDARS` is a JSON list. For each Google calendar: Google Calendar on the web →
    ⚙ Settings → pick the calendar → *Integrate calendar* → **Secret address in iCal format**.
@@ -144,11 +145,20 @@ office, built for a 1080p/4K TV read from the desk. It uses the same Worker:
 - **After hours** (8pm–7am by default; see `on` below) the screen goes black with a dim clock,
   unless a game is on. Any remote button wakes it for 5 minutes.
 
-**Which calendars:** add your work calendar to `CALENDARS` like any other (Outlook:
-Settings → Calendar → Shared calendars → *Publish a calendar* → ICS link; a Google Workspace
-calendar: the same *Secret address in iCal format*, if your company allows it). Then set
-`TV_CALENDARS` to its name, e.g. `Work` (or `Work, Ben` for more than one). Without it, the
-TV shows every calendar. The iPad isn't affected.
+**Which calendars:** the TV (both pages) shows your work calendar, which the family iPad
+never sees. Get its private ICS link:
+
+- **Outlook / Microsoft 365:** Outlook on the web → ⚙︎ Settings → Calendar → *Shared calendars*
+  → *Publish a calendar* → pick your calendar and **Can view all details** → Publish → copy the
+  **ICS** link (not the HTML one).
+- **Google Workspace:** Google Calendar → ⚙︎ Settings → your work calendar → *Integrate
+  calendar* → **Secret address in iCal format**.
+
+Some companies turn both of these off; if the option isn't there, that's why. Treat the link
+like a password. In the Worker add a **Secret** named `WORK_CALENDARS` and paste the link
+as-is (or a JSON list like `CALENDARS` for more than one), then Deploy. To also show some of the
+family calendars on the TV, add a Text variable `TV_CALENDARS` with their names, e.g. `Ben`.
+With neither set, the TV shows every calendar in `CALENDARS`.
 
 **Settings** come from a one-time link, like the iPad's (there's no keyboard worth typing on):
 `https://benmcbratney.github.io/hub/tv/#worker=https://home-hub.YOURNAME.workers.dev&key=YOUR_HUB_KEY`.
