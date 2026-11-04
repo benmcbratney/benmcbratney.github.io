@@ -1,20 +1,28 @@
 // The Study — the office TV board in mahogany and brass. Plain JS, no build step.
 // Same Worker and same one-time setup link as ../tv/ (they share their settings):
-//   …/hub/study/#worker=https://…&key=…&work=8-18&on=7-20
+//   …/hub/study/#worker=https://…&key=…&work=9-17&on=7-20
 // The remote's play/pause and skip buttons drive Spotify; any button wakes it after hours.
 (function () {
   "use strict";
 
   // ------------------------------------------------------------- settings
 
-  var DEFAULTS = { workerUrl: "", hubKey: "", placeName: "Lake Forest", lat: "42.2586", lon: "-87.8406", work: "8-18", on: "7-20" };
+  var DEFAULTS = { workerUrl: "", hubKey: "", placeName: "Lake Forest", lat: "42.2586", lon: "-87.8406", work: "9-17", on: "7-20" };
   var STORE = "homehub.tv.settings";
   var HASH_KEYS = { worker: "workerUrl", key: "hubKey", place: "placeName", lat: "lat", lon: "lon", work: "work", on: "on" };
 
-  function loadSettings() {
+  // Only what was actually set; defaults fill in at load, so changing one reaches every TV.
+  function savedSettings() {
     var saved = {};
-    try { saved = JSON.parse(localStorage.getItem(STORE) || "{}"); } catch (e) {}
-    var s = {};
+    try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) {}
+    // Earlier versions stored every default along with the setup link, including the old
+    // 8am–6pm workday, which nobody chose. Forget it so the 9–5 default applies.
+    if (saved.work === "8-18") delete saved.work;
+    return saved;
+  }
+
+  function loadSettings() {
+    var saved = savedSettings(), s = {};
     for (var k in DEFAULTS) s[k] = saved[k] != null && saved[k] !== "" ? String(saved[k]) : DEFAULTS[k];
     return s;
   }
@@ -22,7 +30,7 @@
   (function importFromHash() {
     if (location.hash.length < 2) return;
     var params = new URLSearchParams(location.hash.slice(1));
-    var s = loadSettings(), any = false;
+    var s = savedSettings(), any = false;
     for (var p in HASH_KEYS) if (params.has(p)) { s[HASH_KEYS[p]] = params.get(p); any = true; }
     if (!any) return;
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
@@ -41,7 +49,7 @@
     var m = /^(\d{1,2})-(\d{1,2})$/.exec(range || "");
     return m && +m[1] < +m[2] && +m[2] <= 24 ? [+m[1], +m[2]] : fallback;
   }
-  var WORK = hours(settings.work, [8, 18]);
+  var WORK = hours(settings.work, [9, 17]);
   var ON = hours(settings.on, [7, 20]);
 
   // ------------------------------------------------------------- utilities
@@ -648,7 +656,7 @@
     box.innerHTML = "";
     var now = new Date(), today = startOfDay(now), tomorrow = addDays(today, 1);
     var todays = timedEvents().filter(function (e) { return e.start < tomorrow && e.end > today; }).map(function (e) {
-      return { s: Math.max(e.start, today), e: Math.min(e.end, tomorrow) };
+      return { s: Math.max(e.start, today), e: Math.min(e.end, tomorrow), solo: !e.attendees.length };
     });
     var fromH = WORK[0], toH = WORK[1];
     todays.forEach(function (x) {
@@ -657,8 +665,13 @@
     });
     toH = Math.min(24, toH);
     var t0 = at(today, fromH).getTime(), t1 = at(today, toH).getTime();
+    var dayStart = at(today, WORK[0]).getTime(), dayEnd = at(today, WORK[1]).getTime();
     var pct = function (t) { return ((Math.min(Math.max(t, t0), t1) - t0) / (t1 - t0)) * 100 + "%"; };
     var span = function (node, a, b) { node.style.left = pct(a); node.style.width = "calc(" + pct(b) + " - " + pct(a) + ")"; };
+
+    // Before 9 and after 5, when something stretches the rule that far: off-work time.
+    if (t0 < dayStart) { var offA = el("div", "rl-off"); span(offA, t0, dayStart); box.appendChild(offA); }
+    if (t1 > dayEnd) { var offB = el("div", "rl-off"); span(offB, dayEnd, t1); box.appendChild(offB); }
 
     for (var q = fromH * 4; q <= toH * 4; q++) {
       var t = t0 + (q - fromH * 4) * 15 * MIN, hr = q % 4 === 0;
@@ -674,7 +687,8 @@
       }
     }
 
-    var free = [], cursor = Math.max(now.getTime(), at(today, WORK[0]).getTime()), dayEnd = at(today, WORK[1]).getTime();
+    // Open time only counts inside the workday.
+    var free = [], cursor = Math.max(now.getTime(), dayStart);
     todays.slice().sort(function (a, b) { return a.s - b.s; }).forEach(function (x) {
       if (x.s > cursor) free.push([cursor, Math.min(x.s, dayEnd)]);
       cursor = Math.max(cursor, x.e);
@@ -688,8 +702,12 @@
       span(g, f[0], f[1]);
       box.appendChild(g);
     });
-    todays.forEach(function (x) {
-      var b = el("div", "rl-ev");
+    // Meetings in oxblood, each the next of three shades so back-to-backs read as separate
+    // blocks; time on your own (nobody else invited, like a deep-work hold) in green.
+    var shade = { meeting: 0, solo: 0 };
+    todays.slice().sort(function (a, b) { return a.s - b.s; }).forEach(function (x) {
+      var kind = x.solo ? "solo" : "meeting";
+      var b = el("div", "rl-ev " + kind + " shade" + (shade[kind]++ % 3));
       span(b, x.s, x.e);
       box.appendChild(b);
     });
