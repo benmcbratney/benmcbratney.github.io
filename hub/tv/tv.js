@@ -126,9 +126,19 @@
   // ------------------------------------------------------------- fit 1920×1080 to the screen
 
   // Checked every second too: a TV's browser can report its real size late, without a resize event.
+  // Inside the Fire TV app, measure from the app's real on-screen size instead of innerWidth:
+  // some Fire TVs' WebViews report a 1920-wide window while drawing it 4× too big.
   var fitted = "";
+  function viewSize() {
+    try {
+      var p = window.HubTV && window.HubTV.size ? String(window.HubTV.size()).split(",") : null;
+      var dpr = window.devicePixelRatio || 1;
+      if (p && +p[0] > 0 && +p[1] > 0) return [p[0] / dpr, p[1] / dpr];
+    } catch (e) {}
+    return [window.innerWidth, window.innerHeight];
+  }
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var v = viewSize(), w = v[0], h = v[1];
     if (!w || !h || fitted === w + "x" + h) return;
     fitted = w + "x" + h;
     var s = Math.min(w / 1920, h / 1080);
