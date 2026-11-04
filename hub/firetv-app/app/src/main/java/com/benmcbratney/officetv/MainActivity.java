@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
     private static final long RETRY_MS = 30 * 1000;
 
     private WebView web;
-    // The WebView's real size on screen, in physical pixels, for HubTV.size().
+    // The WebView's size on screen in pixels, for HubTV.cssSize().
     private volatile int webW, webH;
     private SharedPreferences prefs;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -204,8 +204,7 @@ public class MainActivity extends Activity {
         diag.setText(screen);
         form.addView(diag);
         web.evaluateJavascript("innerWidth+'×'+innerHeight+' @'+devicePixelRatio+(window.visualViewport?', zoom '+visualViewport.scale:'')"
-                        + "+', fits '+Math.round(webW()/devicePixelRatio)+'×'+Math.round(webH()/devicePixelRatio);"
-                        + "function webW(){return +String(HubTV.size()).split(',')[0]}function webH(){return +String(HubTV.size()).split(',')[1]}",
+                        + "+', fits '+String(HubTV.cssSize()).replace(',','×')",
                 value -> diag.setText(screen + " · page " + (value == null ? "?" : value.replace("\"", ""))
                         + " · app " + BuildConfig.VERSION_NAME));
 
@@ -281,13 +280,14 @@ public class MainActivity extends Activity {
     /** window.HubTV in the page. */
     private class Bridge {
         /**
-         * The WebView's size in physical pixels, "1920,1080". Some Fire TVs' WebViews report a
-         * window size (innerWidth) that doesn't match what's on screen (a 1920-wide page drawn
-         * at 4× on a 1920-pixel screen), so the page divides this by devicePixelRatio instead.
+         * The WebView's size in CSS pixels (Android dp), "960,540" on a 1080p Fire TV. The page
+         * fits its board to this because the 4-Series' WebView reports innerWidth inconsistently
+         * (1920 or 960) and a devicePixelRatio of 4 that matches neither.
          */
         @JavascriptInterface
-        public String size() {
-            return webW + "," + webH;
+        public String cssSize() {
+            float d = getResources().getDisplayMetrics().density;
+            return Math.round(webW / d) + "," + Math.round(webH / d);
         }
 
         /** The page calls keepAwake(false) after hours so the TV's own screensaver and sleep take over. */
