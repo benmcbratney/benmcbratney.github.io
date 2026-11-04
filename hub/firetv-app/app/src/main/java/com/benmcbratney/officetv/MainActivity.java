@@ -45,6 +45,8 @@ public class MainActivity extends Activity {
     private static final long RETRY_MS = 30 * 1000;
 
     private WebView web;
+    // The WebView's real size on screen, in physical pixels, for HubTV.size().
+    private volatile int webW, webH;
     private SharedPreferences prefs;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable retry = new Runnable() {
@@ -104,6 +106,7 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
+        web.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> { webW = r - l; webH = b - t; });
         setContentView(web);
         web.requestFocus();
     }
@@ -200,7 +203,9 @@ public class MainActivity extends Activity {
         final String screen = "Screen " + dm.widthPixels + "×" + dm.heightPixels + " px, density " + dm.density;
         diag.setText(screen);
         form.addView(diag);
-        web.evaluateJavascript("innerWidth+'×'+innerHeight+' @'+devicePixelRatio+(window.visualViewport?', zoom '+visualViewport.scale:'')",
+        web.evaluateJavascript("innerWidth+'×'+innerHeight+' @'+devicePixelRatio+(window.visualViewport?', zoom '+visualViewport.scale:'')"
+                        + "+', fits '+Math.round(webW()/devicePixelRatio)+'×'+Math.round(webH()/devicePixelRatio);"
+                        + "function webW(){return +String(HubTV.size()).split(',')[0]}function webH(){return +String(HubTV.size()).split(',')[1]}",
                 value -> diag.setText(screen + " · page " + (value == null ? "?" : value.replace("\"", ""))
                         + " · app " + BuildConfig.VERSION_NAME));
 
@@ -275,6 +280,16 @@ public class MainActivity extends Activity {
 
     /** window.HubTV in the page. */
     private class Bridge {
+        /**
+         * The WebView's size in physical pixels, "1920,1080". Some Fire TVs' WebViews report a
+         * window size (innerWidth) that doesn't match what's on screen (a 1920-wide page drawn
+         * at 4× on a 1920-pixel screen), so the page divides this by devicePixelRatio instead.
+         */
+        @JavascriptInterface
+        public String size() {
+            return webW + "," + webH;
+        }
+
         /** The page calls keepAwake(false) after hours so the TV's own screensaver and sleep take over. */
         @JavascriptInterface
         public void keepAwake(final boolean on) {

@@ -117,9 +117,19 @@
   }
 
   // Checked every second too: a TV's browser can report its real size late, without a resize event.
+  // Inside the Fire TV app, measure from the app's real on-screen size instead of innerWidth:
+  // some Fire TVs' WebViews report a 1920-wide window while drawing it 4× too big.
   var fitted = "";
+  function viewSize() {
+    try {
+      var p = window.HubTV && window.HubTV.size ? String(window.HubTV.size()).split(",") : null;
+      var dpr = window.devicePixelRatio || 1;
+      if (p && +p[0] > 0 && +p[1] > 0) return [p[0] / dpr, p[1] / dpr];
+    } catch (e) {}
+    return [window.innerWidth, window.innerHeight];
+  }
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var v = viewSize(), w = v[0], h = v[1];
     if (!w || !h || fitted === w + "x" + h) return;
     fitted = w + "x" + h;
     var s = Math.min(w / 1920, h / 1080);
@@ -515,11 +525,11 @@
     var next = upcoming[0], nextToday = next && next.start < tomorrow ? next : null;
     var banner = $("banner"), cls = "banner", kicker, title, sub = "", count = null, unit = "";
 
+    // Always hours:minutes ("0:42", "1:12"), so the flaps turn over once a minute, not every second.
     var countdown = function (ms) {
-      var m = Math.ceil(ms / MIN);
-      if (ms <= 5 * MIN) { var s = Math.max(0, Math.ceil(ms / 1000)); count = Math.floor(s / 60) + ":" + pad(s % 60); unit = "min · sec"; }
-      else if (m < 60) { count = String(m); unit = "minutes"; }
-      else { count = Math.floor(m / 60) + ":" + pad(m % 60); unit = "hr · min"; }
+      var m = Math.max(0, Math.ceil(ms / MIN));
+      count = Math.floor(m / 60) + ":" + pad(m % 60);
+      unit = "hr · min";
     };
 
     if (current) {
@@ -527,7 +537,7 @@
       kicker = "In progress";
       title = current.title;
       countdown(current.end - now);
-      unit = unit.replace("minutes", "min left");
+      unit = "hr · min left";
       sub = "Until " + fmtClock(current.end) + (via(current.location) ? " · " + via(current.location) : "") +
         (nextToday ? " · then " + fmtTime(nextToday.start) + " " + nextToday.title : "");
     } else if (nextToday) {

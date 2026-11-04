@@ -16,8 +16,11 @@
 //                            {"parents":["Mom","Dad"],"kids":["A","B"],"nicknames":["Ace"],"dog":"Rex"}
 //   KIDS_QUICK_ADD   plain   optional JSON array of one-tap buttons for the Kids card's +,
 //                            e.g. ["A school clothes","B school clothes"]
-//   TV_CALENDARS     plain   optional CALENDARS names the office TV shows, as JSON or a
-//                            comma list, e.g. ["Work"] or Work, Ben (default: all of them)
+//   WORK_CALENDARS   secret  optional calendars only the office TV shows (work stays off the
+//                            family iPad): just a calendar's ICS link, or a JSON list like CALENDARS
+//   TV_CALENDARS     plain   optional CALENDARS names the office TV also shows, as JSON or a
+//                            comma list, e.g. ["Ben"] or Ben, Family. With neither of these set,
+//                            the TV shows every CALENDARS entry; with only WORK_CALENDARS, just those
 //
 // Optional Nest thermostats (Google Device Access — see hub/README.md):
 //   NEST_PROJECT_ID     plain   Device Access project ID
@@ -31,7 +34,7 @@
 //   SPOTIFY_REFRESH_TOKEN  secret  from visiting /spotify/connect once (it shows you the token)
 //
 // Routes (all require header  X-Hub-Key: <HUB_KEY>, except the two Nest setup pages):
-//   GET  /calendar?days=7              add &for=tv for just the TV_CALENDARS
+//   GET  /calendar?days=7              add &for=tv for the office TV's (WORK_CALENDARS + TV_CALENDARS)
 //   GET  /countdowns                   next year of emoji-led or "⏳"-tagged events and birthdays
 //   GET  /todoist/lists
 //   POST /todoist/close   {"id": "..."}
@@ -83,8 +86,8 @@ export default {
     try {
       if (url.pathname === "/calendar" && request.method === "GET") {
         const days = clamp(parseInt(url.searchParams.get("days") || "7", 10), 1, 31);
-        const only = url.searchParams.get("for") === "tv" ? tvCalendars(env) : null;
-        return json(await calendar(env, days, null, only));
+        const list = url.searchParams.get("for") === "tv" ? tvCalendarList(env) : null;
+        return json(await calendar(env, days, null, list));
       }
       if (url.pathname === "/countdowns" && request.method === "GET") {
         return json(await countdowns(env));
@@ -810,7 +813,25 @@ async function nestSetpoint(env, id, heatC, coolC) {
 // ---------------------------------------------------------------- Calendar
 
 // `keep` optionally narrows which VEVENTs get expanded (see countdowns).
-// TV_CALENDARS: which CALENDARS (by name) the office TV shows. null means all of them.
+// The office TV's calendars: WORK_CALENDARS (read by nothing else, so work stays off the
+// family iPad) plus any CALENDARS named in TV_CALENDARS. With neither set, all of CALENDARS.
+function tvCalendarList(env) {
+  const all = JSON.parse(env.CALENDARS || "[]");
+  const work = workCalendars(env);
+  const names = tvCalendars(env);
+  if (!work.length && !names) return all;
+  return work.concat(names ? all.filter((c) => names.includes(c.name)) : []);
+}
+
+// WORK_CALENDARS: a bare ICS link (shown as "Work"), or a JSON list like CALENDARS.
+function workCalendars(env) {
+  const raw = (env.WORK_CALENDARS || "").trim();
+  if (!raw) return [];
+  if (/^(https?|webcal):\/\//i.test(raw)) return [{ name: "Work", url: raw, color: "#4f8cff" }];
+  try { return JSON.parse(raw); } catch { throw new Error("WORK_CALENDARS isn't an ICS link or valid JSON"); }
+}
+
+// TV_CALENDARS: which CALENDARS (by name) the office TV also shows. null means none chosen.
 function tvCalendars(env) {
   const raw = (env.TV_CALENDARS || "").trim();
   if (!raw) return null;
@@ -820,9 +841,10 @@ function tvCalendars(env) {
   return raw.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
-async function calendar(env, days, keep, only) {
+// `list` is the calendars to read (default: all of CALENDARS).
+async function calendar(env, days, keep, list) {
   const tz = env.HOME_TZ || "America/Chicago";
-  const cals = JSON.parse(env.CALENDARS || "[]").filter((c) => !only || only.includes(c.name));
+  const cals = list || JSON.parse(env.CALENDARS || "[]");
 
   const today = wallParts(new Date(), tz);
   const start = { y: today.y, m: today.m, d: today.d, h: 0, mi: 0, s: 0 };
@@ -830,7 +852,8 @@ async function calendar(env, days, keep, only) {
   const results = await Promise.all(
     cals.map(async (cal) => {
       try {
-        const res = await fetch(cal.url, { cf: { cacheTtl: 120 } });
+        // webcal:// is just https:// that asks to be opened in a calendar app.
+        const res = await fetch(String(cal.url).replace(/^webcal:/i, "https:"), { cf: { cacheTtl: 120 } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const events = expandCalendar(await res.text(), start, days, tz, keep);
         return events.map((e) => ({ ...e, calendar: cal.name, color: cal.color || null }));
