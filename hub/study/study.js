@@ -485,7 +485,7 @@
     var p = demo ? Promise.resolve(demoCalendar()) : api("/calendar?days=2&for=tv");
     return p.then(function (data) {
       events = data.events.map(function (e) {
-        return { title: e.title || "(No title)", location: e.location, allDay: e.allDay, color: e.color,
+        return { title: e.title || "(No title)", location: e.location, attendees: e.attendees || [], allDay: e.allDay, color: e.color,
           start: parseWall(e.start), end: parseWall(e.end || e.start) };
       });
       renderBoard();
@@ -500,6 +500,16 @@
   }
 
   // "Via": the video service, or the room when it's a place.
+  // "Anna Lee" → Anna, "O'Brien, Pat" → Pat, "raj.patel@work.com" → Raj.
+  function firstName(n) {
+    n = String(n).trim();
+    if (n.indexOf("@") > 0) n = n.split("@")[0].split(/[._-]/)[0];
+    else if (n.indexOf(",") > 0) n = n.split(",")[1].trim() || n.split(",")[0];
+    n = n.split(/\s+/)[0];
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+  function who(e) { return e.attendees.map(firstName).join(", "); }
+
   function via(loc) {
     if (!loc) return "";
     if (/zoom\.us/i.test(loc)) return "ZOOM";
@@ -539,7 +549,7 @@
       title = current.title;
       countdown(current.end - now);
       unit = "hr · min left";
-      sub = "Until " + fmtClock(current.end) + (via(current.location) ? " · " + via(current.location) : "") +
+      sub = "Until " + fmtClock(current.end) + (who(current) ? " · with " + who(current) : via(current.location) ? " · " + via(current.location) : "") +
         (nextToday ? " · then " + fmtTime(nextToday.start) + " " + nextToday.title : "");
     } else if (nextToday) {
       var ms = nextToday.start - now;
@@ -548,7 +558,8 @@
       title = nextToday.title;
       countdown(ms);
       if (ms <= MIN) { count = "NOW"; unit = ""; }
-      sub = fmtClock(nextToday.start) + " – " + fmtClock(nextToday.end) + (via(nextToday.location) ? " · " + via(nextToday.location) : "");
+      sub = fmtClock(nextToday.start) + " – " + fmtClock(nextToday.end) +
+        (who(nextToday) ? " · with " + who(nextToday) : via(nextToday.location) ? " · " + via(nextToday.location) : "");
     } else {
       kicker = "No further departures today";
       title = timed.some(function (e) { return e.start < tomorrow && e.end > startOfDay(now); }) ? "That's a wrap" : "A clear day";
@@ -571,9 +582,11 @@
     var box = $("rows");
     for (var i = 0; i < ROWS; i++) {
       var row = el("div", "row");
-      var parts = [["tm", 5, true], ["mt", 22], ["via", 5], ["st", 9]];
+      // Time and meeting on flaps, then who's coming in plain type, then the status flaps.
+      var parts = [["tm", 5, true], ["mt", 17], "who", ["st", 9]];
       var f = {};
       parts.forEach(function (p) {
+        if (p === "who") { f.who = el("div", "who"); row.appendChild(f.who); return; }
         var g = el("div", "flaps " + p[0]);
         row.appendChild(g);
         f[p[0]] = Flaps(g, p[1], p[2]);
@@ -605,8 +618,8 @@
 
     rowFlaps.forEach(function (f, i) {
       var item = list[i];
-      if (!item) { f.row.className = "row"; f.tm.set(""); f.mt.set(""); f.via.set(""); f.st.set(""); return; }
-      if (item.note) { f.row.className = "row gone"; f.tm.set(""); f.mt.set(item.note); f.via.set(""); f.st.set(""); return; }
+      if (!item) { f.row.className = "row"; f.tm.set(""); f.mt.set(""); f.who.textContent = ""; f.st.set(""); return; }
+      if (item.note) { f.row.className = "row gone"; f.tm.set(""); f.mt.set(item.note); f.who.textContent = ""; f.st.set(""); return; }
       var e = item.e, ms = e.start - now, status, cls = "row";
       var h = e.start.getHours() % 12 || 12;
       if (item.tomorrow) { status = "TOMORROW"; cls += " tomorrow"; }
@@ -621,7 +634,7 @@
       f.row.className = cls;
       f.tm.set(h + ":" + pad(e.start.getMinutes()));
       f.mt.set(e.title);
-      f.via.set(via(e.location));
+      f.who.textContent = who(e);
       f.st.set(status);
     });
   }
@@ -1154,10 +1167,10 @@
     var tmrw = ymd(addDays(now, 1));
     return { events: [
       { title: "Quarter-end close", allDay: true, start: ymd(now), end: tmrw },
-      { title: "Standup", start: w(-150), end: w(-135) },
-      { title: "Pipeline review", start: w(-90), end: w(-45) },
-      { title: "Design review", location: "https://zoom.us/j/123456789", start: w(15), end: w(45) },
-      { title: "Vendor call", location: "https://teams.microsoft.com/l/meetup-join/abc", start: w(120), end: w(150) },
+      { title: "Standup", start: w(-150), end: w(-135), attendees: ["Anna Lee", "Raj Patel", "Sofia Alvarez", "Marcus Webb"] },
+      { title: "Pipeline review", start: w(-90), end: w(-45), attendees: ["Marcus Webb", "Jamie Chen"] },
+      { title: "Design review", location: "https://zoom.us/j/123456789", start: w(15), end: w(45), attendees: ["Anna Lee", "raj.patel@example.com", "O'Brien, Pat", "Sofia Alvarez", "Jamie Chen", "Marcus Webb"] },
+      { title: "Vendor call", location: "https://teams.microsoft.com/l/meetup-join/abc", start: w(120), end: w(150), attendees: ["Dana Whitfield"] },
       { title: "Team sync", location: "Library", start: w(210), end: w(255) },
       { title: "Standup", start: tmrw + "T09:00", end: tmrw + "T09:15" },
     ] };
