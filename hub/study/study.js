@@ -515,11 +515,11 @@
     var next = upcoming[0], nextToday = next && next.start < tomorrow ? next : null;
     var banner = $("banner"), cls = "banner", kicker, title, sub = "", count = null, unit = "";
 
+    // Always hours:minutes ("0:42", "1:12"), so the flaps turn over once a minute, not every second.
     var countdown = function (ms) {
-      var m = Math.ceil(ms / MIN);
-      if (ms <= 5 * MIN) { var s = Math.max(0, Math.ceil(ms / 1000)); count = Math.floor(s / 60) + ":" + pad(s % 60); unit = "min · sec"; }
-      else if (m < 60) { count = String(m); unit = "minutes"; }
-      else { count = Math.floor(m / 60) + ":" + pad(m % 60); unit = "hr · min"; }
+      var m = Math.max(0, Math.ceil(ms / MIN));
+      count = Math.floor(m / 60) + ":" + pad(m % 60);
+      unit = "hr · min";
     };
 
     if (current) {
@@ -527,7 +527,7 @@
       kicker = "In progress";
       title = current.title;
       countdown(current.end - now);
-      unit = unit.replace("minutes", "min left");
+      unit = "hr · min left";
       sub = "Until " + fmtClock(current.end) + (via(current.location) ? " · " + via(current.location) : "") +
         (nextToday ? " · then " + fmtTime(nextToday.start) + " " + nextToday.title : "");
     } else if (nextToday) {
