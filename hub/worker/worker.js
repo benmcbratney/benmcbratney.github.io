@@ -935,6 +935,7 @@ function expandCalendar(text, startDay, days, tz, keep) {
           location: ev.location,
           description: ev.description,
           attendees: ev.attendees,
+          declined: ev.declined,
           allDay: false,
           start: fmtWall(wallParts(new Date(startInstant), tz)),
           end: fmtWall(wallParts(new Date(endInstant), tz)),
@@ -1003,12 +1004,17 @@ function parseIcs(text) {
         for (const v of value.split(",")) cur.exdates.push(parseDate(v, params));
         break;
       case "ATTENDEE": {
-        // People only (not rooms or other resources), and not anyone who declined.
+        // People only (not rooms or other resources). Those who declined are kept apart, so
+        // the TV can flag a meeting that everyone else has declined.
         const type = (params.CUTYPE || "INDIVIDUAL").toUpperCase();
         if (type !== "INDIVIDUAL" && type !== "UNKNOWN") break;
-        if ((params.PARTSTAT || "").toUpperCase() === "DECLINED") break;
+        const declined = (params.PARTSTAT || "").toUpperCase() === "DECLINED";
         const email = value.replace(/^mailto:/i, "").trim().toLowerCase();
-        (cur.attendees = cur.attendees || []).push({ name: unescape(params.CN || "") || email, email });
+        const name = unescape(params.CN || "") || email;
+        // Meeting bots ("Fireflies.ai Notetaker", "Read AI Notetaker", …) aren't people.
+        if (/note\s?taker/i.test(name + " " + email)) break;
+        const list = declined ? "declined" : "attendees";
+        (cur[list] = cur[list] || []).push({ name, email });
         break;
       }
     }
@@ -1018,9 +1024,10 @@ function parseIcs(text) {
       ev.end = { instant: ev.start.instant + parseDuration(ev.duration) };
     }
     if (!ev.summary) ev.summary = "(busy)";
-    if (ev.attendees) {
-      const names = ev.attendees.filter((a) => !calName || a.email !== calName).map((a) => a.name);
-      ev.attendees = names.length ? names.slice(0, 12) : undefined;
+    for (const list of ["attendees", "declined"]) {
+      if (!ev[list]) continue;
+      const names = ev[list].filter((a) => !calName || a.email !== calName).map((a) => a.name);
+      ev[list] = names.length ? names.slice(0, 12) : undefined;
     }
   }
   return events;

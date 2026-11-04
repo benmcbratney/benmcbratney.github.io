@@ -493,7 +493,7 @@
     var p = demo ? Promise.resolve(demoCalendar()) : api("/calendar?days=2&for=tv");
     return p.then(function (data) {
       events = data.events.map(function (e) {
-        return { title: e.title || "(No title)", location: e.location, attendees: e.attendees || [], allDay: e.allDay, color: e.color,
+        return { title: e.title || "(No title)", location: e.location, attendees: e.attendees || [], declined: e.declined || [], allDay: e.allDay, color: e.color,
           start: parseWall(e.start), end: parseWall(e.end || e.start) };
       });
       renderBoard();
@@ -517,6 +517,15 @@
     return n.charAt(0).toUpperCase() + n.slice(1);
   }
   function who(e) { return e.attendees.map(firstName).join(", "); }
+  // Everyone else declined: it's still on the calendar, but you'd be the only one there.
+  function deserted(e) { return !e.attendees.length && e.declined.length > 0; }
+  function declinedLine(e) { return "Everyone declined (" + e.declined.map(firstName).join(", ") + ")"; }
+  // The banner's " · with Anna, Raj" (or the warning, or the video service).
+  function subWho(e) {
+    if (deserted(e)) return " · ! " + declinedLine(e);
+    if (who(e)) return " · with " + who(e);
+    return via(e.location) ? " · " + via(e.location) : "";
+  }
 
   function via(loc) {
     if (!loc) return "";
@@ -557,7 +566,8 @@
       title = current.title;
       countdown(current.end - now);
       unit = "hr · min left";
-      sub = "Until " + fmtClock(current.end) + (who(current) ? " · with " + who(current) : via(current.location) ? " · " + via(current.location) : "") +
+      if (deserted(current)) cls += " declined";
+      sub = "Until " + fmtClock(current.end) + subWho(current) +
         (nextToday ? " · then " + fmtTime(nextToday.start) + " " + nextToday.title : "");
     } else if (nextToday) {
       var ms = nextToday.start - now;
@@ -566,8 +576,8 @@
       title = nextToday.title;
       countdown(ms);
       if (ms <= MIN) { count = "NOW"; unit = ""; }
-      sub = fmtClock(nextToday.start) + " – " + fmtClock(nextToday.end) +
-        (who(nextToday) ? " · with " + who(nextToday) : via(nextToday.location) ? " · " + via(nextToday.location) : "");
+      if (deserted(nextToday)) cls += " declined";
+      sub = fmtClock(nextToday.start) + " – " + fmtClock(nextToday.end) + subWho(nextToday);
     } else {
       kicker = "No further departures today";
       title = timed.some(function (e) { return e.start < tomorrow && e.end > startOfDay(now); }) ? "That's a wrap" : "A clear day";
@@ -639,10 +649,14 @@
         var m = Math.ceil(ms / MIN);
         status = m < 60 ? "IN " + m + " MIN" : "IN " + Math.floor(m / 60) + "H" + pad(m % 60);
       }
-      f.row.className = cls;
+      f.row.className = cls + (deserted(e) ? " declined" : "");
       f.tm.set(h + ":" + pad(e.start.getMinutes()));
       f.mt.set(e.title);
-      f.who.textContent = who(e);
+      f.who.textContent = "";
+      if (deserted(e)) {
+        f.who.appendChild(el("span", "warn", "!"));
+        f.who.appendChild(document.createTextNode(declinedLine(e)));
+      } else f.who.textContent = who(e);
       f.st.set(status);
     });
   }
@@ -658,7 +672,8 @@
     box.innerHTML = "";
     var now = new Date(), today = startOfDay(now), tomorrow = addDays(today, 1);
     var todays = timedEvents().filter(function (e) { return e.start < tomorrow && e.end > today; }).map(function (e) {
-      return { s: Math.max(e.start, today), e: Math.min(e.end, tomorrow), solo: !e.attendees.length, title: e.title };
+      return { s: Math.max(e.start, today), e: Math.min(e.end, tomorrow), title: e.title,
+        deserted: deserted(e), solo: !e.attendees.length && !deserted(e) };
     });
     var fromH = WORK[0], toH = WORK[1];
     todays.forEach(function (x) {
@@ -690,10 +705,18 @@
     }
 
     // Meetings in oxblood, each the next of three shades so back-to-backs read as separate
-    // blocks. Time on your own (nobody else invited) in green, except focus time (deep work,
+    // blocks; a meeting everyone else declined in amber with a "!". Time on your own (nobody
+    // else invited) in green, except focus time (deep work,
     // focus, heads-down), which is outlined in brass with its name. Open time is left bare.
     var shade = { meeting: 0, solo: 0 };
     todays.slice().sort(function (a, b) { return a.s - b.s; }).forEach(function (x) {
+      // Everyone else declined: a warning, not a meeting and not time on your own.
+      if (x.deserted) {
+        var w = el("div", "rl-ev declined", "!");
+        span(w, x.s, x.e);
+        box.appendChild(w);
+        return;
+      }
       if (x.solo && FOCUS_RE.test(x.title)) {
         var f = el("div", "rl-focus", x.title);
         span(f, x.s, x.e);
@@ -1183,6 +1206,7 @@
       { title: "Pipeline review", start: w(-90), end: w(-45), attendees: ["Marcus Webb", "Jamie Chen"] },
       { title: "Design review", location: "https://zoom.us/j/123456789", start: w(15), end: w(45), attendees: ["Anna Lee", "raj.patel@example.com", "O'Brien, Pat", "Sofia Alvarez", "Jamie Chen", "Marcus Webb"] },
       { title: "Vendor call", location: "https://teams.microsoft.com/l/meetup-join/abc", start: w(120), end: w(150), attendees: ["Dana Whitfield"] },
+        { title: "JJ / Ben Weekly", start: w(165), end: w(195), declined: ["JJ Abrams"] },
       { title: "Team sync", location: "Library", start: w(210), end: w(255) },
       { title: "Standup", start: tmrw + "T09:00", end: tmrw + "T09:15" },
     ] };
