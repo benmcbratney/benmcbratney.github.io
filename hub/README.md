@@ -194,6 +194,58 @@ up just needs the new address (or use the same `#worker=…&key=…` link with `
 
 Fonts are Playfair Display, EB Garamond, Oswald and UnifrakturMaguntia from Google Fonts.
 
+## The Fire TV app
+
+A small app, **The Study**, that shows The Study (or the Office TV page) full screen.
+Unlike the Fire TV's browser, it keeps the screen awake during the day and lets the TV
+sleep after hours. It also passes the remote's ⏯ ⏪ ⏩ buttons to Spotify, ignores the
+TV's zoom and font-size settings, and reloads by itself after a Wi-Fi hiccup.
+
+GitHub builds it (`.github/workflows/office-tv-app.yml`, from `hub/firetv-app/`) every time
+the app changes on `master` and publishes it at a fixed address:
+`https://github.com/benmcbratney/benmcbratney.github.io/releases/download/office-tv/office-tv.apk`
+(**Actions → Office TV app → Run workflow** rebuilds it by hand).
+
+### Install it (no computer needed, ~5 min)
+
+1. **Turn on Developer Options:** Settings → My Fire TV → About → click the TV's name
+   (the first line) 7 times until it says you're a developer.
+2. Install **Downloader** (by AFTVnews, free) from the Amazon Appstore.
+3. Settings → My Fire TV → Developer Options → **Install unknown apps** → turn on **Downloader**.
+4. Open Downloader, type `benmcbratney.github.io/hub/app` and press Go. The download starts
+   by itself; choose **Install**, then **Done** (and let Downloader delete the file).
+5. Open **The Study** from Your Apps Library (hold ☰ on it to move it into your app row).
+6. The first time, it asks for the **Worker URL** and **hub key** and which page to show.
+   The **Amazon Fire TV** app on your phone has a keyboard, so you can paste them instead of
+   typing with the remote. Press **☰** on the remote any time to change them.
+
+**Updating:** repeat step 4. It installs over the old version and keeps your settings.
+
+### Or install it from a computer (adb)
+
+Turn on Developer Options → **ADB debugging**, find the TV's IP address
+(Settings → My Fire TV → About → Network), then:
+
+```
+adb connect 192.168.1.50
+adb install -r office-tv.apk
+adb shell "am start -n com.benmcbratney.officetv/.MainActivity -d 'https://benmcbratney.github.io/hub/study/#worker=https://home-hub.YOURNAME.workers.dev&key=YOUR_HUB_KEY'"
+```
+
+The last line sets it up with no typing on the TV (use `/hub/tv/` for the modern page).
+
+### How it behaves
+
+- **During the day** (the page's `on` hours, 7am–8pm by default) it keeps the screen on.
+- **After hours** the page goes black and the app stops holding the screen awake, so the
+  Fire TV's own screensaver and sleep timer take over (Settings → Display & Sounds). It can't
+  turn the TV back on in the morning; open the app when you turn the TV on.
+- **Remote:** ⏯ plays/pauses Spotify, ⏪/⏩ skip back/ahead, any other button wakes the screen
+  after hours, ☰ opens setup, and Back/Home leave it for regular TV.
+- The app is signed with a key kept in this repo (`hub/firetv-app/officetv.keystore`), so every
+  build installs over the last. That key only says "built from this repo", which is fine for
+  an app you sideload yourself; it isn't meant for an app store.
+
 ## Smart home (later)
 
 Kasa, WiZ, iRobot and friends can only be reached from inside the house, so they go
