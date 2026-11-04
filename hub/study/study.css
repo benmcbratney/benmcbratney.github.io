@@ -248,6 +248,13 @@ body::after {
   white-space: nowrap; overflow: hidden;
 }
 .row .who + .flaps { margin-left: var(--pitch); }
+/* Everyone else declined: amber, with a "!" disc. */
+.row.declined .who { color: var(--amber); }
+.who .warn, .banner-sub .warn {
+  display: inline-block; width: 26px; height: 26px; margin-right: 8px; border-radius: 50%;
+  background: var(--amber); color: #1d140e; text-align: center; font: 700 20px/26px var(--block); vertical-align: 1px;
+}
+.banner.declined .banner-sub { color: var(--amber); }
 .row.gone .fl, .row.gone .who { color: #6d675c; }
 .row.now .st .fl { background: linear-gradient(180deg, #8a2a22 0 49%, #3a0e0a 49% 51%, #7a231c 51% 100%); color: #fff; }
 .row.boarding .st .fl { color: var(--amber); }
@@ -267,6 +274,12 @@ body::after {
 .rl-ev.meeting.shade0 { background: linear-gradient(180deg, #a63e2e, #74201a); }
 .rl-ev.meeting.shade1 { background: linear-gradient(180deg, #c45a3e, #8c3020); }
 .rl-ev.meeting.shade2 { background: linear-gradient(180deg, #84281f, #561511); }
+/* A meeting everyone else declined: amber stripes and a "!". */
+.rl-ev.declined {
+  background: repeating-linear-gradient(135deg, #e9a63e 0 6px, #b97b22 6px 12px);
+  display: flex; align-items: center; justify-content: center;
+  font: 700 19px/1 var(--block); color: #1d140e;
+}
 /* Time on your own (no one else invited): green, so it doesn't read as a meeting. */
 .rl-ev.solo.shade0 { background: linear-gradient(180deg, #4f8f5a, #2f6038); }
 .rl-ev.solo.shade1 { background: linear-gradient(180deg, #62a26b, #3a7044); }

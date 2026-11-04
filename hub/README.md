@@ -182,14 +182,16 @@ up just needs the new address (or use the same `#worker=…&key=…` link with `
   phase in the corner. A red stamp appears when rain or snow is due within the hour.
 - **Departures board:** today's meetings on a split-flap board like the old train-station
   boards (the letters riffle when they change), with who's in each one by first name (cut off
-  when there's no more room; you, people who declined and rooms are left out). Status reads
+  when there's no more room; you, people who declined and rooms are left out). A meeting
+  everyone else declined says so in amber with a "!", here and in the countdown. Status reads
   DEPARTED, NOW, BOARDING (last 5 minutes), FINAL (last minute) or IN 42 MIN. The big counter
   above counts down to the next one in hours and minutes, with a lamp that blinks amber when
   boarding and red on the final call. Attendees come from the calendar feed: Google's secret
   iCal address includes them; an Outlook published calendar may not.
 - **The day as a brass rule:** the workday, 9 to 5 (`&work=9-17` in the setup link changes
   it), stretched to fit anything earlier or later, which is hatched as off-work time. Meetings
-  are inlaid in oxblood, each a different shade so back-to-backs read as separate blocks.
+  are inlaid in oxblood, each a different shade so back-to-backs read as separate blocks; one
+  that everyone else declined is striped amber with a "!".
   Focus time with nobody else invited (a title with "deep work", "focus" or "heads-down") is
   outlined in brass with its name; anything else with nobody else invited (lunch) is green.
   Open time is left as a gap.
