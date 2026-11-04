@@ -187,8 +187,12 @@ up just needs the new address (or use the same `#worker=…&key=…` link with `
   above counts down to the next one in hours and minutes, with a lamp that blinks amber when
   boarding and red on the final call. Attendees come from the calendar feed: Google's secret
   iCal address includes them; an Outlook published calendar may not.
-- **The day as a brass rule:** meetings inlaid in oxblood, open time in green, the longest
-  stretch (an hour or more) marked Focus.
+- **The day as a brass rule:** the workday, 9 to 5 (`&work=9-17` in the setup link changes
+  it), stretched to fit anything earlier or later, which is hatched as off-work time. Meetings
+  are inlaid in oxblood, each a different shade so back-to-backs read as separate blocks.
+  Focus time with nobody else invited (a title with "deep work", "focus" or "heads-down") is
+  outlined in brass with its name; anything else with nobody else invited (lunch) is green.
+  Open time is left as a gap.
 - **Chicago Scoreboard** in Wrigley green with numbers on tiles, a big panel when a game is
   on (visitors on top, with ESPN's win chance), and Wrigley's flag after a Cubs game: white
   W for a win, blue L for a loss. Every 45 seconds the card flips over to **a fire in the

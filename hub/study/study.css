@@ -260,9 +260,19 @@ body::after {
 .rl-tick { position: absolute; top: 0; width: 1px; height: 10px; background: rgba(224, 201, 143, 0.6); }
 .rl-tick.hr { height: 18px; width: 2px; }
 .rl-num { position: absolute; bottom: 4px; transform: translateX(-50%); font: 500 15px/1 var(--block); letter-spacing: 1px; color: rgba(224, 201, 143, 0.75); }
-.rl-ev { position: absolute; top: 18px; height: 24px; border-radius: 3px; background: linear-gradient(180deg, #9b3a2c, #6e1f1a); box-shadow: inset 0 1px 0 rgba(255, 200, 170, 0.3), 0 1px 2px rgba(0, 0, 0, 0.7); }
-.rl-free { position: absolute; top: 18px; height: 24px; border-radius: 3px; background: repeating-linear-gradient(135deg, rgba(60, 110, 70, 0.55) 0 6px, rgba(40, 85, 50, 0.55) 6px 12px); display: flex; align-items: center; justify-content: center; overflow: hidden; font: 600 14px/1 var(--block); letter-spacing: 2px; text-transform: uppercase; color: #cfe8c9; white-space: nowrap; }
-.rl-free.best { background: linear-gradient(180deg, #3f7a4a, #2a5a35); box-shadow: inset 0 0 0 1.5px #e0c98f; }
+/* Off-work time (before 9, after 5): hatched darker. */
+.rl-off { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.42) 0 5px, rgba(0, 0, 0, 0.22) 5px 10px); }
+/* A thin dark seam on the left, so blocks that touch still read as two. */
+.rl-ev { position: absolute; top: 18px; height: 24px; border-radius: 3px; border-left: 2px solid #1a0905; box-shadow: inset 0 1px 0 rgba(255, 200, 170, 0.3), 0 1px 2px rgba(0, 0, 0, 0.7); }
+.rl-ev.meeting.shade0 { background: linear-gradient(180deg, #a63e2e, #74201a); }
+.rl-ev.meeting.shade1 { background: linear-gradient(180deg, #c45a3e, #8c3020); }
+.rl-ev.meeting.shade2 { background: linear-gradient(180deg, #84281f, #561511); }
+/* Time on your own (no one else invited): green, so it doesn't read as a meeting. */
+.rl-ev.solo.shade0 { background: linear-gradient(180deg, #4f8f5a, #2f6038); }
+.rl-ev.solo.shade1 { background: linear-gradient(180deg, #62a26b, #3a7044); }
+.rl-ev.solo.shade2 { background: linear-gradient(180deg, #3f7a4a, #24502d); }
+/* Focus time on the calendar (deep work and the like): brass outline, with its name. */
+.rl-focus { position: absolute; top: 18px; height: 24px; border-radius: 3px; border: 1.5px solid #e0c98f; background: rgba(224, 201, 143, 0.16); display: flex; align-items: center; justify-content: center; overflow: hidden; font: 600 14px/1 var(--block); letter-spacing: 2px; text-transform: uppercase; color: #e0c98f; white-space: nowrap; }
 .rl-past { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); }
 .rl-now { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: #f0d68f; box-shadow: 0 0 8px rgba(240, 214, 143, 0.9); }
 
