@@ -271,9 +271,8 @@ body::after {
 .rl-ev.solo.shade0 { background: linear-gradient(180deg, #4f8f5a, #2f6038); }
 .rl-ev.solo.shade1 { background: linear-gradient(180deg, #62a26b, #3a7044); }
 .rl-ev.solo.shade2 { background: linear-gradient(180deg, #3f7a4a, #24502d); }
-/* Open time in the workday: a brass outline; the longest stretch, "Focus", filled. */
-.rl-free { position: absolute; top: 18px; height: 24px; border-radius: 3px; border: 1.5px dashed rgba(224, 201, 143, 0.55); display: flex; align-items: center; justify-content: center; overflow: hidden; font: 600 14px/1 var(--block); letter-spacing: 2px; text-transform: uppercase; color: #e0c98f; white-space: nowrap; }
-.rl-free.best { border: 1.5px solid #e0c98f; background: rgba(224, 201, 143, 0.16); }
+/* Focus time on the calendar (deep work and the like): brass outline, with its name. */
+.rl-focus { position: absolute; top: 18px; height: 24px; border-radius: 3px; border: 1.5px solid #e0c98f; background: rgba(224, 201, 143, 0.16); display: flex; align-items: center; justify-content: center; overflow: hidden; font: 600 14px/1 var(--block); letter-spacing: 2px; text-transform: uppercase; color: #e0c98f; white-space: nowrap; }
 .rl-past { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); }
 .rl-now { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: #f0d68f; box-shadow: 0 0 8px rgba(240, 214, 143, 0.9); }
 

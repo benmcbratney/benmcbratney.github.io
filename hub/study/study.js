@@ -651,12 +651,14 @@
   // Work hours left to right; meetings inlaid in oxblood, open time from now until the
   // end of the day in green baize, the longest stretch (an hour or more) marked "Focus".
 
+  var FOCUS_RE = /deep work|focus|heads[- ]?down/i;
+
   function renderRuler() {
     var box = $("ruler");
     box.innerHTML = "";
     var now = new Date(), today = startOfDay(now), tomorrow = addDays(today, 1);
     var todays = timedEvents().filter(function (e) { return e.start < tomorrow && e.end > today; }).map(function (e) {
-      return { s: Math.max(e.start, today), e: Math.min(e.end, tomorrow), solo: !e.attendees.length };
+      return { s: Math.max(e.start, today), e: Math.min(e.end, tomorrow), solo: !e.attendees.length, title: e.title };
     });
     var fromH = WORK[0], toH = WORK[1];
     todays.forEach(function (x) {
@@ -687,25 +689,17 @@
       }
     }
 
-    // Open time only counts inside the workday.
-    var free = [], cursor = Math.max(now.getTime(), dayStart);
-    todays.slice().sort(function (a, b) { return a.s - b.s; }).forEach(function (x) {
-      if (x.s > cursor) free.push([cursor, Math.min(x.s, dayEnd)]);
-      cursor = Math.max(cursor, x.e);
-    });
-    if (dayEnd > cursor) free.push([cursor, dayEnd]);
-    free = free.filter(function (f) { return f[1] - f[0] >= 30 * MIN; });
-    var best = free.reduce(function (b, f) { return !b || f[1] - f[0] > b[1] - b[0] ? f : b; }, null);
-    if (best && best[1] - best[0] < HOUR) best = null;
-    free.forEach(function (f) {
-      var g = el("div", "rl-free" + (f === best ? " best" : ""), (f === best ? "Focus · " : "") + fmtSpan(f[1] - f[0]));
-      span(g, f[0], f[1]);
-      box.appendChild(g);
-    });
     // Meetings in oxblood, each the next of three shades so back-to-backs read as separate
-    // blocks; time on your own (nobody else invited, like a deep-work hold) in green.
+    // blocks. Time on your own (nobody else invited) in green, except focus time (deep work,
+    // focus, heads-down), which is outlined in brass with its name. Open time is left bare.
     var shade = { meeting: 0, solo: 0 };
     todays.slice().sort(function (a, b) { return a.s - b.s; }).forEach(function (x) {
+      if (x.solo && FOCUS_RE.test(x.title)) {
+        var f = el("div", "rl-focus", x.title);
+        span(f, x.s, x.e);
+        box.appendChild(f);
+        return;
+      }
       var kind = x.solo ? "solo" : "meeting";
       var b = el("div", "rl-ev " + kind + " shade" + (shade[kind]++ % 3));
       span(b, x.s, x.e);
