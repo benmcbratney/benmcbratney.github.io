@@ -33,8 +33,9 @@ import android.widget.TextView;
  * The page does all the work; this wrapper keeps the screen awake while the page wants it
  * (it lets the TV sleep after hours), passes the remote's media buttons through to the
  * page, reloads after a network hiccup, and asks for the Worker URL and hub key once.
- * The key is handed to the page in the address's #fragment, and the page keeps it in its
- * own storage, the same way the iPad's setup link works.
+ * The app keeps those two and hands them to the page in the address's #fragment every
+ * time it opens it (the same setup link the iPad uses), so the page never falls back to
+ * demo data even if its own storage is cleared.
  */
 public class MainActivity extends Activity {
 
@@ -47,7 +48,7 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable retry = new Runnable() {
-        @Override public void run() { loadPage(null); }
+        @Override public void run() { loadPage(); }
     };
 
     @Override
@@ -57,7 +58,7 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_FULLSCREEN);
         buildWebView();
         if (!handleIntent(getIntent())) {
-            loadPage(null);
+            loadPage();
             if (!prefs.getBoolean("configured", false)) showSetup();
         }
     }
@@ -77,7 +78,9 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);           // the page keeps its settings in localStorage
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setTextZoom(100);                     // ignore the TV's font-size setting; the page scales itself
-        s.setUseWideViewPort(true);
+        // One CSS pixel per screen dp, no page zoom: the page measures the window and scales
+        // its 1920×1080 board to fit, so nothing on the TV's side should zoom it again.
+        s.setUseWideViewPort(false);
         s.setLoadWithOverviewMode(false);
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
@@ -105,11 +108,20 @@ public class MainActivity extends Activity {
         web.requestFocus();
     }
 
-    /** Open the page this TV is set to, optionally with a #worker=…&key=… setup fragment. */
-    private void loadPage(String fragment) {
+    /**
+     * Open the page this TV is set to, with the saved Worker URL and key in the #fragment.
+     * The ?app= part makes it a fresh page load every time: a change to just the #fragment
+     * of the page already showing wouldn't reload it, and the page only reads its settings
+     * when it loads (it strips both from the address once it has them).
+     */
+    private void loadPage() {
         handler.removeCallbacks(retry);
-        String page = prefs.getString("page", STUDY);
-        web.loadUrl(fragment == null ? page : page + "#" + fragment);
+        String worker = prefs.getString("worker", ""), key = prefs.getString("key", "");
+        String fragment = "";
+        if (!worker.isEmpty()) fragment += "worker=" + Uri.encode(worker);
+        if (!key.isEmpty()) fragment += (fragment.isEmpty() ? "" : "&") + "key=" + Uri.encode(key);
+        web.loadUrl(prefs.getString("page", STUDY) + "?app=" + System.currentTimeMillis()
+                + (fragment.isEmpty() ? "" : "#" + fragment));
     }
 
     private void offline() {
@@ -129,12 +141,18 @@ public class MainActivity extends Activity {
         if (data == null || !data.toString().startsWith(HOST + "/hub/")) return false;
         String url = data.toString();
         int hash = url.indexOf('#');
-        prefs.edit()
+        SharedPreferences.Editor e = prefs.edit()
                 .putString("page", hash >= 0 ? url.substring(0, hash) : url)
-                .putBoolean("configured", true)
-                .apply();
-        handler.removeCallbacks(retry);
-        web.loadUrl(url);
+                .putBoolean("configured", true);
+        if (hash >= 0) {
+            // Read the fragment like a query string: worker=…&key=…
+            Uri f = Uri.parse("https://x/?" + url.substring(hash + 1));
+            String worker = f.getQueryParameter("worker"), key = f.getQueryParameter("key");
+            if (worker != null) e.putString("worker", worker.trim());
+            if (key != null) e.putString("key", key.trim());
+        }
+        e.apply();
+        loadPage();
         return true;
     }
 
@@ -145,18 +163,20 @@ public class MainActivity extends Activity {
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(pad, pad / 2, pad, 0);
 
+        final boolean hasKey = !prefs.getString("key", "").isEmpty();
         TextView hint = new TextView(this);
-        hint.setText("Tip: the Amazon Fire TV app on your phone has a keyboard, so you can paste these. "
-                + "Leave them blank to keep what's saved (or to run on demo data).");
+        hint.setText("Tip: the Amazon Fire TV app on your phone has a keyboard, so you can paste these."
+                + (hasKey ? " A key is saved; leave the key blank to keep it." : ""));
         form.addView(hint);
 
         final EditText worker = new EditText(this);
         worker.setHint("Worker URL (https://home-hub.….workers.dev)");
         worker.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        worker.setText(prefs.getString("worker", ""));
         form.addView(worker);
 
         final EditText key = new EditText(this);
-        key.setHint("Hub key");
+        key.setHint(hasKey ? "Hub key (saved)" : "Hub key");
         key.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         form.addView(key);
 
@@ -173,21 +193,30 @@ public class MainActivity extends Activity {
         final int studyId = study.getId();
         form.addView(pages);
 
+        // What the TV reports about its screen, for sorting out sizing problems.
+        final TextView diag = new TextView(this);
+        diag.setTextSize(12);
+        final android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
+        final String screen = "Screen " + dm.widthPixels + "×" + dm.heightPixels + " px, density " + dm.density;
+        diag.setText(screen);
+        form.addView(diag);
+        web.evaluateJavascript("innerWidth+'×'+innerHeight+' @'+devicePixelRatio+(window.visualViewport?', zoom '+visualViewport.scale:'')",
+                value -> diag.setText(screen + " · page " + (value == null ? "?" : value.replace("\"", ""))
+                        + " · app " + BuildConfig.VERSION_NAME));
+
         new AlertDialog.Builder(this)
                 .setTitle("Set up The Study")
                 .setView(form)
                 .setPositiveButton("Save", (d, w) -> {
-                    prefs.edit()
-                            .putString("page", pages.getCheckedRadioButtonId() == studyId ? STUDY : MODERN)
-                            .putBoolean("configured", true)
-                            .apply();
                     String u = worker.getText().toString().trim(), k = key.getText().toString().trim();
-                    String fragment = null;
-                    if (!u.isEmpty() || !k.isEmpty()) {
-                        fragment = (u.isEmpty() ? "" : "worker=" + Uri.encode(u)) + (u.isEmpty() || k.isEmpty() ? "" : "&")
-                                + (k.isEmpty() ? "" : "key=" + Uri.encode(k));
-                    }
-                    loadPage(fragment);
+                    if (!u.isEmpty() && !u.startsWith("http")) u = "https://" + u; // "home-hub.x.workers.dev" works too
+                    SharedPreferences.Editor e = prefs.edit()
+                            .putString("page", pages.getCheckedRadioButtonId() == studyId ? STUDY : MODERN)
+                            .putString("worker", u)
+                            .putBoolean("configured", true);
+                    if (!k.isEmpty()) e.putString("key", k);
+                    e.apply();
+                    loadPage();
                 })
                 .setNegativeButton("Cancel", (d, w) -> prefs.edit().putBoolean("configured", true).apply())
                 .show();

@@ -27,6 +27,10 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig true // the setup screen shows the app's version
+    }
+
     buildTypes {
         release {
             minifyEnabled false
