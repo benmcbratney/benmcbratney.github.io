@@ -4,7 +4,7 @@ A Skylight-style wall display — calendar, chores, groceries, weather — built
 old iPad Air 2 (iPadOS 15) hanging on the wall. No subscription, no app store.
 
 - **Front end** (`index.html`, `hub.css`, `hub.js`): served by GitHub Pages at
-  `https://benmcbratney.com/hub/`. Plain JS, no build step.
+  `https://benmcbratney.github.io/hub/`. Plain JS, no build step.
 - **Backend** (`worker/worker.js`): a free Cloudflare Worker that holds the secrets
   and turns calendar feeds into simple JSON. This repo is public, so secrets never
   go in it.
@@ -51,7 +51,7 @@ With no backend configured the hub runs on demo data, so you can try it right aw
 
 1. Open this link once in Safari on the iPad (fill in your values) — it saves the
    settings on the iPad and removes them from the address bar:
-   `https://benmcbratney.com/hub/#worker=https://home-hub.YOURNAME.workers.dev&key=YOUR_HUB_KEY`
+   `https://benmcbratney.github.io/hub/#worker=https://home-hub.YOURNAME.workers.dev&key=YOUR_HUB_KEY`
 2. Share → **Add to Home Screen**, then launch it from the home screen icon (full screen, no Safari bars).
 3. Settings → Display & Brightness → **Auto-Lock: Never**.
 4. Settings → Accessibility → **Guided Access: On**. Open Home Hub, triple-click the
@@ -124,7 +124,7 @@ app's **User Management** in the Spotify dashboard (new apps start in developmen
 
 ## Office TV (Fire TV)
 
-A second, look-only board at `https://benmcbratney.com/hub/tv/` for the Fire TV in the
+A second, look-only board at `https://benmcbratney.github.io/hub/tv/` for the Fire TV in the
 office, built for a 1080p/4K TV read from the desk. It uses the same Worker:
 
 - **Clock and weather:** current conditions, sunset (sunrise after dark), a 5-day strip, and the same
@@ -151,14 +151,14 @@ calendar: the same *Secret address in iCal format*, if your company allows it). 
 TV shows every calendar. The iPad isn't affected.
 
 **Settings** come from a one-time link, like the iPad's (there's no keyboard worth typing on):
-`https://benmcbratney.com/hub/tv/#worker=https://home-hub.YOURNAME.workers.dev&key=YOUR_HUB_KEY`.
+`https://benmcbratney.github.io/hub/tv/#worker=https://home-hub.YOURNAME.workers.dev&key=YOUR_HUB_KEY`.
 Optional extras: `&work=8-18` (timeline hours), `&on=7-20` (when the screen is lit),
 `&place=…&lat=…&lon=…` (weather location; defaults to Lake Forest). Without a Worker it
 runs on demo data.
 
 ## The Study (Fire TV, retro)
 
-A second take on the office TV at `https://benmcbratney.com/hub/study/`, dressed for a
+A second take on the office TV at `https://benmcbratney.github.io/hub/study/`, dressed for a
 room with a mahogany bookcase wall: the same data as the Office TV page, drawn as things
 you'd find in an old study. It shares the Office TV's settings, so a TV that's already set
 up just needs the new address (or use the same `#worker=…&key=…` link with `/study/`).
