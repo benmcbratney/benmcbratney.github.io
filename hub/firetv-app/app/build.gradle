@@ -1,0 +1,47 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.benmcbratney.officetv"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.benmcbratney.officetv"
+        minSdk 26 // Fire OS 6 and up (the 4-Series runs Fire OS 7, which is Android 9)
+        targetSdk 34
+        // Each GitHub build gets a higher number, so a new APK installs over the old one.
+        versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1") as int)
+        versionName "1." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+    }
+
+    // A fixed key that lives in the repo, so every build is signed the same way and
+    // updates install over the old app. It only proves "built from this repo", which is
+    // all a sideloaded app needs.
+    signingConfigs {
+        release {
+            storeFile rootProject.file("officetv.keystore")
+            storePassword "officetv"
+            keyAlias "officetv"
+            keyPassword "officetv"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    // Warnings shouldn't block a personal sideloaded build.
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}

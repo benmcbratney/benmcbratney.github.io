@@ -577,7 +577,7 @@ function parseFeed(xml, url) {
 async function feedSection(urls) {
   const lists = await Promise.all(urls.map(async (u) => {
     try {
-      const res = await fetch(u, { headers: { "User-Agent": "HomeHub/1.0 (+https://benmcbratney.com/hub/)" }, cf: { cacheTtl: 900, cacheEverything: true } });
+      const res = await fetch(u, { headers: { "User-Agent": "HomeHub/1.0 (+https://benmcbratney.github.io/hub/)" }, cf: { cacheTtl: 900, cacheEverything: true } });
       return res.ok ? parseFeed(await res.text(), u) : [];
     } catch { return []; }
   }));

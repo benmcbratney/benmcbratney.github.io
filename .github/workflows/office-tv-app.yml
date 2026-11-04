@@ -1,0 +1,54 @@
+# Builds the Fire TV app (hub/firetv-app) and, on master, publishes it as the
+# "office-tv" release so the TV can download it from a fixed address:
+#   https://github.com/benmcbratney/benmcbratney.github.io/releases/download/office-tv/office-tv.apk
+name: Office TV app
+
+on:
+  push:
+    paths:
+      - "hub/firetv-app/**"
+      - ".github/workflows/office-tv-app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build
+        working-directory: hub/firetv-app
+        run: gradle --no-daemon assembleRelease
+
+      - name: Name the APK
+        run: cp hub/firetv-app/app/build/outputs/apk/release/app-release.apk office-tv.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: office-tv
+          path: office-tv.apk
+
+      - name: Publish the release
+        if: github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="The Study / Office TV app for Fire TV, build ${{ github.run_number }} ($(git rev-parse --short HEAD)). Install steps: hub/README.md."
+          if gh release view office-tv >/dev/null 2>&1; then
+            gh release edit office-tv --notes "$notes"
+          else
+            gh release create office-tv --title "Office TV app" --notes "$notes" --target "$GITHUB_SHA"
+          fi
+          gh release upload office-tv office-tv.apk --clobber
