@@ -1010,8 +1010,11 @@ function parseIcs(text) {
         if (type !== "INDIVIDUAL" && type !== "UNKNOWN") break;
         const declined = (params.PARTSTAT || "").toUpperCase() === "DECLINED";
         const email = value.replace(/^mailto:/i, "").trim().toLowerCase();
+        const name = unescape(params.CN || "") || email;
+        // Meeting bots ("Fireflies.ai Notetaker", "Read AI Notetaker", …) aren't people.
+        if (/note\s?taker/i.test(name + " " + email)) break;
         const list = declined ? "declined" : "attendees";
-        (cur[list] = cur[list] || []).push({ name: unescape(params.CN || "") || email, email });
+        (cur[list] = cur[list] || []).push({ name, email });
         break;
       }
     }

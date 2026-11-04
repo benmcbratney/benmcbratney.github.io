@@ -182,7 +182,7 @@ up just needs the new address (or use the same `#worker=…&key=…` link with `
   phase in the corner. A red stamp appears when rain or snow is due within the hour.
 - **Departures board:** today's meetings on a split-flap board like the old train-station
   boards (the letters riffle when they change), with who's in each one by first name (cut off
-  when there's no more room; you, people who declined and rooms are left out). A meeting
+  when there's no more room; you, people who declined, rooms and notetaker bots are left out). A meeting
   everyone else declined says so in amber with a "!", here and in the countdown. Status reads
   DEPARTED, NOW, BOARDING (last 5 minutes), FINAL (last minute) or IN 42 MIN. The big counter
   above counts down to the next one in hours and minutes, with a lamp that blinks amber when
