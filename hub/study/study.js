@@ -28,6 +28,11 @@
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     history.replaceState(null, "", location.pathname);
   })();
+  // A setup link opened on top of the page only changes the #fragment, which doesn't
+  // reload the page; reload so the settings above are read (the Fire TV app does this).
+  window.addEventListener("hashchange", function () {
+    if (/(^#|&)(worker|key)=/.test(location.hash)) location.reload();
+  });
 
   var settings = loadSettings();
   var demo = !settings.workerUrl;
@@ -111,13 +116,19 @@
     }
   }
 
+  // Checked every second too: a TV's browser can report its real size late, without a resize event.
+  var fitted = "";
   function fit() {
-    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-    var x = (window.innerWidth - 1920 * s) / 2, y = (window.innerHeight - 1080 * s) / 2;
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h || fitted === w + "x" + h) return;
+    fitted = w + "x" + h;
+    var s = Math.min(w / 1920, h / 1080);
+    var x = (w - 1920 * s) / 2, y = (h - 1080 * s) / 2;
     $("stage").style.transform = "translate(" + x + "px," + y + "px) scale(" + s + ")";
   }
   window.addEventListener("resize", fit);
   fit();
+  setInterval(fit, 1000);
 
   // ------------------------------------------------------------- status line
 
