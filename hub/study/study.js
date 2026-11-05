@@ -947,8 +947,8 @@
         var when = gameWhen(g.start, now).split(" ")[0]; // a final just needs the day
         if (when !== "Today") res.appendChild(el("span", "sb-when", when));
         res.appendChild(el("span", "wl " + (g.won ? "w" : "l"), g.won ? "W" : g.won === false ? "L" : "T"));
-        res.appendChild(tiles(g.usScore));
-        res.appendChild(tiles(g.themScore));
+        // Finals are plain lettering, like the rest of the row; tiles are for live games.
+        res.appendChild(el("span", "sb-final", (g.usScore != null ? g.usScore : "0") + "–" + (g.themScore != null ? g.themScore : "0")));
       } else {
         res.appendChild(el("span", null, gameWhen(g.start, now)));
         if (g.tv) res.appendChild(el("span", "sb-when", g.tv));
