@@ -321,6 +321,7 @@ body::after {
 .sb-res .wl.w { color: #fff; }
 .sb-res .wl.l { color: #b9c8b3; }
 .sb-when { color: #cfe0c8; }
+.sb-final { font-variant-numeric: tabular-nums; }
 .sb-sub { font: 500 18px/1 var(--block); letter-spacing: 3px; text-transform: uppercase; color: #a8c0a0; margin: 4px 0 2px; }
 
 .sb-live { background: rgba(0, 0, 0, 0.16); border-radius: 4px; padding: 10px 14px 12px; margin-bottom: 8px; }
