@@ -941,13 +941,13 @@
 
   // Big "What to wear" card in the right column, sized for kids across the room.
   // On Bears game days the shirt becomes a jersey: navy, orange-and-white sleeve
-  // stripes, a white number. Drawn here (no team marks), sized like the emoji tiles.
+  // stripes, a white 18. Drawn here (no team marks), sized like the emoji tiles.
   var JERSEY_SVG = '<svg viewBox="0 0 64 64" class="wear-svg">' +
     '<path d="M20 7L26 4Q32 10 38 4L44 7L59 15L54 28L47 25V59H17V25L10 28L5 15Z" fill="#0b162a" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>' +
     '<path d="M8 19.5L14.5 22.6L13.4 25.4L6.9 22.4Z M56 19.5L49.5 22.6L50.6 25.4L57.1 22.4Z" fill="#c83803" stroke="#fff" stroke-width="0.9"/>' +
     '<path d="M26 4Q32 10 38 4L36.4 7.5Q32 13 27.6 7.5Z" fill="#fff"/><path d="M28.4 7Q32 11.2 35.6 7" fill="none" stroke="#c83803" stroke-width="1.4"/>' +
-    '<text x="32" y="47" text-anchor="middle" font-size="21" font-weight="900" fill="#fff" stroke="#c83803" stroke-width="1.1" ' +
-    'font-family="Futura-CondensedExtraBold, Futura, Impact, Arial Black, sans-serif">1</text></svg>';
+    '<text x="32" y="47" text-anchor="middle" font-size="20" font-weight="900" fill="#fff" stroke="#c83803" stroke-width="1.1" ' +
+    'letter-spacing="-0.5" font-family="Futura-CondensedExtraBold, Futura, Impact, Arial Black, sans-serif">18</text></svg>';
 
   function renderWearCard() {
     var wear = outfit(new Date());
