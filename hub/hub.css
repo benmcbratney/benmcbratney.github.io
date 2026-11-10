@@ -975,71 +975,186 @@ body.july4 {
 }
 
 /* ---------------------------------------------------------------- skins */
-/* hub.js puts one of skin-glass, skin-paper, skin-bento or skin-soft on <body>, one
+/* hub.js puts one of skin-glass, skin-cork, skin-bento or skin-bauhaus on <body>, one
    per day in rotation, and "evening" once the sun is down. Glass is the look above;
    the others swap the weather photo for a plain page and restyle the same layout. */
 
 /* Shared by the plain-page skins */
-body.skin-paper .bg-layer, body.skin-bento .bg-layer, body.skin-soft .bg-layer,
-body.skin-paper .backdrop::after, body.skin-bento .backdrop::after, body.skin-soft .backdrop::after { display: none; }
-body.skin-paper .backdrop, body.skin-bento .backdrop, body.skin-soft .backdrop { background: var(--page); }
-body.skin-paper, body.skin-bento, body.skin-soft { --photo-shadow: none; }
-body.skin-paper .card, body.skin-bento .card, body.skin-soft .card,
-body.skin-paper .clock-unit, body.skin-bento .clock-unit, body.skin-soft .clock-unit,
-body.skin-paper .weather, body.skin-bento .weather, body.skin-soft .weather {
+body.skin-cork .bg-layer, body.skin-bento .bg-layer, body.skin-bauhaus .bg-layer,
+body.skin-cork .backdrop::after, body.skin-bento .backdrop::after, body.skin-bauhaus .backdrop::after { display: none; }
+body.skin-cork .backdrop, body.skin-bento .backdrop, body.skin-bauhaus .backdrop { background: var(--page); }
+body.skin-cork, body.skin-bento, body.skin-bauhaus { --photo-shadow: none; }
+body.skin-cork .card, body.skin-bento .card, body.skin-bauhaus .card,
+body.skin-cork .clock-unit, body.skin-bento .clock-unit, body.skin-bauhaus .clock-unit,
+body.skin-cork .weather, body.skin-bento .weather, body.skin-bauhaus .weather {
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
-body.skin-paper .cd-pill, body.skin-bento .cd-pill, body.skin-soft .cd-pill,
-body.skin-paper .timer-btn, body.skin-bento .timer-btn, body.skin-soft .timer-btn {
+body.skin-cork .cd-pill, body.skin-bento .cd-pill, body.skin-bauhaus .cd-pill,
+body.skin-cork .timer-btn, body.skin-bento .timer-btn, body.skin-bauhaus .timer-btn {
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 
-/* ---- Paper: light and minimal. Warm off-white page, white cards, a big thin clock. */
+/* ---- Corkboard: the kitchen bulletin board. Cork in a wood frame, pinned index cards
+   and sticky notes at slight angles, headings in marker, the clock on a sticky note. */
 
-body.skin-paper {
-  --page: #f3eee6;
-  --on-photo: #221d18; --on-photo-muted: #857a6e;
-  --paper-card: #fffdfa; --paper-line: #ece4d8; --paper-shadow: 0 1px 2px rgba(60, 40, 20, 0.06), 0 10px 30px rgba(60, 40, 20, 0.08);
-  font-family: "Avenir Next", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+body.skin-cork {
+  --page: #c49a63;
+  --on-photo: #2a2622; --on-photo-muted: #6b6258;
+  --accent: #d2403a; --accent-soft: rgba(210, 64, 58, 0.14);
+  --marker: "Marker Felt", "Chalkboard SE", "Comic Sans MS", cursive;
+  --pin-shadow: 0 2px 3px rgba(0, 0, 0, 0.25), 0 10px 18px rgba(60, 30, 5, 0.28);
 }
-body.skin-paper.evening {
-  --page: #1d1a17;
-  --on-photo: #f3ece2; --on-photo-muted: #a69c90;
-  --paper-card: #2a2622; --paper-line: #3a3530; --paper-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.3);
+/* Cork: speckles at a few odd sizes over a warm base, inside a wooden frame. */
+body.skin-cork .backdrop {
+  background:
+    radial-gradient(rgba(95, 55, 20, 0.35) 1px, transparent 1.6px) 0 0 / 7px 7px,
+    radial-gradient(rgba(255, 228, 185, 0.3) 1px, transparent 1.7px) 3px 4px / 11px 11px,
+    radial-gradient(rgba(120, 72, 30, 0.3) 1.6px, transparent 2.2px) 5px 2px / 13px 13px,
+    radial-gradient(rgba(70, 40, 12, 0.22) 2px, transparent 2.8px) 9px 6px / 23px 23px,
+    linear-gradient(135deg, #cfa56e, #b98a52);
+  box-shadow: inset 0 0 0 12px #7a4b24, inset 0 0 0 14px #5c3417, inset 0 0 40px 14px rgba(60, 30, 5, 0.35);
 }
-body.skin-paper .card {
-  --ink: var(--on-photo); --muted: var(--on-photo-muted); --line: var(--paper-line);
-  --control-bg: var(--page); --accent-soft: rgba(200, 85, 61, 0.14);
-  background: var(--paper-card); border: 0; border-radius: 24px; box-shadow: var(--paper-shadow);
+body.skin-cork.evening .backdrop {
+  background:
+    radial-gradient(rgba(40, 22, 8, 0.4) 1px, transparent 1.6px) 0 0 / 7px 7px,
+    radial-gradient(rgba(255, 210, 150, 0.12) 1px, transparent 1.7px) 3px 4px / 11px 11px,
+    radial-gradient(rgba(40, 22, 8, 0.35) 1.6px, transparent 2.2px) 5px 2px / 13px 13px,
+    radial-gradient(ellipse at 50% 30%, #8a6440, #4a3018);
+  box-shadow: inset 0 0 0 12px #3e230e, inset 0 0 0 14px #2a1608, inset 0 0 60px 20px rgba(0, 0, 0, 0.45);
 }
-body.skin-paper .card h2 { color: var(--accent); letter-spacing: 1.6px; }
-body.skin-paper .clock-unit, body.skin-paper .weather {
-  background: var(--paper-card); border: 0; border-radius: 24px; box-shadow: var(--paper-shadow);
+/* Index cards, each pinned at its own slight angle. */
+body.skin-cork .card {
+  --ink: #2a2622; --muted: #6b6258; --line: rgba(80, 110, 170, 0.22); --control-bg: rgba(80, 110, 170, 0.08);
+  position: relative; background: #fffdf5; border: 0; border-radius: 3px; box-shadow: var(--pin-shadow);
 }
-/* The flip clock becomes plain, thin numerals. */
-body.skin-paper .flip, body.skin-paper .fl-top, body.skin-paper .fl-bot { background: transparent; box-shadow: none; }
-body.skin-paper .flip { color: var(--on-photo); font-weight: 300; min-width: 1.2em; padding: 0 0.05em; }
-body.skin-paper .flip::after { display: none; }
-/* A thin colon between the numbers, and AM/PM tucked up beside the minutes. */
-body.skin-paper .time { gap: 0.18em; }
-body.skin-paper .flip-h::after {
-  display: block; content: ":"; left: auto; right: -0.2em; top: -0.06em; height: auto; margin: 0;
-  background: none; color: var(--on-photo-muted); font-weight: 200;
+body.skin-cork .agenda { transform: rotate(-0.6deg); }
+body.skin-cork .scores { transform: rotate(0.5deg); background: #eef5ff; }
+body.skin-cork .nest { transform: rotate(0.7deg); background: #f3e3c3; }
+body.skin-cork .wear { transform: rotate(-0.5deg); background: #fff1a3; }
+body.skin-cork .spotify { transform: rotate(0.3deg); }
+/* Red push pins; the music card is taped up instead. */
+body.skin-cork .card::before {
+  content: ""; position: absolute; top: -7px; left: 50%; margin-left: -8px; width: 16px; height: 16px; border-radius: 50%; z-index: 2;
+  background: radial-gradient(circle at 35% 35%, #ff8a80, #d2403a 55%, #8e1f1a);
+  box-shadow: 1px 3px 3px rgba(0, 0, 0, 0.35);
 }
-body.skin-paper .flip-ampm { color: var(--on-photo-muted); left: 0; bottom: -0.2em; font-size: 0.13em; letter-spacing: 0.12em; }
-body.skin-paper .tile { background: none; box-shadow: none; color: var(--on-photo-muted); width: auto; font-weight: 600; letter-spacing: 1px; }
-body.skin-paper .tile::after { display: none; }
-body.skin-paper .tile-word { gap: 0; }
-body.skin-paper .wx-strip { border-left-color: var(--paper-line); }
-body.skin-paper .fc-pop { color: #2f7bd6; }
-body.skin-paper .cd-pill { background: var(--paper-card); color: var(--on-photo); box-shadow: var(--paper-shadow); }
-body.skin-paper .cd-pill.today { background: var(--accent); color: #fff; }
-body.skin-paper .timer-btn { background: var(--paper-card); color: var(--on-photo); box-shadow: var(--paper-shadow); }
-body.skin-paper .pill-count { background: var(--paper-line); color: var(--on-photo); }
-body.skin-paper .list-pill.has-items .pill-count { background: var(--accent); color: #fff; }
-body.skin-paper .wk-col { background: var(--page); }
-body.skin-paper:not(.evening) .status .warn, body.skin-soft:not(.evening) .status .warn { color: #b3401f; }
-body.skin-paper .wk-col.today { background: var(--paper-card); }
+body.skin-cork .spotify::before {
+  width: 90px; height: 22px; top: -10px; margin-left: -45px; border-radius: 1px; transform: rotate(-3deg);
+  background: rgba(240, 228, 196, 0.85); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+/* Headings in marker, with a red rule under them like an index card. */
+body.skin-cork .card h2 {
+  font-family: var(--marker); font-size: 23px; font-weight: 400; text-transform: none; letter-spacing: 0;
+  color: #24408e; padding-bottom: 4px; border-bottom: 2px solid rgba(210, 64, 58, 0.55);
+}
+/* The clock is a big yellow sticky note; the weather is a pinned card. */
+body.skin-cork .clock-unit {
+  position: relative; background: #ffe66d; border: 0; border-radius: 2px; transform: rotate(-2deg);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 12px 20px rgba(60, 30, 5, 0.3);
+}
+body.skin-cork .clock-unit::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 18px; background: rgba(0, 0, 0, 0.05);
+}
+body.skin-cork .weather {
+  position: relative; background: #fffdf5; border: 0; border-radius: 3px; transform: rotate(0.6deg);
+  box-shadow: var(--pin-shadow);
+}
+body.skin-cork .weather::before {
+  content: ""; position: absolute; top: -7px; left: 50%; margin-left: -8px; width: 16px; height: 16px; border-radius: 50%; z-index: 2;
+  background: radial-gradient(circle at 35% 35%, #9fd0ff, #2f74d0 55%, #173f7a); box-shadow: 1px 3px 3px rgba(0, 0, 0, 0.35);
+}
+body.skin-cork .weather { color: var(--on-photo); }
+body.skin-cork .wx-strip { border-left: 2px dashed rgba(80, 110, 170, 0.35); }
+body.skin-cork .fc-pop { color: #2f74d0; }
+body.skin-cork .flip, body.skin-cork .fl-top, body.skin-cork .fl-bot { background: transparent; box-shadow: none; }
+body.skin-cork .flip { color: #2a2622; font-family: var(--marker); font-weight: 400; }
+body.skin-cork .flip::after { display: none; }
+body.skin-cork .flip-ampm { color: #6b6258; font-family: var(--marker); font-weight: 400; }
+body.skin-cork .tile { background: none; box-shadow: none; color: #d2403a; font-family: var(--marker); font-weight: 400; width: auto; font-size: 22px; }
+body.skin-cork .tile::after { display: none; }
+body.skin-cork .tile-word { gap: 0; }
+/* Countdowns and footer buttons as little paper tags. */
+body.skin-cork .cd-pill { background: #fffdf5; color: #2a2622; border-radius: 3px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); }
+body.skin-cork .cd-pill.today { background: #ffe66d; }
+body.skin-cork .timer-btn { background: #fffdf5; color: #2a2622; border-radius: 4px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); }
+body.skin-cork .pill-count { background: #e9e1cf; color: #2a2622; }
+body.skin-cork .list-pill.has-items .pill-count { background: var(--accent); color: #fff; }
+body.skin-cork .status { color: #3a2a18; text-shadow: 0 1px 0 rgba(255, 230, 190, 0.5); }
+body.skin-cork.evening .status { color: #f3e2c6; text-shadow: none; }
+body.skin-cork:not(.evening) .status .warn { color: #8e1f1a; }
+body.skin-cork .gear { color: #3a2a18; text-shadow: none; }
+body.skin-cork.evening .gear { color: #f3e2c6; }
+body.skin-cork .sm-tile.live { background: rgba(210, 64, 58, 0.14); }
+body.skin-cork .wk-col { background: rgba(80, 110, 170, 0.06); }
+body.skin-cork .wk-col.today { background: #fff6c4; }
+/* After dark, the cards dim like a room lit by one lamp. */
+body.skin-cork.evening .card, body.skin-cork.evening .clock-unit, body.skin-cork.evening .weather,
+body.skin-cork.evening .cd-pill, body.skin-cork.evening .timer-btn { filter: brightness(0.86) sepia(0.12); }
+
+/* ---- Bauhaus: a mid-century poster. Cream page, big flat shapes, square black-
+   outlined cards with color-block labels, Futura, and a mustard clock tile. */
+
+body.skin-bauhaus {
+  --page: #f1e8d6;
+  --on-photo: #1d1d1b; --on-photo-muted: #57534a;
+  --bh-ink: #1d1d1b; --bh-cream: #fbf6ea;
+  --bh-coral: #e4572e; --bh-mustard: #f2b134; --bh-teal: #1f7a7a; --bh-navy: #1d3557;
+  --accent: var(--bh-coral); --accent-soft: rgba(228, 87, 46, 0.14);
+  --bh-font: "Futura", "Avenir Next", "Century Gothic", sans-serif;
+}
+body.skin-bauhaus.evening { --page: #1f2a33; --on-photo: #f1e8d6; --on-photo-muted: #b9b2a3; }
+/* The shapes (built in hub.js) sit behind the panels and peek out around them. */
+.bh-shape { position: absolute; }
+.bh-circle { top: -140px; right: -120px; width: 520px; height: 520px; border-radius: 50%; background: var(--bh-coral); }
+.bh-half { bottom: -210px; left: -60px; width: 460px; height: 460px; border-radius: 50%; background: var(--bh-mustard);
+  -webkit-clip-path: inset(0 0 50% 0); clip-path: inset(0 0 50% 0); }
+.bh-quarter { bottom: -260px; right: -260px; width: 560px; height: 560px; border-radius: 50%; background: var(--bh-teal); }
+.bh-tri { top: 38%; left: -40px; width: 0; height: 0; border-left: 110px solid var(--bh-navy); border-top: 90px solid transparent; border-bottom: 90px solid transparent; }
+.bh-dot { top: 46%; right: 47%; width: 70px; height: 70px; border-radius: 50%; background: var(--bh-ink); }
+body.skin-bauhaus.evening .bh-shape { opacity: 0.45; }
+body.skin-bauhaus.evening .bh-dot { background: var(--bh-cream); opacity: 0.25; }
+/* Flat, square, outlined. */
+body.skin-bauhaus .card {
+  --ink: var(--bh-ink); --muted: #57534a; --line: rgba(29, 29, 27, 0.16); --control-bg: rgba(29, 29, 27, 0.06);
+  background: var(--bh-cream); border: 3px solid var(--bh-ink); border-radius: 0; box-shadow: 6px 6px 0 rgba(29, 29, 27, 0.9);
+}
+/* Each card's title is a color block bleeding off its left edge. */
+body.skin-bauhaus .card h2 {
+  align-self: flex-start; margin-left: -18px; padding: 5px 14px 5px 18px; background: var(--bh-coral); color: #fff;
+  font-family: var(--bh-font); font-weight: 700; font-size: 15px; letter-spacing: 2px;
+}
+body.skin-bauhaus .scores h2 { background: var(--bh-teal); }
+body.skin-bauhaus .nest h2 { background: var(--bh-navy); }
+body.skin-bauhaus .wear h2 { background: var(--bh-mustard); color: var(--bh-ink); }
+body.skin-bauhaus .clock-unit, body.skin-bauhaus .weather {
+  border: 3px solid var(--bh-ink); border-radius: 0; box-shadow: 6px 6px 0 rgba(29, 29, 27, 0.9);
+}
+body.skin-bauhaus .clock-unit { background: var(--bh-mustard); }
+body.skin-bauhaus .weather { background: var(--bh-cream); color: var(--bh-ink); --on-photo: var(--bh-ink); --on-photo-muted: #57534a; }
+body.skin-bauhaus .wx-strip { border-left: 3px solid var(--bh-ink); }
+body.skin-bauhaus .wx-temp, body.skin-bauhaus .fc-name { font-family: var(--bh-font); }
+body.skin-bauhaus .fc-pop { color: var(--bh-teal); font-weight: 700; }
+/* Huge geometric numerals; the date on black squares. */
+body.skin-bauhaus .flip, body.skin-bauhaus .fl-top, body.skin-bauhaus .fl-bot { background: transparent; box-shadow: none; }
+body.skin-bauhaus .flip { color: var(--bh-ink); font-family: var(--bh-font); font-weight: 700; letter-spacing: -0.03em; }
+body.skin-bauhaus .flip::after { display: none; }
+body.skin-bauhaus .flip-ampm { color: var(--bh-ink); }
+body.skin-bauhaus .tile { background: var(--bh-ink); color: var(--bh-cream); border-radius: 0; box-shadow: none; font-family: var(--bh-font); }
+body.skin-bauhaus .tile::after { display: none; }
+body.skin-bauhaus .cd-pill { background: var(--bh-cream); color: var(--bh-ink); border: 2px solid var(--bh-ink); border-radius: 0; line-height: 18px; }
+body.skin-bauhaus .cd-pill.today { background: var(--bh-coral); color: #fff; }
+body.skin-bauhaus .precip-alert { border-radius: 0; }
+body.skin-bauhaus .timer-btn { background: var(--bh-cream); color: var(--bh-ink); border: 2px solid var(--bh-ink); border-radius: 0; box-shadow: 3px 3px 0 var(--bh-ink); }
+body.skin-bauhaus .pill-count { background: var(--bh-ink); color: var(--bh-cream); border-radius: 0; }
+body.skin-bauhaus .list-pill.has-items .pill-count { background: var(--bh-coral); color: #fff; }
+body.skin-bauhaus:not(.evening) .status .warn { color: #b3401f; }
+body.skin-bauhaus .event.now { background: rgba(242, 177, 52, 0.3); border-radius: 0; }
+body.skin-bauhaus .sm-tile { border-radius: 0; }
+body.skin-bauhaus .sm-tile.live { background: rgba(228, 87, 46, 0.16); }
+body.skin-bauhaus .t-ctrl button { border: 2px solid var(--bh-ink); }
+body.skin-bauhaus .wk-col { background: rgba(29, 29, 27, 0.04); border-radius: 0; }
+body.skin-bauhaus .wk-col.today { background: rgba(242, 177, 52, 0.25); box-shadow: inset 0 0 0 2px var(--bh-ink); }
+body.skin-bauhaus.evening .card, body.skin-bauhaus.evening .clock-unit, body.skin-bauhaus.evening .weather { filter: brightness(0.88); }
 
 /* ---- Bento: a dark page with every tile in its own solid color. */
 
@@ -1083,54 +1198,6 @@ body.skin-bento .wk-col.today .wk-dow { color: #fff; }
 /* After dark the colors deepen a little so the wall isn't too bright. */
 body.skin-bento.evening .card, body.skin-bento.evening .clock-unit, body.skin-bento.evening .weather { filter: brightness(0.82); }
 
-/* ---- Soft: "soft UI". Raised panels the same color as the page, with rounded type. */
-
-body.skin-soft {
-  --page: #e3e8ef;
-  --on-photo: #2c3340; --on-photo-muted: #6f7a8b;
-  --soft-hi: #ffffff; --soft-lo: #bec6d1;
-  --soft-raised: 8px 8px 18px var(--soft-lo), -8px -8px 18px var(--soft-hi);
-  --soft-small: 4px 4px 9px var(--soft-lo), -4px -4px 9px var(--soft-hi);
-  --soft-pressed: inset 3px 3px 7px var(--soft-lo), inset -3px -3px 7px var(--soft-hi);
-  --accent: #5a72e8; --accent-soft: rgba(90, 114, 232, 0.16);
-  font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-}
-body.skin-soft.evening {
-  --page: #252a33;
-  --on-photo: #e4e8ef; --on-photo-muted: #97a1b2;
-  --soft-hi: #2f3540; --soft-lo: #1a1e25;
-  --accent: #8a9bff; --accent-soft: rgba(138, 155, 255, 0.18);
-}
-body.skin-soft .card {
-  --ink: var(--on-photo); --muted: var(--on-photo-muted); --line: rgba(120, 132, 150, 0.22);
-  --control-bg: var(--page);
-  background: var(--page); border: 0; border-radius: 26px; box-shadow: var(--soft-raised);
-}
-body.skin-soft .card h2 { color: var(--accent); }
-body.skin-soft .clock-unit, body.skin-soft .weather { background: var(--page); border: 0; border-radius: 26px; box-shadow: var(--soft-raised); }
-/* Clock digits sit in pressed-in wells. */
-body.skin-soft .flip { background: var(--page); color: var(--on-photo); box-shadow: var(--soft-pressed); font-weight: 600; }
-body.skin-soft .fl-top, body.skin-soft .fl-bot { background: transparent; }
-body.skin-soft .fl-flap { background: var(--page); }
-body.skin-soft .flip::after { left: 12%; right: 12%; height: 1px; background: rgba(120, 132, 150, 0.22); }
-body.skin-soft .flip-ampm { color: var(--on-photo-muted); }
-body.skin-soft .tile { background: var(--page); color: var(--on-photo); box-shadow: var(--soft-small); }
-body.skin-soft .tile::after { display: none; }
-body.skin-soft .wx-strip { border-left-color: rgba(120, 132, 150, 0.25); }
-body.skin-soft .fc-pop { color: #3d7be0; }
-body.skin-soft .sm-tile { box-shadow: var(--soft-pressed); }
-body.skin-soft .sm-tile.live { background: rgba(200, 56, 40, 0.1); }
-body.skin-soft .t-ctrl button { border: 0; box-shadow: var(--soft-small); }
-body.skin-soft .t-ctrl button:active { box-shadow: var(--soft-pressed); }
-body.skin-soft .cd-pill { background: var(--page); color: var(--on-photo); box-shadow: var(--soft-small); }
-body.skin-soft .cd-pill.today { background: var(--accent); color: #fff; }
-body.skin-soft .timer-btn { background: var(--page); color: var(--on-photo); box-shadow: var(--soft-small); }
-body.skin-soft .timer-btn:active { box-shadow: var(--soft-pressed); }
-body.skin-soft .pill-count { background: rgba(120, 132, 150, 0.2); color: var(--on-photo); }
-body.skin-soft .list-pill.has-items .pill-count { background: var(--accent); color: #fff; }
-body.skin-soft .wk-col { background: var(--page); box-shadow: var(--soft-pressed); }
-body.skin-soft .wk-col.today { box-shadow: var(--soft-small), inset 0 0 0 2px var(--accent); }
-
 /* ---------------------------------------------------------------- kids' skins */
 /* Saturdays, taking turns: skin-hero and skin-princess (see the skins section in
    hub.js). Like Paper/Bento/Soft they use a plain page instead of the photo; their
@@ -1145,7 +1212,7 @@ body.skin-hero .weather, body.skin-princess .weather,
 body.skin-hero .cd-pill, body.skin-princess .cd-pill,
 body.skin-hero .timer-btn, body.skin-princess .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .sk-scene, .sk-front { display: none; }
-body.skin-hero .sk-hero, body.skin-princess .sk-princess { display: block; }
+body.skin-hero .sk-hero, body.skin-princess .sk-princess, body.skin-bauhaus .sk-bauhaus { display: block; }
 .sk-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .sk-front { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
 
