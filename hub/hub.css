@@ -972,3 +972,160 @@ body.july4 {
   flex: 1; height: 26px; border-radius: 0 0 50% 50% / 0 0 100% 100%; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
   background: radial-gradient(ellipse 50% 100% at 50% 0, #1e3a8a 0 34%, #fff 34% 52%, #c81e2c 52% 70%, #fff 70% 86%, #c81e2c 86%);
 }
+
+/* ---------------------------------------------------------------- skins */
+/* hub.js puts one of skin-glass, skin-paper, skin-bento or skin-soft on <body>, one
+   per day in rotation, and "evening" once the sun is down. Glass is the look above;
+   the others swap the weather photo for a plain page and restyle the same layout. */
+
+/* Shared by the plain-page skins */
+body.skin-paper .bg-layer, body.skin-bento .bg-layer, body.skin-soft .bg-layer,
+body.skin-paper .backdrop::after, body.skin-bento .backdrop::after, body.skin-soft .backdrop::after { display: none; }
+body.skin-paper .backdrop, body.skin-bento .backdrop, body.skin-soft .backdrop { background: var(--page); }
+body.skin-paper, body.skin-bento, body.skin-soft { --photo-shadow: none; }
+body.skin-paper .card, body.skin-bento .card, body.skin-soft .card,
+body.skin-paper .clock-unit, body.skin-bento .clock-unit, body.skin-soft .clock-unit,
+body.skin-paper .weather, body.skin-bento .weather, body.skin-soft .weather {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+body.skin-paper .cd-pill, body.skin-bento .cd-pill, body.skin-soft .cd-pill,
+body.skin-paper .timer-btn, body.skin-bento .timer-btn, body.skin-soft .timer-btn {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+
+/* ---- Paper: light and minimal. Warm off-white page, white cards, a big thin clock. */
+
+body.skin-paper {
+  --page: #f3eee6;
+  --on-photo: #221d18; --on-photo-muted: #857a6e;
+  --paper-card: #fffdfa; --paper-line: #ece4d8; --paper-shadow: 0 1px 2px rgba(60, 40, 20, 0.06), 0 10px 30px rgba(60, 40, 20, 0.08);
+  font-family: "Avenir Next", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+body.skin-paper.evening {
+  --page: #1d1a17;
+  --on-photo: #f3ece2; --on-photo-muted: #a69c90;
+  --paper-card: #2a2622; --paper-line: #3a3530; --paper-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+body.skin-paper .card {
+  --ink: var(--on-photo); --muted: var(--on-photo-muted); --line: var(--paper-line);
+  --control-bg: var(--page); --accent-soft: rgba(200, 85, 61, 0.14);
+  background: var(--paper-card); border: 0; border-radius: 24px; box-shadow: var(--paper-shadow);
+}
+body.skin-paper .card h2 { color: var(--accent); letter-spacing: 1.6px; }
+body.skin-paper .clock-unit, body.skin-paper .weather {
+  background: var(--paper-card); border: 0; border-radius: 24px; box-shadow: var(--paper-shadow);
+}
+/* The flip clock becomes plain, thin numerals. */
+body.skin-paper .flip, body.skin-paper .fl-top, body.skin-paper .fl-bot { background: transparent; box-shadow: none; }
+body.skin-paper .flip { color: var(--on-photo); font-weight: 300; min-width: 1.2em; padding: 0 0.05em; }
+body.skin-paper .flip::after { display: none; }
+/* A thin colon between the numbers, and AM/PM tucked up beside the minutes. */
+body.skin-paper .time { gap: 0.18em; }
+body.skin-paper .flip-h::after {
+  display: block; content: ":"; left: auto; right: -0.2em; top: -0.06em; height: auto; margin: 0;
+  background: none; color: var(--on-photo-muted); font-weight: 200;
+}
+body.skin-paper .flip-ampm { color: var(--on-photo-muted); left: 0; bottom: -0.2em; font-size: 0.13em; letter-spacing: 0.12em; }
+body.skin-paper .tile { background: none; box-shadow: none; color: var(--on-photo-muted); width: auto; font-weight: 600; letter-spacing: 1px; }
+body.skin-paper .tile::after { display: none; }
+body.skin-paper .tile-word { gap: 0; }
+body.skin-paper .wx-strip { border-left-color: var(--paper-line); }
+body.skin-paper .fc-pop { color: #2f7bd6; }
+body.skin-paper .cd-pill { background: var(--paper-card); color: var(--on-photo); box-shadow: var(--paper-shadow); }
+body.skin-paper .cd-pill.today { background: var(--accent); color: #fff; }
+body.skin-paper .timer-btn { background: var(--paper-card); color: var(--on-photo); box-shadow: var(--paper-shadow); }
+body.skin-paper .pill-count { background: var(--paper-line); color: var(--on-photo); }
+body.skin-paper .list-pill.has-items .pill-count { background: var(--accent); color: #fff; }
+body.skin-paper .wk-col { background: var(--page); }
+body.skin-paper:not(.evening) .status .warn, body.skin-soft:not(.evening) .status .warn { color: #b3401f; }
+body.skin-paper .wk-col.today { background: var(--paper-card); }
+
+/* ---- Bento: a dark page with every tile in its own solid color. */
+
+body.skin-bento {
+  --page: #121418;
+  --on-photo: #fff; --on-photo-muted: rgba(255, 255, 255, 0.78);
+}
+body.skin-bento .card {
+  --ink: #fff; --muted: rgba(255, 255, 255, 0.74); --line: rgba(255, 255, 255, 0.18);
+  --control-bg: rgba(255, 255, 255, 0.14); --accent-soft: rgba(255, 255, 255, 0.2);
+  border: 0; border-radius: 28px; box-shadow: none; background: #262a33;
+}
+body.skin-bento .card h2 { color: rgba(255, 255, 255, 0.85); font-weight: 800; }
+body.skin-bento .agenda { background: #2c3e78; }
+body.skin-bento .scores { background: #1f6650; }
+body.skin-bento .nest { background: #9a4a1f; }
+body.skin-bento .wear { background: #5d3d86; }
+body.skin-bento .spotify { background: #2a2e38; }
+body.skin-bento .clock-unit { background: #f2c14e; border: 0; border-radius: 28px; box-shadow: none; }
+body.skin-bento .weather { background: #3b7bd4; border: 0; border-radius: 28px; box-shadow: none; }
+body.skin-bento .flip, body.skin-bento .fl-top, body.skin-bento .fl-bot { background: transparent; box-shadow: none; }
+body.skin-bento .flip { color: #1b1a17; font-weight: 800; letter-spacing: -0.04em; }
+body.skin-bento .flip::after { display: none; }
+body.skin-bento .flip-ampm { color: rgba(27, 26, 23, 0.6); }
+body.skin-bento .tile { background: rgba(27, 26, 23, 0.12); box-shadow: none; color: #1b1a17; }
+body.skin-bento .tile::after { display: none; }
+body.skin-bento .wx-strip { border-left-color: rgba(255, 255, 255, 0.3); }
+body.skin-bento .fc-pop { color: #d6ecff; }
+body.skin-bento .cd-pill { background: #262a33; }
+body.skin-bento .cd-pill.today { background: #e0573a; }
+body.skin-bento .timer-btn { background: #262a33; }
+body.skin-bento .event.now { background: rgba(255, 255, 255, 0.14); }
+body.skin-bento .event.now .pill { background: #fff; color: #2c3e78; }
+body.skin-bento .event .pill, body.skin-bento .task .due { color: #fff; }
+body.skin-bento .tstat.heating .t-status, body.skin-bento .tstat.heating .t-target { color: #ffd2a8; }
+body.skin-bento .tstat.cooling .t-status, body.skin-bento .tstat.cooling .t-target { color: #bfe0ff; }
+body.skin-bento .sm-wl.win { color: #9ff0b8; }
+body.skin-bento .wk-col { background: rgba(255, 255, 255, 0.1); }
+body.skin-bento .wk-col.today { background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 2px #fff; }
+body.skin-bento .wk-col.today .wk-dow { color: #fff; }
+/* After dark the colors deepen a little so the wall isn't too bright. */
+body.skin-bento.evening .card, body.skin-bento.evening .clock-unit, body.skin-bento.evening .weather { filter: brightness(0.82); }
+
+/* ---- Soft: "soft UI". Raised panels the same color as the page, with rounded type. */
+
+body.skin-soft {
+  --page: #e3e8ef;
+  --on-photo: #2c3340; --on-photo-muted: #6f7a8b;
+  --soft-hi: #ffffff; --soft-lo: #bec6d1;
+  --soft-raised: 8px 8px 18px var(--soft-lo), -8px -8px 18px var(--soft-hi);
+  --soft-small: 4px 4px 9px var(--soft-lo), -4px -4px 9px var(--soft-hi);
+  --soft-pressed: inset 3px 3px 7px var(--soft-lo), inset -3px -3px 7px var(--soft-hi);
+  --accent: #5a72e8; --accent-soft: rgba(90, 114, 232, 0.16);
+  font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+body.skin-soft.evening {
+  --page: #252a33;
+  --on-photo: #e4e8ef; --on-photo-muted: #97a1b2;
+  --soft-hi: #2f3540; --soft-lo: #1a1e25;
+  --accent: #8a9bff; --accent-soft: rgba(138, 155, 255, 0.18);
+}
+body.skin-soft .card {
+  --ink: var(--on-photo); --muted: var(--on-photo-muted); --line: rgba(120, 132, 150, 0.22);
+  --control-bg: var(--page);
+  background: var(--page); border: 0; border-radius: 26px; box-shadow: var(--soft-raised);
+}
+body.skin-soft .card h2 { color: var(--accent); }
+body.skin-soft .clock-unit, body.skin-soft .weather { background: var(--page); border: 0; border-radius: 26px; box-shadow: var(--soft-raised); }
+/* Clock digits sit in pressed-in wells. */
+body.skin-soft .flip { background: var(--page); color: var(--on-photo); box-shadow: var(--soft-pressed); font-weight: 600; }
+body.skin-soft .fl-top, body.skin-soft .fl-bot { background: transparent; }
+body.skin-soft .fl-flap { background: var(--page); }
+body.skin-soft .flip::after { left: 12%; right: 12%; height: 1px; background: rgba(120, 132, 150, 0.22); }
+body.skin-soft .flip-ampm { color: var(--on-photo-muted); }
+body.skin-soft .tile { background: var(--page); color: var(--on-photo); box-shadow: var(--soft-small); }
+body.skin-soft .tile::after { display: none; }
+body.skin-soft .wx-strip { border-left-color: rgba(120, 132, 150, 0.25); }
+body.skin-soft .fc-pop { color: #3d7be0; }
+body.skin-soft .sm-tile { box-shadow: var(--soft-pressed); }
+body.skin-soft .sm-tile.live { background: rgba(200, 56, 40, 0.1); }
+body.skin-soft .t-ctrl button { border: 0; box-shadow: var(--soft-small); }
+body.skin-soft .t-ctrl button:active { box-shadow: var(--soft-pressed); }
+body.skin-soft .cd-pill { background: var(--page); color: var(--on-photo); box-shadow: var(--soft-small); }
+body.skin-soft .cd-pill.today { background: var(--accent); color: #fff; }
+body.skin-soft .timer-btn { background: var(--page); color: var(--on-photo); box-shadow: var(--soft-small); }
+body.skin-soft .timer-btn:active { box-shadow: var(--soft-pressed); }
+body.skin-soft .pill-count { background: rgba(120, 132, 150, 0.2); color: var(--on-photo); }
+body.skin-soft .list-pill.has-items .pill-count { background: var(--accent); color: #fff; }
+body.skin-soft .wk-col { background: var(--page); box-shadow: var(--soft-pressed); }
+body.skin-soft .wk-col.today { box-shadow: var(--soft-small), inset 0 0 0 2px var(--accent); }

@@ -349,6 +349,19 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Rain/snow heads-up: when precipitation is expected in the next 60 minutes, a blue pill appears first in the row of pills under the clock and weather ("☔ Rain starting around 5:15p", "Rain now · letting up around 6p", or a
   "70% chance of rain this hour" fallback). It uses Open-Meteo's 15-minute forecast (NOAA HRRR in the US).
 
+## Looks (skins)
+
+The iPad has four looks and shows a different one each day, cycling through them in order:
+
+- **Glass:** the original. A weather photo behind frosted-glass panels.
+- **Paper:** light and minimal. A warm off-white page, white cards, and a big thin clock with no flip cards.
+- **Bento:** a dark page with every tile in its own solid color. A mustard clock, a blue weather tile, an indigo calendar, a green scores tile, a rust thermostat tile and a purple "What to wear" tile.
+- **Soft:** "soft UI". Raised panels the same color as the page, with the clock digits in pressed-in wells and rounded type.
+
+Paper, Bento and Soft skip the weather photo and turn darker once the sun is down. On a holiday,
+the holiday's own look takes over. To keep one look instead of rotating, pick it in ⚙︎ → **Look**.
+To preview one, add `?skin=paper` (or `glass`, `bento`, `soft`) to the address.
+
 ## Holidays
 
 The hub dresses up for a few holidays, going by the iPad's own date, and switches back by

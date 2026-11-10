@@ -15,6 +15,7 @@
     days: "5",
     calendarStyle: "list",
     photoUrl: "",
+    skin: "rotate",
   };
   var STORE = "homehub.settings";
 
@@ -203,6 +204,7 @@
     $("date").setAttribute("aria-label", DAY_NAMES[now.getDay()] + ", " + MONTHS[now.getMonth()] + " " + now.getDate());
     renderPrecipAlert(now);
     updateHoliday(now);
+    updateSkin(now);
     updateBackdrop();
 
     var night = isNightHour(h) && Date.now() > wakeUntil && $("settings").hidden;
@@ -469,6 +471,38 @@
     });
   }
 
+  // ------------------------------------------------------------- skins
+  // Four looks for the hub, one per day in rotation (⚙︎ → Look can pin one instead):
+  //   glass  the weather photo behind frosted-glass panels (the original)
+  //   paper  light and minimal: warm off-white page, white cards, a big thin clock
+  //   bento  dark page with every tile in its own solid color
+  //   soft   "soft UI": raised panels the same color as the page, gently shadowed
+  // The last three swap the photo for a plain page and turn darker once the sun is
+  // down (the "evening" class). Holidays bring their own look and use glass. Add
+  // ?skin=paper (or glass, bento, soft) to the address to preview one.
+
+  var SKINS = ["glass", "paper", "bento", "soft"];
+  var skinPreview = (location.search.match(/(?:^|[?&])skin=(\w+)/) || [])[1] || "";
+  var skinOn = "";
+
+  function activeSkin(now) {
+    if (holidayOn) return "glass";
+    var pick = SKINS.indexOf(skinPreview) >= 0 ? skinPreview : settings.skin;
+    if (SKINS.indexOf(pick) >= 0) return pick;
+    // Days since Jan 1 2026 (round() absorbs DST's 23/25-hour days), so each day of the
+    // week doesn't always get the same look.
+    var day = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(2026, 0, 1)) / 864e5);
+    return SKINS[((day % SKINS.length) + SKINS.length) % SKINS.length];
+  }
+
+  function updateSkin(now) {
+    var name = activeSkin(now);
+    if (name === skinOn) return;
+    if (skinOn) document.body.classList.remove("skin-" + skinOn);
+    document.body.classList.add("skin-" + name);
+    skinOn = name;
+  }
+
   // ------------------------------------------------------------- photo backdrop
   // A freely licensed Wikimedia Commons photo that matches the current weather
   // (photographers are credited in README.md rather than on the wall),
@@ -507,6 +541,7 @@
   }
 
   function currentPhoto() {
+    if (skinOn && skinOn !== "glass") return null; // the other skins use a plain page
     if (settings.photoUrl) return { url: settings.photoUrl };
     if (!currentWx) return null; // keep the plain gradient until the first forecast arrives
     var p = PHOTOS[photoKind(currentWx.code, currentWx.isDay)];
@@ -519,7 +554,9 @@
       photoKind(currentWx.code, currentWx.isDay) !== "night";
     document.querySelector(".backdrop").classList.toggle("dim", dim);
     // Smoky dark panels with light text once the sun is down (any photo).
-    document.body.classList.toggle("glass-dark", !!currentWx && !currentWx.isDay && !settings.photoUrl);
+    document.body.classList.toggle("glass-dark", !!currentWx && !currentWx.isDay && !settings.photoUrl && skinOn === "glass");
+    // The other skins' darker evening versions.
+    document.body.classList.toggle("evening", !!currentWx && !currentWx.isDay);
     var photo = currentPhoto();
     if (!photo || shownPhoto === photo.url) return;
     if (failedPhotos[photo.url] > Date.now()) return;
