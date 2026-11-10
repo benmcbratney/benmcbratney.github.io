@@ -358,9 +358,16 @@ The iPad has four looks and shows a different one each day, cycling through them
 - **Bento:** a dark page with every tile in its own solid color. A mustard clock, a blue weather tile, an indigo calendar, a green scores tile, a rust thermostat tile and a purple "What to wear" tile.
 - **Soft:** "soft UI". Raised panels the same color as the page, with the clock digits in pressed-in wells and rounded type.
 
-Paper, Bento and Soft skip the weather photo and turn darker once the sun is down. On a holiday,
+**Saturdays are for the kids**, taking turns week to week:
+
+- **Superhero:** a comic book. Halftone dots on bright blue, thick black outlines with hard shadows, yellow caption-box titles, outlined comic numerals, a "POW!" bursting off the clock, and a caped hero swooping across now and then.
+- **Princess:** a pastel castle in the clouds. Soft white panels with gold trim, script titles, a crown on the clock, sparkles, a castle on the horizon, and a unicorn floating by.
+
+Both are original drawings, not licensed characters. In December, Christmas takes Saturdays too.
+
+Every look except Glass skips the weather photo and turns darker once the sun is down. On a holiday,
 the holiday's own look takes over. To keep one look instead of rotating, pick it in ⚙︎ → **Look**.
-To preview one, add `?skin=paper` (or `glass`, `bento`, `soft`) to the address.
+To preview one, add `?skin=paper` (or `glass`, `bento`, `soft`, `hero`, `princess`) to the address.
 
 ## Holidays
 

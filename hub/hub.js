@@ -477,23 +477,67 @@
   //   paper  light and minimal: warm off-white page, white cards, a big thin clock
   //   bento  dark page with every tile in its own solid color
   //   soft   "soft UI": raised panels the same color as the page, gently shadowed
-  // The last three swap the photo for a plain page and turn darker once the sun is
+  // Saturdays are for the kids, alternating week to week:
+  //   hero      comic book: halftone dots, black outlines, POW!, a caped hero flying by
+  //   princess  pastel castle in the clouds: gold trim, a crown, sparkles, a unicorn
+  // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
-  // ?skin=paper (or glass, bento, soft) to the address to preview one.
+  // ?skin=paper (or glass, bento, soft, hero, princess) to the address to preview one.
 
-  var SKINS = ["glass", "paper", "bento", "soft"];
+  var SKINS = ["glass", "paper", "bento", "soft"]; // the daily rotation
+  var WILDCARDS = ["hero", "princess"]; // Saturdays, taking turns
+  var ALL_SKINS = SKINS.concat(WILDCARDS);
   var skinPreview = (location.search.match(/(?:^|[?&])skin=(\w+)/) || [])[1] || "";
   var skinOn = "";
 
   function activeSkin(now) {
     if (holidayOn) return "glass";
-    var pick = SKINS.indexOf(skinPreview) >= 0 ? skinPreview : settings.skin;
-    if (SKINS.indexOf(pick) >= 0) return pick;
+    var pick = ALL_SKINS.indexOf(skinPreview) >= 0 ? skinPreview : settings.skin;
+    if (ALL_SKINS.indexOf(pick) >= 0) return pick;
     // Days since Jan 1 2026 (round() absorbs DST's 23/25-hour days), so each day of the
     // week doesn't always get the same look.
     var day = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(2026, 0, 1)) / 864e5);
+    if (now.getDay() === 6) return WILDCARDS[Math.floor(day / 7) % WILDCARDS.length];
     return SKINS[((day % SKINS.length) + SKINS.length) % SKINS.length];
   }
+
+  // Drawn decorations for the kids' skins: .sk-scene sits still behind the panels,
+  // .sk-front moves over everything (taps go straight through).
+  var HERO_SVG = '<svg viewBox="0 0 120 44" stroke="#111" stroke-width="1.6" stroke-linejoin="round">' +
+    '<path d="M90 16C74 4 52 0 26 5C38 11 36 17 24 24C46 27 70 27 90 25Z" fill="#e8322f"/>' + // cape
+    '<path d="M40 18L62 17L62 25L40 25Z" fill="#1d3fbf"/>' + // legs
+    '<path d="M60 16L92 15L92 26L60 26Z" fill="#1d3fbf"/>' + // body
+    '<path d="M76 18L80 21L76 24L72 21Z" fill="#ffd23f" stroke-width="1"/>' + // emblem
+    '<path d="M91 16L113 13L114 18L92 21Z" fill="#f2c28b"/><circle cx="115" cy="15" r="3.2" fill="#f2c28b"/>' + // arm, fist
+    '<circle cx="99" cy="20" r="6.5" fill="#f2c28b"/><path d="M93 17Q99 11 105 17L104 19Q99 16 94 19Z" fill="#111"/></svg>'; // head, hair
+  var CASTLE_SVG = '<svg viewBox="0 -12 400 182" fill="#fff"><path d="M60 170V96H340V170Z"/>' +
+    '<path d="M40 170V62H92V170Z"/><path d="M34 64L66 8L98 64Z" fill="#f7a8cf"/>' +
+    '<path d="M308 170V62H360V170Z"/><path d="M302 64L334 8L366 64Z" fill="#f7a8cf"/>' +
+    '<path d="M166 170V44H234V170Z"/><path d="M158 46L200 -10L242 46Z" fill="#c9a6ff"/>' +
+    '<path d="M110 96V80H124V90H138V80H152V90H166V96ZM234 96V90H248V80H262V90H276V80H290V96Z"/>' +
+    '<path d="M186 170V136Q200 118 214 136V170Z" fill="#f3c6de"/></svg>';
+
+  var SKIN_DECOR = {
+    hero: function (scene, front) {
+      var hero = el("div", "sk-flyer");
+      hero.innerHTML = HERO_SVG;
+      front.appendChild(hero);
+    },
+    princess: function (scene, front) {
+      var castle = el("div", "sk-castle");
+      castle.innerHTML = CASTLE_SVG;
+      scene.appendChild(castle);
+      for (var i = 0; i < 14; i++) {
+        var spark = el("div", "sk-sparkle", "✦");
+        spark.style.left = (4 + Math.random() * 92) + "%";
+        spark.style.top = (4 + Math.random() * 88) + "%";
+        spark.style.fontSize = (12 + Math.random() * 14) + "px";
+        spark.style.animationDelay = (-Math.random() * 4) + "s";
+        scene.appendChild(spark); // behind the panels, so they never twinkle over words
+      }
+      front.appendChild(el("div", "sk-unicorn", "🦄"));
+    },
+  };
 
   function updateSkin(now) {
     var name = activeSkin(now);
@@ -501,6 +545,14 @@
     if (skinOn) document.body.classList.remove("skin-" + skinOn);
     document.body.classList.add("skin-" + name);
     skinOn = name;
+    if (SKIN_DECOR[name] && !document.querySelector(".sk-scene.sk-" + name)) {
+      var scene = el("div", "sk-scene sk-" + name), front = el("div", "sk-front sk-" + name);
+      scene.setAttribute("aria-hidden", "true");
+      front.setAttribute("aria-hidden", "true");
+      SKIN_DECOR[name](scene, front);
+      document.body.insertBefore(scene, $("hub"));
+      document.body.appendChild(front);
+    }
   }
 
   // ------------------------------------------------------------- photo backdrop
