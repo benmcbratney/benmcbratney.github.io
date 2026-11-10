@@ -360,7 +360,8 @@ The iPad has four looks and shows a different one each day, cycling through them
 
 **Bears game days** beat everything else, holidays and the kids' weekend included: any day the
 Bears play (as the Scores feed knows it, including a late game running past midnight), the hub
-goes navy and orange all day. Card headers get an orange stripe, the clock panel turns orange with
+goes navy and orange all day, with the bear-head logo filling the background behind
+see-through navy cards. Card headers get an orange stripe, the clock panel turns orange with
 white jersey numerals and a **"BEAR DOWN!"** pennant with the bear-head logo flying off it, and the header panels get
 navy-white-orange sleeve stripes. A footer pill follows the game ("🐻 Bear Down! · Kickoff 12p vs
 Packers", then the live score, then "W 24–20"; just "Bear Down!" in portrait), and a football

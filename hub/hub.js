@@ -546,9 +546,10 @@
     '<path d="M110 96V80H124V90H138V80H152V90H166V96ZM234 96V90H248V80H262V90H276V80H290V96Z"/>' +
     '<path d="M186 170V136Q200 118 214 136V170Z" fill="#f3c6de"/></svg>';
 
-  // The bear-head logo for the Bears look (bears-logo.png, next to this file). If it
-  // doesn't load, the pennant and pill fall back to 🐻.
-  var BEARS_LOGO = "bears-logo.png?v=1";
+  // The bear-head logo for the Bears look (bears-logo.png, next to this file): the
+  // backdrop of the whole hub, and on the pennant and pill. If it doesn't load, the
+  // pennant and pill fall back to 🐻.
+  var BEARS_LOGO = "bears-logo.png?v=2";
 
   function bearsLogo(cls) {
     var box = el("span", cls);
@@ -562,6 +563,9 @@
 
   var SKIN_DECOR = {
     bears: function (scene, front) {
+      var bg = el("div", "bears-bg");
+      bg.style.backgroundImage = "url(\"" + BEARS_LOGO + "\")";
+      scene.appendChild(bg);
       front.appendChild(el("div", "sk-football", "🏈"));
       // "BEAR DOWN!" pennant with the logo, leading the pill row under the header.
       var pennant = el("div", "bears-pennant");

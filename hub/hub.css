@@ -1326,8 +1326,7 @@ body.skin-princess:not(.evening) .sk-sparkle { color: #f5c94f; text-shadow: 0 0 
    clock, a footer pill following the game, and a football spiraling by. */
 
 body.skin-bears .bg-layer, body.skin-bears .backdrop::after { display: none; }
-body.skin-bears .card, body.skin-bears .clock-unit, body.skin-bears .weather,
-body.skin-bears .cd-pill, body.skin-bears .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.skin-bears .clock-unit, body.skin-bears .cd-pill, body.skin-bears .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
 body.skin-bears .sk-bears { display: block; }
 body.skin-bears {
   --navy: #0b162a; --orange: #c83803; --orange-hi: #ff6a2b;
@@ -1342,9 +1341,16 @@ body.skin-bears .backdrop {
     repeating-linear-gradient(90deg, transparent 0 94px, rgba(255, 255, 255, 0.05) 94px 96px),
     linear-gradient(to bottom, #0b162a, #14254a);
 }
+/* The bear head fills the page behind everything (built in hub.js). */
+.bears-bg {
+  position: absolute; left: 50%; top: 50%; width: min(104vh, 100vw); height: min(104vh, 100vw);
+  transform: translate(-50%, -50%); background: center / contain no-repeat;
+}
+/* See-through navy panels, lightly frosted, so the bear shows through behind the text. */
 body.skin-bears .card {
-  --ink: #fff; --muted: #b9c3d6; --line: rgba(255, 255, 255, 0.12); --control-bg: rgba(255, 255, 255, 0.08);
-  background: #112242; border: 0; border-top: 5px solid var(--orange); border-radius: 16px;
+  --ink: #fff; --muted: #c9d1df; --line: rgba(255, 255, 255, 0.14); --control-bg: rgba(255, 255, 255, 0.1);
+  background: rgba(11, 22, 42, 0.74); border: 0; border-top: 5px solid var(--orange); border-radius: 16px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
 }
 body.skin-bears .card h2 { color: var(--orange-hi); font-family: var(--bears-font); font-style: italic; font-size: 17px; letter-spacing: 1.6px; }
@@ -1354,7 +1360,9 @@ body.skin-bears .clock-unit, body.skin-bears .weather {
   box-shadow: inset 0 -6px 0 var(--orange), inset 0 -10px 0 #fff, inset 0 -15px 0 var(--navy), 0 10px 26px rgba(0, 0, 0, 0.4);
 }
 body.skin-bears .clock-unit { position: relative; background: var(--orange); padding-bottom: 22px; }
-body.skin-bears .weather { background: #112242; padding-bottom: 20px; }
+body.skin-bears .weather {
+  background: rgba(11, 22, 42, 0.74); padding-bottom: 20px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
 body.skin-bears .wx-strip { border-left-color: rgba(255, 255, 255, 0.18); }
 /* Jersey numerals: white with a navy outline. */
 body.skin-bears .flip, body.skin-bears .fl-top, body.skin-bears .fl-bot { background: transparent; box-shadow: none; }
@@ -1379,9 +1387,9 @@ body.skin-bears .bears-pennant {
   font-family: var(--bears-font); font-style: italic; font-size: 17px; font-weight: 800; letter-spacing: 1px;
   color: var(--orange); text-shadow: none; white-space: nowrap;
 }
-body.skin-bears .cd-pill { background: #112242; color: #fff; }
+body.skin-bears .cd-pill { background: rgba(11, 22, 42, 0.85); color: #fff; }
 body.skin-bears .cd-pill.today { background: var(--orange); }
-body.skin-bears .timer-btn { background: #112242; color: #fff; }
+body.skin-bears .timer-btn { background: rgba(11, 22, 42, 0.85); color: #fff; }
 body.skin-bears .event.now { background: rgba(200, 56, 3, 0.25); }
 body.skin-bears .sm-tile.live { background: rgba(200, 56, 3, 0.35); }
 body.skin-bears .sm-wl.win { color: #7fd69a; }
