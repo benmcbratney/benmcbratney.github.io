@@ -1319,3 +1319,86 @@ body.skin-princess:not(.evening) .sk-sparkle { color: #f5c94f; text-shadow: 0 0 
   38% { opacity: 1; transform: translate3d(-80px, 0, 0); }
   38.1%, 100% { opacity: 0; transform: translate3d(-80px, 0, 0); }
 }
+
+/* ---------------------------------------------------------------- Bears game day */
+/* skin-bears: all day whenever the Bears play (see bearsGame in hub.js). Team navy
+   and orange, sleeve stripes on the header panels, a "Bear Down!" pennant on the
+   clock, a footer pill following the game, and a football spiraling by. */
+
+body.skin-bears .bg-layer, body.skin-bears .backdrop::after { display: none; }
+body.skin-bears .card, body.skin-bears .clock-unit, body.skin-bears .weather,
+body.skin-bears .cd-pill, body.skin-bears .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.skin-bears .sk-bears { display: block; }
+body.skin-bears {
+  --navy: #0b162a; --orange: #c83803; --orange-hi: #ff6a2b;
+  --on-photo: #fff; --on-photo-muted: #c3cbda; --photo-shadow: none;
+  --accent: var(--orange); --accent-soft: rgba(200, 56, 3, 0.25);
+  --bears-font: "Futura-CondensedExtraBold", "Futura", Impact, "Arial Black", sans-serif;
+}
+/* Navy field with faint yard lines and an orange glow off the end zone. */
+body.skin-bears .backdrop {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 110%, rgba(200, 56, 3, 0.45), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0 94px, rgba(255, 255, 255, 0.05) 94px 96px),
+    linear-gradient(to bottom, #0b162a, #14254a);
+}
+body.skin-bears .card {
+  --ink: #fff; --muted: #b9c3d6; --line: rgba(255, 255, 255, 0.12); --control-bg: rgba(255, 255, 255, 0.08);
+  background: #112242; border: 0; border-top: 5px solid var(--orange); border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+}
+body.skin-bears .card h2 { color: var(--orange-hi); font-family: var(--bears-font); font-style: italic; font-size: 17px; letter-spacing: 1.6px; }
+/* Navy-white-orange sleeve stripes along the bottom of the header panels. */
+body.skin-bears .clock-unit, body.skin-bears .weather {
+  border: 0; border-radius: 16px;
+  box-shadow: inset 0 -6px 0 var(--orange), inset 0 -10px 0 #fff, inset 0 -15px 0 var(--navy), 0 10px 26px rgba(0, 0, 0, 0.4);
+}
+body.skin-bears .clock-unit { position: relative; background: var(--orange); padding-bottom: 22px; }
+body.skin-bears .weather { background: #112242; padding-bottom: 20px; }
+body.skin-bears .wx-strip { border-left-color: rgba(255, 255, 255, 0.18); }
+/* Jersey numerals: white with a navy outline. */
+body.skin-bears .flip, body.skin-bears .fl-top, body.skin-bears .fl-bot { background: transparent; box-shadow: none; }
+body.skin-bears .flip {
+  color: #fff; font-family: var(--bears-font); font-weight: 800;
+  text-shadow: -3px -3px 0 var(--navy), 3px -3px 0 var(--navy), -3px 3px 0 var(--navy), 3px 3px 0 var(--navy), 0 3px 0 var(--navy), 0 -3px 0 var(--navy);
+}
+body.skin-bears .flip::after { display: none; }
+body.skin-bears .flip-ampm { color: var(--navy); text-shadow: none; }
+body.skin-bears .tile { background: var(--navy); color: #fff; box-shadow: none; font-family: var(--bears-font); }
+body.skin-bears .tile::after { display: none; }
+/* "BEAR DOWN!" pennant flying off the clock. */
+body.skin-bears .clock-unit::after {
+  content: "BEAR DOWN!"; position: absolute; top: -14px; right: -64px; z-index: 2;
+  padding: 6px 26px 6px 12px; transform: rotate(-8deg);
+  font-family: var(--bears-font); font-style: italic; font-size: 17px; font-weight: 800; letter-spacing: 1px; color: var(--orange);
+  background: #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  -webkit-clip-path: polygon(0 0, 100% 10%, 88% 50%, 100% 90%, 0 100%); clip-path: polygon(0 0, 100% 10%, 88% 50%, 100% 90%, 0 100%);
+}
+body.skin-bears .cd-pill { background: #112242; color: #fff; }
+body.skin-bears .cd-pill.today { background: var(--orange); }
+body.skin-bears .timer-btn { background: #112242; color: #fff; }
+body.skin-bears .event.now { background: rgba(200, 56, 3, 0.25); }
+body.skin-bears .sm-tile.live { background: rgba(200, 56, 3, 0.35); }
+body.skin-bears .sm-wl.win { color: #7fd69a; }
+body.skin-bears .tstat.heating .t-status, body.skin-bears .tstat.heating .t-target { color: #ff9a62; }
+body.skin-bears .tstat.cooling .t-status, body.skin-bears .tstat.cooling .t-target { color: #8cc0ff; }
+body.skin-bears .wk-col { background: rgba(255, 255, 255, 0.06); }
+body.skin-bears .wk-col.today { background: rgba(255, 255, 255, 0.12); box-shadow: inset 0 0 0 2px var(--orange); }
+/* Footer pill following the game. */
+.bears-pill { display: none; }
+body.skin-bears .bears-pill {
+  display: inline-block; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; padding: 4px 14px; border-radius: 999px;
+  background: var(--orange); color: #fff; font-size: 15px; font-weight: 800; text-shadow: none;
+  box-shadow: inset 0 0 0 2px #fff;
+}
+/* No room for the game in portrait; the Scores card has it. */
+@media (orientation: portrait) { .bears-detail { display: none; } body.skin-bears .bears-pill { flex: none; } }
+/* A football spirals across now and then. */
+.sk-football { position: absolute; top: 40%; left: 0; font-size: 44px; opacity: 0; animation: football-pass 36s linear infinite 6s; }
+@keyframes football-pass {
+  0% { opacity: 1; transform: translate3d(-80px, 140px, 0) rotate(-30deg); }
+  14% { transform: translate3d(45vw, -120px, 0) rotate(-10deg); }
+  28% { opacity: 1; transform: translate3d(calc(100vw + 80px), 120px, 0) rotate(20deg); }
+  28.1%, 100% { opacity: 0; transform: translate3d(calc(100vw + 80px), 120px, 0); }
+}

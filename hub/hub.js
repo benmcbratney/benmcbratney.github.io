@@ -432,6 +432,7 @@
 
   function activeHoliday(now) {
     if (holidayPreview) return holidayPreview;
+    if (!skinPreview && bearsGame(now)) return ""; // Bears game days beat holidays (see skins)
     for (var name in HOLIDAYS) if (HOLIDAYS[name].on(now)) return name;
     return "";
   }
@@ -477,21 +478,47 @@
   //   paper  light and minimal: warm off-white page, white cards, a big thin clock
   //   bento  dark page with every tile in its own solid color
   //   soft   "soft UI": raised panels the same color as the page, gently shadowed
+  // Bears game days (any day the Bears play, from the Scores feed) get their own
+  // look all day, ahead of everything else:
+  //   bears     navy and orange, sleeve stripes, a "Bear Down!" pennant on the clock,
+  //             a footer pill following the game, and a football spiraling by
   // Weekends are for the kids, swapping every hour on the hour:
   //   hero      comic book: halftone dots, black outlines, POW!, a caped hero flying by
   //   princess  pastel castle in the clouds: gold trim, a crown, sparkles, a unicorn
   // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
-  // ?skin=paper (or glass, bento, soft, hero, princess, kids) to the address to preview one.
+  // ?skin=paper (or glass, bento, soft, hero, princess, kids, bears) to preview one.
 
   var SKINS = ["glass", "paper", "bento", "soft"]; // the daily rotation
   var WILDCARDS = ["hero", "princess"]; // weekends, taking turns hourly
-  var ALL_SKINS = SKINS.concat(WILDCARDS);
+  var ALL_SKINS = SKINS.concat(WILDCARDS, ["bears"]);
   var skinPreview = (location.search.match(/(?:^|[?&])skin=(\w+)/) || [])[1] || "";
   var skinOn = "";
 
+  // Today's (or a live, past-midnight) Bears game, or null.
+  function bearsGame(now) {
+    var team = (sports || []).filter(function (t) { return t.key === "bears"; })[0];
+    if (!team) return null;
+    return [team.live, team.next, team.last].filter(function (g) {
+      return g && (g.state === "in" || ymd(new Date(g.start)) === ymd(now));
+    })[0] || null;
+  }
+
+  // The game after "🐻 Bear Down!": " · Kickoff 12p vs Packers", " · 17–10 vs Packers ·
+  // 3rd 8:12" or " · W 24–20 vs Packers" (blank without a game, e.g. a preview).
+  function bearsDetail(now) {
+    var g = bearsGame(now);
+    if (!g) return "";
+    var vs = (g.home ? "vs " : "@ ") + g.them;
+    if (g.state === "pre") return " · Kickoff " + fmtTime(new Date(g.start)) + " " + vs;
+    var score = g.usScore + "–" + g.themScore;
+    if (g.state === "in") return " · " + score + " " + vs + (g.detail ? " · " + g.detail : "");
+    return " · " + (g.won ? "W " : g.won === false ? "L " : "") + score + " " + vs;
+  }
+
   function activeSkin(now) {
     if (holidayOn) return "glass";
+    if (ALL_SKINS.indexOf(skinPreview) < 0 && skinPreview !== "kids" && bearsGame(now)) return "bears";
     var pick = ALL_SKINS.indexOf(skinPreview) >= 0 || skinPreview === "kids" ? skinPreview : settings.skin;
     if (ALL_SKINS.indexOf(pick) >= 0) return pick;
     var kidsNow = WILDCARDS[now.getHours() % WILDCARDS.length]; // Superhero on even hours, Princess on odd
@@ -520,6 +547,13 @@
     '<path d="M186 170V136Q200 118 214 136V170Z" fill="#f3c6de"/></svg>';
 
   var SKIN_DECOR = {
+    bears: function (scene, front) {
+      front.appendChild(el("div", "sk-football", "🏈"));
+      var pill = el("span", "bears-pill", "🐻 Bear Down!");
+      pill.id = "bears-pill";
+      pill.appendChild(el("span", "bears-detail"));
+      $("status-text").parentNode.insertBefore(pill, $("status-text"));
+    },
     hero: function (scene, front) {
       var hero = el("div", "sk-flyer");
       hero.innerHTML = HERO_SVG;
@@ -543,6 +577,7 @@
 
   function updateSkin(now) {
     var name = activeSkin(now);
+    if ($("bears-pill")) $("bears-pill").lastChild.textContent = bearsDetail(now);
     if (name === skinOn) return;
     if (skinOn) document.body.classList.remove("skin-" + skinOn);
     document.body.classList.add("skin-" + name);
@@ -554,6 +589,7 @@
       SKIN_DECOR[name](scene, front);
       document.body.insertBefore(scene, $("hub"));
       document.body.appendChild(front);
+      if ($("bears-pill")) $("bears-pill").lastChild.textContent = bearsDetail(now);
     }
   }
 
@@ -1069,6 +1105,7 @@
     return p.then(function (data) {
       sports = data.teams || [];
       layoutColumns();
+      tickClock(); // a Bears game day switches the look right away
       if (!$("scores-modal").hidden) renderScores();
       setProblem("scores", null);
     }).catch(function (e) {
