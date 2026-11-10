@@ -546,11 +546,32 @@
     '<path d="M110 96V80H124V90H138V80H152V90H166V96ZM234 96V90H248V80H262V90H276V80H290V96Z"/>' +
     '<path d="M186 170V136Q200 118 214 136V170Z" fill="#f3c6de"/></svg>';
 
+  // The bear-head logo for the Bears look (bears-logo.png, next to this file). If it
+  // doesn't load, the pennant and pill fall back to 🐻.
+  var BEARS_LOGO = "bears-logo.png?v=1";
+
+  function bearsLogo(cls) {
+    var box = el("span", cls);
+    var img = new Image();
+    img.alt = "";
+    img.onerror = function () { box.textContent = "🐻"; };
+    img.src = BEARS_LOGO;
+    box.appendChild(img);
+    return box;
+  }
+
   var SKIN_DECOR = {
     bears: function (scene, front) {
       front.appendChild(el("div", "sk-football", "🏈"));
-      var pill = el("span", "bears-pill", "🐻 Bear Down!");
+      // "BEAR DOWN!" pennant with the logo, leading the pill row under the header.
+      var pennant = el("div", "bears-pennant");
+      pennant.appendChild(bearsLogo("bears-logo"));
+      pennant.appendChild(el("span", "bears-pennant-text", "BEAR DOWN!"));
+      $("pill-row").insertBefore(pennant, $("pill-row").firstChild);
+      var pill = el("span", "bears-pill");
       pill.id = "bears-pill";
+      pill.appendChild(bearsLogo("bears-pill-logo"));
+      pill.appendChild(el("span", null, "Bear Down!"));
       pill.appendChild(el("span", "bears-detail"));
       $("status-text").parentNode.insertBefore(pill, $("status-text"));
     },
@@ -591,6 +612,7 @@
       document.body.appendChild(front);
       if ($("bears-pill")) $("bears-pill").lastChild.textContent = bearsDetail(now);
     }
+    syncPillRow();
   }
 
   // ------------------------------------------------------------- photo backdrop
@@ -1087,10 +1109,11 @@
     syncPillRow();
   }
 
-  // The pill row under the header holds the rain heads-up and the countdowns; hide
-  // it (and its gap) when both are empty.
+  // The pill row under the header holds the rain heads-up and the countdowns (and the
+  // Bears pennant on game days); hide
+  // it (and its gap) when there is nothing to show.
   function syncPillRow() {
-    $("pill-row").hidden = $("precip-alert").hidden && $("countdowns").hidden;
+    $("pill-row").hidden = $("precip-alert").hidden && $("countdowns").hidden && skinOn !== "bears"; // the Bears pennant lives here too
   }
 
   // ------------------------------------------------------------- sports scores
