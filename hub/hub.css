@@ -1327,7 +1327,7 @@ body.skin-princess:not(.evening) .sk-sparkle { color: #f5c94f; text-shadow: 0 0 
    clock, a footer pill following the game, and a football spiraling by. */
 
 body.skin-bears .bg-layer, body.skin-bears .backdrop::after { display: none; }
-body.skin-bears .clock-unit, body.skin-bears .cd-pill, body.skin-bears .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.skin-bears .cd-pill, body.skin-bears .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
 body.skin-bears .sk-bears { display: block; }
 body.skin-bears {
   --navy: #0b162a; --orange: #c83803; --orange-hi: #ff6a2b;
@@ -1360,20 +1360,22 @@ body.skin-bears .clock-unit, body.skin-bears .weather {
   border: 0; border-radius: 16px;
   box-shadow: inset 0 -6px 0 var(--orange), inset 0 -10px 0 #fff, inset 0 -15px 0 var(--navy), 0 10px 26px rgba(0, 0, 0, 0.4);
 }
-body.skin-bears .clock-unit { position: relative; background: var(--orange); padding-bottom: 22px; }
-body.skin-bears .weather {
-  background: rgba(11, 22, 42, 0.74); padding-bottom: 20px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+/* Both header panels: see-through frosted navy, like the cards. */
+body.skin-bears .clock-unit, body.skin-bears .weather {
+  background: rgba(11, 22, 42, 0.74); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
+body.skin-bears .clock-unit { position: relative; padding-bottom: 22px; }
+body.skin-bears .weather { padding-bottom: 20px; }
 body.skin-bears .wx-strip { border-left-color: rgba(255, 255, 255, 0.18); }
-/* Jersey numerals: white with a navy outline. */
+/* Jersey numerals: white with an orange outline. */
 body.skin-bears .flip, body.skin-bears .fl-top, body.skin-bears .fl-bot { background: transparent; box-shadow: none; }
 body.skin-bears .flip {
   color: #fff; font-family: var(--bears-font); font-weight: 800;
-  text-shadow: -3px -3px 0 var(--navy), 3px -3px 0 var(--navy), -3px 3px 0 var(--navy), 3px 3px 0 var(--navy), 0 3px 0 var(--navy), 0 -3px 0 var(--navy);
+  text-shadow: -3px -3px 0 var(--orange), 3px -3px 0 var(--orange), -3px 3px 0 var(--orange), 3px 3px 0 var(--orange), 0 3px 0 var(--orange), 0 -3px 0 var(--orange);
 }
 body.skin-bears .flip::after { display: none; }
-body.skin-bears .flip-ampm { color: var(--navy); text-shadow: none; }
-body.skin-bears .tile { background: var(--navy); color: #fff; box-shadow: none; font-family: var(--bears-font); }
+body.skin-bears .flip-ampm { color: #c9d1df; text-shadow: none; }
+body.skin-bears .tile { background: rgba(255, 255, 255, 0.1); color: #fff; box-shadow: none; font-family: var(--bears-font); }
 body.skin-bears .tile::after { display: none; }
 /* "BEAR DOWN!" pennant with the bear-head logo, first in the pill row (built in hub.js). */
 .bears-pennant { display: none; }
