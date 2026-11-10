@@ -354,9 +354,9 @@ doesn't have `/countdowns` yet, the holidays still show.
 The iPad has four looks and shows a different one each day, cycling through them in order:
 
 - **Glass:** the original. A weather photo behind frosted-glass panels.
-- **Paper:** light and minimal. A warm off-white page, white cards, and a big thin clock with no flip cards.
+- **Corkboard:** the kitchen bulletin board. Cork in a wooden frame, cards as index cards and sticky notes pinned (or taped) at slight angles, headings in marker, and the clock on a big yellow sticky note.
 - **Bento:** a dark page with every tile in its own solid color. A mustard clock, a blue weather tile, an indigo calendar, a green scores tile, a rust thermostat tile and a purple "What to wear" tile.
-- **Soft:** "soft UI". Raised panels the same color as the page, with the clock digits in pressed-in wells and rounded type.
+- **Bauhaus:** a mid-century poster. A cream page with big flat shapes (coral circle, mustard half-moon, teal quarter-circle) peeking out behind square, black-outlined cards with color-block labels, Futura type, and a mustard clock tile.
 
 **Bears game days** beat everything else, holidays and the kids' weekend included: any day the
 Bears play (as the Scores feed knows it, including a late game running past midnight), the hub
@@ -377,7 +377,7 @@ pick "Kids' looks, every hour" to keep the hourly swap going all week.
 
 Every look except Glass skips the weather photo and turns darker once the sun is down. On a holiday,
 the holiday's own look takes over. To keep one look instead of rotating, pick it in ⚙︎ → **Look**.
-To preview one, add `?skin=paper` (or `glass`, `bento`, `soft`, `hero`, `princess`, `kids`, `bears`) to the address.
+To preview one, add `?skin=cork` (or `glass`, `bento`, `bauhaus`, `hero`, `princess`, `kids`, `bears`) to the address.
 
 ## Holidays
 

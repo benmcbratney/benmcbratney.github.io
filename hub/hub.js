@@ -475,9 +475,11 @@
   // ------------------------------------------------------------- skins
   // Four looks for the hub, one per day in rotation (⚙︎ → Look can pin one instead):
   //   glass  the weather photo behind frosted-glass panels (the original)
-  //   paper  light and minimal: warm off-white page, white cards, a big thin clock
-  //   bento  dark page with every tile in its own solid color
-  //   soft   "soft UI": raised panels the same color as the page, gently shadowed
+  //   cork     the kitchen bulletin board: cork in a wood frame, pinned index cards
+  //            and sticky notes in marker, the clock on a yellow sticky note
+  //   bento    dark page with every tile in its own solid color
+  //   bauhaus  mid-century poster: cream page, big bold shapes, black-outlined
+  //            square cards with color-block labels, a mustard clock tile
   // Bears game days (any day the Bears play, from the Scores feed) get their own
   // look all day, ahead of everything else:
   //   bears     navy and orange, sleeve stripes, a "Bear Down!" pennant on the clock,
@@ -487,12 +489,15 @@
   //   princess  pastel castle in the clouds: gold trim, a crown, sparkles, a unicorn
   // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
-  // ?skin=paper (or glass, bento, soft, hero, princess, kids, bears) to preview one.
+  // ?skin=cork (or glass, bento, bauhaus, hero, princess, kids, bears) to preview one.
 
-  var SKINS = ["glass", "paper", "bento", "soft"]; // the daily rotation
+  var SKINS = ["glass", "cork", "bento", "bauhaus"]; // the daily rotation
   var WILDCARDS = ["hero", "princess"]; // weekends, taking turns hourly
   var ALL_SKINS = SKINS.concat(WILDCARDS, ["bears"]);
+  var OLD_SKINS = { paper: "cork", soft: "bauhaus" }; // renamed looks, for saved settings and old links
   var skinPreview = (location.search.match(/(?:^|[?&])skin=(\w+)/) || [])[1] || "";
+  skinPreview = OLD_SKINS[skinPreview] || skinPreview;
+  settings.skin = OLD_SKINS[settings.skin] || settings.skin;
   var skinOn = "";
 
   // Today's (or a live, past-midnight) Bears game, or null.
@@ -562,6 +567,12 @@
   }
 
   var SKIN_DECOR = {
+    bauhaus: function (scene) {
+      // Big flat shapes behind the panels, peeking out around the edges like a poster.
+      ["bh-circle", "bh-half", "bh-quarter", "bh-tri", "bh-dot"].forEach(function (cls) {
+        scene.appendChild(el("div", "bh-shape " + cls));
+      });
+    },
     bears: function (scene, front) {
       var bg = el("div", "bears-bg");
       bg.style.backgroundImage = "url(\"" + BEARS_LOGO + "\")";
