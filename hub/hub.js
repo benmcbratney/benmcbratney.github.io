@@ -432,6 +432,7 @@
 
   function activeHoliday(now) {
     if (holidayPreview) return holidayPreview;
+    if (!skinPreview && bearsGame(now)) return ""; // Bears game days beat holidays (see skins)
     for (var name in HOLIDAYS) if (HOLIDAYS[name].on(now)) return name;
     return "";
   }
@@ -477,30 +478,147 @@
   //   paper  light and minimal: warm off-white page, white cards, a big thin clock
   //   bento  dark page with every tile in its own solid color
   //   soft   "soft UI": raised panels the same color as the page, gently shadowed
-  // The last three swap the photo for a plain page and turn darker once the sun is
+  // Bears game days (any day the Bears play, from the Scores feed) get their own
+  // look all day, ahead of everything else:
+  //   bears     navy and orange, sleeve stripes, a "Bear Down!" pennant on the clock,
+  //             a footer pill following the game, and a football spiraling by
+  // Weekends are for the kids, swapping every hour on the hour:
+  //   hero      comic book: halftone dots, black outlines, POW!, a caped hero flying by
+  //   princess  pastel castle in the clouds: gold trim, a crown, sparkles, a unicorn
+  // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
-  // ?skin=paper (or glass, bento, soft) to the address to preview one.
+  // ?skin=paper (or glass, bento, soft, hero, princess, kids, bears) to preview one.
 
-  var SKINS = ["glass", "paper", "bento", "soft"];
+  var SKINS = ["glass", "paper", "bento", "soft"]; // the daily rotation
+  var WILDCARDS = ["hero", "princess"]; // weekends, taking turns hourly
+  var ALL_SKINS = SKINS.concat(WILDCARDS, ["bears"]);
   var skinPreview = (location.search.match(/(?:^|[?&])skin=(\w+)/) || [])[1] || "";
   var skinOn = "";
 
+  // Today's (or a live, past-midnight) Bears game, or null.
+  function bearsGame(now) {
+    var team = (sports || []).filter(function (t) { return t.key === "bears"; })[0];
+    if (!team) return null;
+    return [team.live, team.next, team.last].filter(function (g) {
+      return g && (g.state === "in" || ymd(new Date(g.start)) === ymd(now));
+    })[0] || null;
+  }
+
+  // The game after "🐻 Bear Down!": " · Kickoff 12p vs Packers", " · 17–10 vs Packers ·
+  // 3rd 8:12" or " · W 24–20 vs Packers" (blank without a game, e.g. a preview).
+  function bearsDetail(now) {
+    var g = bearsGame(now);
+    if (!g) return "";
+    var vs = (g.home ? "vs " : "@ ") + g.them;
+    if (g.state === "pre") return " · Kickoff " + fmtTime(new Date(g.start)) + " " + vs;
+    var score = g.usScore + "–" + g.themScore;
+    if (g.state === "in") return " · " + score + " " + vs + (g.detail ? " · " + g.detail : "");
+    return " · " + (g.won ? "W " : g.won === false ? "L " : "") + score + " " + vs;
+  }
+
   function activeSkin(now) {
     if (holidayOn) return "glass";
-    var pick = SKINS.indexOf(skinPreview) >= 0 ? skinPreview : settings.skin;
-    if (SKINS.indexOf(pick) >= 0) return pick;
+    if (ALL_SKINS.indexOf(skinPreview) < 0 && skinPreview !== "kids" && bearsGame(now)) return "bears";
+    var pick = ALL_SKINS.indexOf(skinPreview) >= 0 || skinPreview === "kids" ? skinPreview : settings.skin;
+    if (ALL_SKINS.indexOf(pick) >= 0) return pick;
+    var kidsNow = WILDCARDS[now.getHours() % WILDCARDS.length]; // Superhero on even hours, Princess on odd
+    if (pick === "kids") return kidsNow;
     // Days since Jan 1 2026 (round() absorbs DST's 23/25-hour days), so each day of the
     // week doesn't always get the same look.
     var day = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(2026, 0, 1)) / 864e5);
+    if (now.getDay() === 0 || now.getDay() === 6) return kidsNow;
     return SKINS[((day % SKINS.length) + SKINS.length) % SKINS.length];
   }
 
+  // Drawn decorations for the kids' skins: .sk-scene sits still behind the panels,
+  // .sk-front moves over everything (taps go straight through).
+  var HERO_SVG = '<svg viewBox="0 0 120 44" stroke="#111" stroke-width="1.6" stroke-linejoin="round">' +
+    '<path d="M90 16C74 4 52 0 26 5C38 11 36 17 24 24C46 27 70 27 90 25Z" fill="#e8322f"/>' + // cape
+    '<path d="M40 18L62 17L62 25L40 25Z" fill="#1d3fbf"/>' + // legs
+    '<path d="M60 16L92 15L92 26L60 26Z" fill="#1d3fbf"/>' + // body
+    '<path d="M76 18L80 21L76 24L72 21Z" fill="#ffd23f" stroke-width="1"/>' + // emblem
+    '<path d="M91 16L113 13L114 18L92 21Z" fill="#f2c28b"/><circle cx="115" cy="15" r="3.2" fill="#f2c28b"/>' + // arm, fist
+    '<circle cx="99" cy="20" r="6.5" fill="#f2c28b"/><path d="M93 17Q99 11 105 17L104 19Q99 16 94 19Z" fill="#111"/></svg>'; // head, hair
+  var CASTLE_SVG = '<svg viewBox="0 -12 400 182" fill="#fff"><path d="M60 170V96H340V170Z"/>' +
+    '<path d="M40 170V62H92V170Z"/><path d="M34 64L66 8L98 64Z" fill="#f7a8cf"/>' +
+    '<path d="M308 170V62H360V170Z"/><path d="M302 64L334 8L366 64Z" fill="#f7a8cf"/>' +
+    '<path d="M166 170V44H234V170Z"/><path d="M158 46L200 -10L242 46Z" fill="#c9a6ff"/>' +
+    '<path d="M110 96V80H124V90H138V80H152V90H166V96ZM234 96V90H248V80H262V90H276V80H290V96Z"/>' +
+    '<path d="M186 170V136Q200 118 214 136V170Z" fill="#f3c6de"/></svg>';
+
+  // The bear-head logo for the Bears look (bears-logo.png, next to this file): the
+  // backdrop of the whole hub, and on the pennant and pill. If it doesn't load, the
+  // pennant and pill fall back to 🐻.
+  var BEARS_LOGO = "bears-logo.png?v=2";
+
+  function bearsLogo(cls) {
+    var box = el("span", cls);
+    var img = new Image();
+    img.alt = "";
+    img.onerror = function () { box.textContent = "🐻"; };
+    img.src = BEARS_LOGO;
+    box.appendChild(img);
+    return box;
+  }
+
+  var SKIN_DECOR = {
+    bears: function (scene, front) {
+      var bg = el("div", "bears-bg");
+      bg.style.backgroundImage = "url(\"" + BEARS_LOGO + "\")";
+      scene.appendChild(bg);
+      front.appendChild(el("div", "sk-football", "🏈"));
+      // "BEAR DOWN!" pennant with the logo, leading the pill row under the header.
+      var pennant = el("div", "bears-pennant");
+      pennant.appendChild(bearsLogo("bears-logo"));
+      pennant.appendChild(el("span", "bears-pennant-text", "BEAR DOWN!"));
+      $("pill-row").insertBefore(pennant, $("pill-row").firstChild);
+      var pill = el("span", "bears-pill");
+      pill.id = "bears-pill";
+      pill.appendChild(bearsLogo("bears-pill-logo"));
+      pill.appendChild(el("span", null, "Bear Down!"));
+      pill.appendChild(el("span", "bears-detail"));
+      $("status-text").parentNode.insertBefore(pill, $("status-text"));
+    },
+    hero: function (scene, front) {
+      var hero = el("div", "sk-flyer");
+      hero.innerHTML = HERO_SVG;
+      front.appendChild(hero);
+    },
+    princess: function (scene, front) {
+      var castle = el("div", "sk-castle");
+      castle.innerHTML = CASTLE_SVG;
+      scene.appendChild(castle);
+      for (var i = 0; i < 14; i++) {
+        var spark = el("div", "sk-sparkle", "✦");
+        spark.style.left = (4 + Math.random() * 92) + "%";
+        spark.style.top = (4 + Math.random() * 88) + "%";
+        spark.style.fontSize = (12 + Math.random() * 14) + "px";
+        spark.style.animationDelay = (-Math.random() * 4) + "s";
+        scene.appendChild(spark); // behind the panels, so they never twinkle over words
+      }
+      front.appendChild(el("div", "sk-unicorn", "🦄"));
+    },
+  };
+
   function updateSkin(now) {
     var name = activeSkin(now);
+    if ($("bears-pill")) $("bears-pill").lastChild.textContent = bearsDetail(now);
     if (name === skinOn) return;
+    var prevSkin = skinOn;
     if (skinOn) document.body.classList.remove("skin-" + skinOn);
     document.body.classList.add("skin-" + name);
     skinOn = name;
+    if (name === "bears" || prevSkin === "bears") renderWearCard(); // the jersey comes and goes
+    if (SKIN_DECOR[name] && !document.querySelector(".sk-scene.sk-" + name)) {
+      var scene = el("div", "sk-scene sk-" + name), front = el("div", "sk-front sk-" + name);
+      scene.setAttribute("aria-hidden", "true");
+      front.setAttribute("aria-hidden", "true");
+      SKIN_DECOR[name](scene, front);
+      document.body.insertBefore(scene, $("hub"));
+      document.body.appendChild(front);
+      if ($("bears-pill")) $("bears-pill").lastChild.textContent = bearsDetail(now);
+    }
+    syncPillRow();
   }
 
   // ------------------------------------------------------------- photo backdrop
@@ -822,6 +940,15 @@
   }
 
   // Big "What to wear" card in the right column, sized for kids across the room.
+  // On Bears game days the shirt becomes a jersey: navy, orange-and-white sleeve
+  // stripes, a white number. Drawn here (no team marks), sized like the emoji tiles.
+  var JERSEY_SVG = '<svg viewBox="0 0 64 64" class="wear-svg">' +
+    '<path d="M20 7L26 4Q32 10 38 4L44 7L59 15L54 28L47 25V59H17V25L10 28L5 15Z" fill="#0b162a" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>' +
+    '<path d="M8 19.5L14.5 22.6L13.4 25.4L6.9 22.4Z M56 19.5L49.5 22.6L50.6 25.4L57.1 22.4Z" fill="#c83803" stroke="#fff" stroke-width="0.9"/>' +
+    '<path d="M26 4Q32 10 38 4L36.4 7.5Q32 13 27.6 7.5Z" fill="#fff"/><path d="M28.4 7Q32 11.2 35.6 7" fill="none" stroke="#c83803" stroke-width="1.4"/>' +
+    '<text x="32" y="47" text-anchor="middle" font-size="21" font-weight="900" fill="#fff" stroke="#c83803" stroke-width="1.1" ' +
+    'font-family="Futura-CondensedExtraBold, Futura, Impact, Arial Black, sans-serif">1</text></svg>';
+
   function renderWearCard() {
     var wear = outfit(new Date());
     $("wear-card").hidden = !wear;
@@ -831,9 +958,15 @@
     var box = $("wear-items");
     box.innerHTML = "";
     box.className = "wear-grid" + (wear.items.length > 4 ? " many" : ""); // 5+ items: two rows of smaller tiles
-    wear.items.forEach(function (it) {
+    var items = wear.items;
+    if (skinOn === "bears") items = items.map(function (it) {
+      return it[0] === "👕" || it[0] === "👔" ? ["jersey", "Bears jersey"] : it;
+    });
+    items.forEach(function (it) {
       var item = el("div", "wear-tile");
-      item.appendChild(el("div", "wear-tile-icon", it[0]));
+      var icon = el("div", "wear-tile-icon", it[0] === "jersey" ? null : it[0]);
+      if (it[0] === "jersey") icon.innerHTML = JERSEY_SVG;
+      item.appendChild(icon);
       item.appendChild(el("div", "wear-tile-label", it[1]));
       box.appendChild(item);
     });
@@ -997,10 +1130,11 @@
     syncPillRow();
   }
 
-  // The pill row under the header holds the rain heads-up and the countdowns; hide
-  // it (and its gap) when both are empty.
+  // The pill row under the header holds the rain heads-up and the countdowns (and the
+  // Bears pennant on game days); hide
+  // it (and its gap) when there is nothing to show.
   function syncPillRow() {
-    $("pill-row").hidden = $("precip-alert").hidden && $("countdowns").hidden;
+    $("pill-row").hidden = $("precip-alert").hidden && $("countdowns").hidden && skinOn !== "bears"; // the Bears pennant lives here too
   }
 
   // ------------------------------------------------------------- sports scores
@@ -1015,6 +1149,7 @@
     return p.then(function (data) {
       sports = data.teams || [];
       layoutColumns();
+      tickClock(); // a Bears game day switches the look right away
       if (!$("scores-modal").hidden) renderScores();
       setProblem("scores", null);
     }).catch(function (e) {

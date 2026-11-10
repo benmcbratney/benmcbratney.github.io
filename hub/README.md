@@ -358,9 +358,26 @@ The iPad has four looks and shows a different one each day, cycling through them
 - **Bento:** a dark page with every tile in its own solid color. A mustard clock, a blue weather tile, an indigo calendar, a green scores tile, a rust thermostat tile and a purple "What to wear" tile.
 - **Soft:** "soft UI". Raised panels the same color as the page, with the clock digits in pressed-in wells and rounded type.
 
-Paper, Bento and Soft skip the weather photo and turn darker once the sun is down. On a holiday,
+**Bears game days** beat everything else, holidays and the kids' weekend included: any day the
+Bears play (as the Scores feed knows it, including a late game running past midnight), the hub
+goes navy and orange all day, with the bear-head logo filling the background behind
+see-through navy cards. Card headers get an orange stripe, the clock panel turns orange with
+white jersey numerals and a **"BEAR DOWN!"** pennant with the bear-head logo flying off it, and the header panels get
+navy-white-orange sleeve stripes. A footer pill follows the game ("🐻 Bear Down! · Kickoff 12p vs
+Packers", then the live score, then "W 24–20"; just "Bear Down!" in portrait), and a football
+spirals across now and then. "What to wear" swaps the T-shirt or long sleeves for a Bears jersey. The pennant and pill carry the bear-head logo (`bears-logo.png`).
+
+**Weekends are for the kids:** all day Saturday and Sunday the hub swaps between these two every hour, on the hour (Superhero on even hours, Princess on odd):
+
+- **Superhero:** a comic book. Halftone dots on bright blue, thick black outlines with hard shadows, yellow caption-box titles, outlined comic numerals, a "POW!" bursting off the clock, and a caped hero swooping across now and then.
+- **Princess:** a pastel castle in the clouds. Soft white panels with gold trim, script titles, a crown on the clock, sparkles, a castle on the horizon, and a unicorn floating by.
+
+Both are original drawings, not licensed characters. In December, Christmas takes the weekends too. ⚙︎ → **Look** can also pin either one, or
+pick "Kids' looks, every hour" to keep the hourly swap going all week.
+
+Every look except Glass skips the weather photo and turns darker once the sun is down. On a holiday,
 the holiday's own look takes over. To keep one look instead of rotating, pick it in ⚙︎ → **Look**.
-To preview one, add `?skin=paper` (or `glass`, `bento`, `soft`) to the address.
+To preview one, add `?skin=paper` (or `glass`, `bento`, `soft`, `hero`, `princess`, `kids`, `bears`) to the address.
 
 ## Holidays
 
