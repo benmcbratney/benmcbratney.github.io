@@ -477,27 +477,29 @@
   //   paper  light and minimal: warm off-white page, white cards, a big thin clock
   //   bento  dark page with every tile in its own solid color
   //   soft   "soft UI": raised panels the same color as the page, gently shadowed
-  // Saturdays are for the kids, alternating week to week:
+  // Weekends are for the kids, swapping every hour on the hour:
   //   hero      comic book: halftone dots, black outlines, POW!, a caped hero flying by
   //   princess  pastel castle in the clouds: gold trim, a crown, sparkles, a unicorn
   // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
-  // ?skin=paper (or glass, bento, soft, hero, princess) to the address to preview one.
+  // ?skin=paper (or glass, bento, soft, hero, princess, kids) to the address to preview one.
 
   var SKINS = ["glass", "paper", "bento", "soft"]; // the daily rotation
-  var WILDCARDS = ["hero", "princess"]; // Saturdays, taking turns
+  var WILDCARDS = ["hero", "princess"]; // weekends, taking turns hourly
   var ALL_SKINS = SKINS.concat(WILDCARDS);
   var skinPreview = (location.search.match(/(?:^|[?&])skin=(\w+)/) || [])[1] || "";
   var skinOn = "";
 
   function activeSkin(now) {
     if (holidayOn) return "glass";
-    var pick = ALL_SKINS.indexOf(skinPreview) >= 0 ? skinPreview : settings.skin;
+    var pick = ALL_SKINS.indexOf(skinPreview) >= 0 || skinPreview === "kids" ? skinPreview : settings.skin;
     if (ALL_SKINS.indexOf(pick) >= 0) return pick;
+    var kidsNow = WILDCARDS[now.getHours() % WILDCARDS.length]; // Superhero on even hours, Princess on odd
+    if (pick === "kids") return kidsNow;
     // Days since Jan 1 2026 (round() absorbs DST's 23/25-hour days), so each day of the
     // week doesn't always get the same look.
     var day = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(2026, 0, 1)) / 864e5);
-    if (now.getDay() === 6) return WILDCARDS[Math.floor(day / 7) % WILDCARDS.length];
+    if (now.getDay() === 0 || now.getDay() === 6) return kidsNow;
     return SKINS[((day % SKINS.length) + SKINS.length) % SKINS.length];
   }
 

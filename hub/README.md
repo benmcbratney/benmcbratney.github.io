@@ -358,16 +358,17 @@ The iPad has four looks and shows a different one each day, cycling through them
 - **Bento:** a dark page with every tile in its own solid color. A mustard clock, a blue weather tile, an indigo calendar, a green scores tile, a rust thermostat tile and a purple "What to wear" tile.
 - **Soft:** "soft UI". Raised panels the same color as the page, with the clock digits in pressed-in wells and rounded type.
 
-**Saturdays are for the kids**, taking turns week to week:
+**Weekends are for the kids:** all day Saturday and Sunday the hub swaps between these two every hour, on the hour (Superhero on even hours, Princess on odd):
 
 - **Superhero:** a comic book. Halftone dots on bright blue, thick black outlines with hard shadows, yellow caption-box titles, outlined comic numerals, a "POW!" bursting off the clock, and a caped hero swooping across now and then.
 - **Princess:** a pastel castle in the clouds. Soft white panels with gold trim, script titles, a crown on the clock, sparkles, a castle on the horizon, and a unicorn floating by.
 
-Both are original drawings, not licensed characters. In December, Christmas takes Saturdays too.
+Both are original drawings, not licensed characters. In December, Christmas takes the weekends too. ⚙︎ → **Look** can also pin either one, or
+pick "Kids' looks, every hour" to keep the hourly swap going all week.
 
 Every look except Glass skips the weather photo and turns darker once the sun is down. On a holiday,
 the holiday's own look takes over. To keep one look instead of rotating, pick it in ⚙︎ → **Look**.
-To preview one, add `?skin=paper` (or `glass`, `bento`, `soft`, `hero`, `princess`) to the address.
+To preview one, add `?skin=paper` (or `glass`, `bento`, `soft`, `hero`, `princess`, `kids`) to the address.
 
 ## Holidays
 
