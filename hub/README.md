@@ -365,7 +365,7 @@ see-through navy cards. Card headers get an orange stripe, the clock panel turns
 white jersey numerals and a **"BEAR DOWN!"** pennant with the bear-head logo flying off it, and the header panels get
 navy-white-orange sleeve stripes. A footer pill follows the game ("🐻 Bear Down! · Kickoff 12p vs
 Packers", then the live score, then "W 24–20"; just "Bear Down!" in portrait), and a football
-spirals across now and then. The pennant and pill carry the bear-head logo (`bears-logo.png`).
+spirals across now and then. "What to wear" swaps the T-shirt or long sleeves for a Bears jersey. The pennant and pill carry the bear-head logo (`bears-logo.png`).
 
 **Weekends are for the kids:** all day Saturday and Sunday the hub swaps between these two every hour, on the hour (Superhero on even hours, Princess on odd):
 

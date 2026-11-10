@@ -180,6 +180,7 @@ input { -webkit-user-select: text; user-select: text; touch-action: auto; }
 .wear-grid { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 10px 6px; }
 .wear-tile { width: 104px; text-align: center; min-width: 0; }
 .wear-tile-icon { font-size: 58px; line-height: 1.1; }
+.wear-svg { display: block; width: 1.1em; height: 1.1em; margin: 0 auto; overflow: visible; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
 .wear-tile-label { font-size: 17px; font-weight: 700; margin-top: 2px; }
 .wear-grid.many { gap: 6px 4px; }
 .wear-grid.many .wear-tile { width: 92px; }
