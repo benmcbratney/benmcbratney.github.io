@@ -927,7 +927,7 @@
     else if (lo < 60) items.push(["🧥", "Light jacket"]);
     if (hi >= 70) items.push(["👕", "T-shirt"], ["🩳", "Shorts"]);
     else {
-      items.push(["👔", "Long sleeves"]);
+      items.push(["longsleeve", "Long sleeves"]); // a drawn long-sleeve tee (see WEAR_SVG)
       if (!snowy) items.push(["👖", "Pants"]);
     }
     if (snowy) items.push(["👖", "Snow pants"], ["🥾", "Snow boots"]);
@@ -943,7 +943,7 @@
     row.appendChild(el("span", "wear-when", wear.when + ", wear"));
     wear.items.forEach(function (it) {
       var item = el("span", "wear-item");
-      item.appendChild(el("span", "wear-icon", it[0]));
+      item.appendChild(wearIcon(el("span", "wear-icon"), it[0]));
       item.appendChild(el("span", "wear-label", it[1]));
       row.appendChild(item);
     });
@@ -951,6 +951,14 @@
   }
 
   // Big "What to wear" card in the right column, sized for kids across the room.
+  // Drawn icons for clothes with no good emoji: a plain long-sleeve tee (👔 is a shirt
+  // and tie, which no kid wears) and, on Bears game days, the jersey below.
+  var LONGSLEEVE_SVG = '<svg viewBox="0 0 64 64" class="wear-svg">' +
+    '<path d="M22 8Q32 13 42 8L52 12Q58 16 60 30L61 50L54 51L51 30L48 25V58H16V25L13 30L10 51L3 50L4 30Q6 16 12 12Z" ' +
+    'fill="#5b9be0" stroke="#2f5f9a" stroke-width="1.6" stroke-linejoin="round"/>' +
+    '<path d="M24 8.6Q32 15 40 8.6" fill="none" stroke="#2f5f9a" stroke-width="2.6" stroke-linecap="round"/>' +
+    '<path d="M3.3 46.5L10.5 47.5M60.7 46.5L53.5 47.5M16 54.5H48" fill="none" stroke="#2f5f9a" stroke-width="2.2"/></svg>';
+
   // On Bears game days the shirt becomes a jersey: navy, orange-and-white sleeve
   // stripes, a white 18. Drawn here (no team marks), sized like the emoji tiles.
   var JERSEY_SVG = '<svg viewBox="0 0 64 64" class="wear-svg">' +
@@ -959,6 +967,14 @@
     '<path d="M26 4Q32 10 38 4L36.4 7.5Q32 13 27.6 7.5Z" fill="#fff"/><path d="M28.4 7Q32 11.2 35.6 7" fill="none" stroke="#c83803" stroke-width="1.4"/>' +
     '<text x="32" y="47" text-anchor="middle" font-size="20" font-weight="900" fill="#fff" stroke="#c83803" stroke-width="1.1" ' +
     'letter-spacing="-0.5" font-family="Futura-CondensedExtraBold, Futura, Impact, Arial Black, sans-serif">18</text></svg>';
+  var WEAR_SVG = { longsleeve: LONGSLEEVE_SVG, jersey: JERSEY_SVG };
+
+  // Fills a wear icon box with an emoji or one of the drawn icons above.
+  function wearIcon(box, icon) {
+    if (WEAR_SVG[icon]) box.innerHTML = WEAR_SVG[icon];
+    else box.textContent = icon;
+    return box;
+  }
 
   function renderWearCard() {
     var wear = outfit(new Date());
@@ -971,13 +987,11 @@
     box.className = "wear-grid" + (wear.items.length > 4 ? " many" : ""); // 5+ items: two rows of smaller tiles
     var items = wear.items;
     if (skinOn === "bears") items = items.map(function (it) {
-      return it[0] === "👕" || it[0] === "👔" ? ["jersey", "Bears jersey"] : it;
+      return it[0] === "👕" || it[0] === "longsleeve" ? ["jersey", "Bears jersey"] : it;
     });
     items.forEach(function (it) {
       var item = el("div", "wear-tile");
-      var icon = el("div", "wear-tile-icon", it[0] === "jersey" ? null : it[0]);
-      if (it[0] === "jersey") icon.innerHTML = JERSEY_SVG;
-      item.appendChild(icon);
+      item.appendChild(wearIcon(el("div", "wear-tile-icon"), it[0]));
       item.appendChild(el("div", "wear-tile-label", it[1]));
       box.appendChild(item);
     });

@@ -317,7 +317,7 @@ doesn't have `/countdowns` yet, the holidays still show.
   (unofficial) feeds through the Worker; change teams with an optional `SPORTS_TEAMS` variable (see the top of
   worker.js).
 - What to wear: big picture icons with one-word labels so the kids can read it from across the room
-  (👔 long sleeves + 👖 pants below 70°, 👕 T-shirt + 🩳 shorts at 70°+, 🧥 coats when it's cold, 🧤 mittens,
+  (a drawn long-sleeve tee + 👖 pants below 70°, 👕 T-shirt + 🩳 shorts at 70°+, 🧥 coats when it's cold, 🧤 mittens,
   ☂️ umbrella, 🥾 snow/rain boots, 🧴 sunscreen, 💨 windy), from the daytime (7am–7pm) "feels like" temperatures,
   rain/snow chances, wind and UV. From 5pm it switches to tomorrow, so it's ready for getting dressed in the morning.
 - Tap the weather for the next 24 hours: temperature (the numbers ride higher when it's warmer), conditions,
