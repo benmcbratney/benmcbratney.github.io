@@ -922,7 +922,7 @@
     var uv = di >= 0 && dailyWx.uv_index_max ? dailyWx.uv_index_max[di] : 0;
 
     var items = [];
-    if (lo < 33) items.push(["🧥", "Big coat"], ["🧣", "Hat & scarf"], ["🧤", "Mittens"]);
+    if (lo < 33) items.push(["🧥", "Big coat"], ["🧣", "Hat & scarf"]);
     else if (lo < 50) items.push(["🧥", "Coat"]);
     else if (lo < 60) items.push(["🧥", "Light jacket"]);
     if (hi >= 70) items.push(["👕", "T-shirt"], ["🩳", "Shorts"]);
@@ -930,7 +930,7 @@
       items.push(["longsleeve", "Long sleeves"]); // a drawn long-sleeve tee (see WEAR_SVG)
       if (!snowy) items.push(["👖", "Pants"]);
     }
-    if (snowy) items.push(["👖", "Snow pants"], ["🥾", "Snow boots"]);
+    if (snowy) items.push(["👖", "Snow pants"], ["🥾", "Snow boots"], ["🧤", "Mittens"]); // mittens only for snow
     else if (rainy) items.push(["☂️", "Umbrella"], ["🥾", "Rain boots"]);
     else if (pop >= 40) items.push(["☂️", "Umbrella"]);
     if (uv >= 6 && hi >= 60) items.push(["🧴", "Sunscreen"]);
