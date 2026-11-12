@@ -923,7 +923,7 @@
 
     var items = [];
     var bigCoat = lo < 33; // what's under the big coat goes without saying
-    if (bigCoat) items.push(["🧥", "Big coat"], ["🧣", "Hat & scarf"]);
+    if (bigCoat) items.push(["🧥", "Big coat"], ["hat", "Hat"]); // a drawn knit beanie (see WEAR_SVG)
     else if (lo < 50) items.push(["🧥", "Coat"]);
     else if (lo < 60) items.push(["🧥", "Light jacket"]);
     if (hi >= 70) items.push(["👕", "T-shirt"], ["🩳", "Shorts"]);
@@ -953,7 +953,7 @@
 
   // Big "What to wear" card in the right column, sized for kids across the room.
   // Drawn icons for clothes with no good emoji: a plain long-sleeve tee (👔 is a shirt
-  // and tie, which no kid wears) and, on Bears game days, the jersey below.
+  // and tie, which no kid wears), a knit hat, and on Bears game days the jersey below.
   var LONGSLEEVE_SVG = '<svg viewBox="0 0 64 64" class="wear-svg">' +
     '<path d="M22 8Q32 13 42 8L52 12Q58 16 60 30L61 50L54 51L51 30L48 25V58H16V25L13 30L10 51L3 50L4 30Q6 16 12 12Z" ' +
     'fill="#5b9be0" stroke="#2f5f9a" stroke-width="1.6" stroke-linejoin="round"/>' +
@@ -968,7 +968,14 @@
     '<path d="M26 4Q32 10 38 4L36.4 7.5Q32 13 27.6 7.5Z" fill="#fff"/><path d="M28.4 7Q32 11.2 35.6 7" fill="none" stroke="#c83803" stroke-width="1.4"/>' +
     '<text x="32" y="47" text-anchor="middle" font-size="20" font-weight="900" fill="#fff" stroke="#c83803" stroke-width="1.1" ' +
     'letter-spacing="-0.5" font-family="Futura-CondensedExtraBold, Futura, Impact, Arial Black, sans-serif">18</text></svg>';
-  var WEAR_SVG = { longsleeve: LONGSLEEVE_SVG, jersey: JERSEY_SVG };
+  // A red knit beanie with a pom-pom (there's no winter-hat emoji).
+  var HAT_SVG = '<svg viewBox="0 0 64 64" class="wear-svg">' +
+    '<path d="M11 42Q11 15 32 15Q53 15 53 42Z" fill="#d64545" stroke="#9e2b2b" stroke-width="1.6" stroke-linejoin="round"/>' +
+    '<path d="M22 41Q21 26 27 18M32 41V16M42 41Q43 26 37 18" fill="none" stroke="#ee7a7a" stroke-width="2" stroke-linecap="round"/>' +
+    '<rect x="8" y="39" width="48" height="14" rx="4" fill="#b83232" stroke="#9e2b2b" stroke-width="1.6"/>' +
+    '<path d="M14 41V51M20 41V51M26 41V51M32 41V51M38 41V51M44 41V51M50 41V51" stroke="#d64545" stroke-width="2"/>' +
+    '<circle cx="32" cy="11" r="7.5" fill="#f4ece0" stroke="#cbbfae" stroke-width="1.4"/></svg>';
+  var WEAR_SVG = { longsleeve: LONGSLEEVE_SVG, jersey: JERSEY_SVG, hat: HAT_SVG };
 
   // Fills a wear icon box with an emoji or one of the drawn icons above.
   function wearIcon(box, icon) {
@@ -990,7 +997,7 @@
       items = items.map(function (it) {
         return it[0] === "👕" || it[0] === "longsleeve" ? ["jersey", "Bears jersey"] : it;
       });
-      // Big-coat days skip the shirt, but a game day still gets the jersey.
+      // Big-coat days skip the shirt, but a game day still gets the jersey (after the hat).
       if (!items.some(function (it) { return it[0] === "jersey"; })) items.splice(2, 0, ["jersey", "Bears jersey"]);
     }
     box.className = "wear-grid" + (items.length > 4 ? " many" : ""); // 5+ items: two rows of smaller tiles
