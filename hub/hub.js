@@ -922,11 +922,12 @@
     var uv = di >= 0 && dailyWx.uv_index_max ? dailyWx.uv_index_max[di] : 0;
 
     var items = [];
-    if (lo < 33) items.push(["🧥", "Big coat"], ["🧣", "Hat & scarf"]);
+    var bigCoat = lo < 33; // what's under the big coat goes without saying
+    if (bigCoat) items.push(["🧥", "Big coat"], ["🧣", "Hat & scarf"]);
     else if (lo < 50) items.push(["🧥", "Coat"]);
     else if (lo < 60) items.push(["🧥", "Light jacket"]);
     if (hi >= 70) items.push(["👕", "T-shirt"], ["🩳", "Shorts"]);
-    else {
+    else if (!bigCoat) {
       items.push(["longsleeve", "Long sleeves"]); // a drawn long-sleeve tee (see WEAR_SVG)
       if (!snowy) items.push(["👖", "Pants"]);
     }
@@ -984,11 +985,15 @@
     $("wear-title").textContent = "What to wear " + wear.when.toLowerCase();
     var box = $("wear-items");
     box.innerHTML = "";
-    box.className = "wear-grid" + (wear.items.length > 4 ? " many" : ""); // 5+ items: two rows of smaller tiles
     var items = wear.items;
-    if (skinOn === "bears") items = items.map(function (it) {
-      return it[0] === "👕" || it[0] === "longsleeve" ? ["jersey", "Bears jersey"] : it;
-    });
+    if (skinOn === "bears") {
+      items = items.map(function (it) {
+        return it[0] === "👕" || it[0] === "longsleeve" ? ["jersey", "Bears jersey"] : it;
+      });
+      // Big-coat days skip the shirt, but a game day still gets the jersey.
+      if (!items.some(function (it) { return it[0] === "jersey"; })) items.splice(2, 0, ["jersey", "Bears jersey"]);
+    }
+    box.className = "wear-grid" + (items.length > 4 ? " many" : ""); // 5+ items: two rows of smaller tiles
     items.forEach(function (it) {
       var item = el("div", "wear-tile");
       item.appendChild(wearIcon(el("div", "wear-tile-icon"), it[0]));
