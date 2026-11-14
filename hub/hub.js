@@ -610,7 +610,10 @@
         car.style.animationDelay = lane.delay + "s";
         var body = el("div", "car-body", list[n]);
         car.appendChild(body);
-        car.addEventListener("animationiteration", function () {
+        car.addEventListener("animationiteration", function (ev) {
+          // Only when the lane's own run starts over (off-screen), not on every bounce
+          // of the car inside it, whose iteration events bubble up here too.
+          if (ev.target !== car) return;
           n = (n + 1) % list.length;
           body.textContent = list[n];
         });
