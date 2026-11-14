@@ -373,7 +373,7 @@ spirals across now and then. "What to wear" swaps the T-shirt or long sleeves fo
 - **Princess:** a pastel castle in the clouds. Soft white panels with gold trim, script titles, a crown on the clock, sparkles, a castle on the horizon, and a unicorn floating by.
 - **Cars & trucks:** for Tommy. Dark asphalt with lane lines, every card a road sign (green highway calendar, blue weather, brown scores, yellow thermostats, orange construction "What to wear"), a license-plate clock reading "TOMMY'S GARAGE", and cars, trucks, a fire engine, a tractor and a helicopter driving across in their lanes.
 
-They use original drawings and Apple's emoji, not licensed characters or brands. In December, Christmas takes the weekends too. ⚙︎ → **Look** can also pin either one, or
+They use original drawings and Apple's emoji, not licensed characters or brands. In December, Christmas takes the weekends too. ⚙︎ → **Look** can also pin any of them, or
 pick "Kids' looks, every hour" to keep the hourly swap going all week.
 
 Every look except Glass skips the weather photo and turns darker once the sun is down. On a holiday,
