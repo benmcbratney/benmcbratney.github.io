@@ -1216,7 +1216,7 @@ body.skin-hero .weather, body.skin-princess .weather,
 body.skin-hero .cd-pill, body.skin-princess .cd-pill,
 body.skin-hero .timer-btn, body.skin-princess .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .sk-scene, .sk-front { display: none; }
-body.skin-hero .sk-hero, body.skin-princess .sk-princess, body.skin-bauhaus .sk-bauhaus { display: block; }
+body.skin-hero .sk-hero, body.skin-princess .sk-princess, body.skin-bauhaus .sk-bauhaus, body.skin-cars .sk-cars { display: block; }
 .sk-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .sk-front { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
 
@@ -1491,3 +1491,113 @@ body.skin-bears .bears-pill {
   28% { opacity: 1; transform: translate3d(calc(100vw + 80px), 120px, 0) rotate(20deg); }
   28.1%, 100% { opacity: 0; transform: translate3d(calc(100vw + 80px), 120px, 0); }
 }
+
+/* ---------------------------------------------------------------- Cars & trucks */
+/* skin-cars: a kids' weekend look (see the skins section in hub.js). Asphalt with
+   lane lines, cards as road signs, a license-plate clock, and vehicles driving by. */
+
+body.skin-cars .bg-layer, body.skin-cars .backdrop::after { display: none; }
+body.skin-cars .card, body.skin-cars .clock-unit, body.skin-cars .weather,
+body.skin-cars .cd-pill, body.skin-cars .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.skin-cars {
+  --on-photo: #fff; --on-photo-muted: rgba(255, 255, 255, 0.85); --photo-shadow: none;
+  --accent: #e8590c; --accent-soft: rgba(232, 89, 12, 0.18);
+  --sign-font: "DIN Alternate", "DIN Condensed", "Avenir Next Condensed", "Arial Narrow", sans-serif;
+}
+/* Asphalt: fine grit, white edge lines, and dashed yellow center lines. */
+body.skin-cars .backdrop {
+  background:
+    repeating-linear-gradient(90deg, #f2c200 0 46px, transparent 46px 86px) 0 35% / 100% 5px no-repeat,
+    repeating-linear-gradient(90deg, #f2c200 0 46px, transparent 46px 86px) 0 70% / 100% 5px no-repeat,
+    linear-gradient(#e9e9e9, #e9e9e9) 0 4% / 100% 4px no-repeat,
+    linear-gradient(#e9e9e9, #e9e9e9) 0 100% / 100% 4px no-repeat,
+    radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.5px) 0 0 / 5px 5px,
+    radial-gradient(rgba(0, 0, 0, 0.3) 1px, transparent 1.6px) 2px 3px / 7px 7px,
+    #3a3d43;
+}
+body.skin-cars.evening .backdrop { filter: brightness(0.8); }
+/* Every card is a road sign: a colored face with a white border inset from the edge. */
+body.skin-cars .card {
+  --sign: #0b6e3a; --sign-ink: #fff;
+  --ink: var(--sign-ink); --muted: rgba(255, 255, 255, 0.8); --line: rgba(255, 255, 255, 0.25); --control-bg: rgba(255, 255, 255, 0.16);
+  --accent-soft: rgba(255, 255, 255, 0.22);
+  background: var(--sign); border: 0; border-radius: 14px;
+  box-shadow: inset 0 0 0 4px var(--sign), inset 0 0 0 7px var(--sign-ink), 0 8px 18px rgba(0, 0, 0, 0.45);
+  padding: 18px 20px;
+}
+body.skin-cars .card h2 { color: var(--sign-ink); font-family: var(--sign-font); font-weight: 700; font-size: 18px; letter-spacing: 1.4px; }
+body.skin-cars .agenda { --sign: #0b6e3a; }                           /* highway green */
+body.skin-cars .scores { --sign: #6b4226; }                           /* recreation brown */
+body.skin-cars .spotify { --sign: #2d3036; }
+/* Warning yellow and construction orange signs take black ink. */
+body.skin-cars .nest, body.skin-cars .wear {
+  --sign-ink: #111; --muted: rgba(0, 0, 0, 0.68); --line: rgba(0, 0, 0, 0.2); --control-bg: rgba(0, 0, 0, 0.08); --accent-soft: rgba(0, 0, 0, 0.1);
+}
+body.skin-cars .nest { --sign: #ffd200; }
+body.skin-cars .wear { --sign: #f7851e; }
+body.skin-cars .event .pill, body.skin-cars .task .due { color: #fff; background: rgba(0, 0, 0, 0.25); }
+body.skin-cars .event.now { background: rgba(255, 255, 255, 0.16); }
+body.skin-cars .event.now .pill { background: #fff; color: #0b6e3a; }
+body.skin-cars .sm-tile.live { background: rgba(255, 90, 60, 0.35); }
+body.skin-cars .sm-wl.win { color: #9ff0b8; }
+body.skin-cars .tstat.heating .t-status, body.skin-cars .tstat.heating .t-target { color: #a33b00; }
+body.skin-cars .tstat.cooling .t-status, body.skin-cars .tstat.cooling .t-target { color: #0b4fa3; }
+body.skin-cars .wk-col { background: rgba(255, 255, 255, 0.1); }
+body.skin-cars .wk-col.today { background: rgba(255, 255, 255, 0.2); box-shadow: inset 0 0 0 2px #fff; }
+body.skin-cars .wk-col.today .wk-dow { color: #fff; }
+/* Weather is a blue services sign. */
+body.skin-cars .weather {
+  background: #1f5fae; border: 0; border-radius: 14px;
+  box-shadow: inset 0 0 0 4px #1f5fae, inset 0 0 0 7px #fff, 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+body.skin-cars .wx-strip { border-left-color: rgba(255, 255, 255, 0.35); }
+body.skin-cars .fc-pop { color: #d4ecff; }
+/* The clock is a license plate: bolt holes, a red banner, embossed navy numbers. */
+body.skin-cars .clock-unit {
+  position: relative; padding-top: 26px; border: 3px solid #1d3a7a; border-radius: 14px;
+  background:
+    radial-gradient(circle at 14px 14px, #8b9099 0 4px, #c9ccd1 4.5px 6px, transparent 6.5px),
+    radial-gradient(circle at calc(100% - 14px) 14px, #8b9099 0 4px, #c9ccd1 4.5px 6px, transparent 6.5px),
+    linear-gradient(#ffffff, #eef0f3);
+  box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px #1d3a7a, 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+body.skin-cars .clock-unit::before {
+  content: "TOMMY'S GARAGE"; position: absolute; top: 8px; left: 0; right: 0; text-align: center;
+  font-family: var(--sign-font); font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #c8102e; text-shadow: none;
+}
+body.skin-cars .flip, body.skin-cars .fl-top, body.skin-cars .fl-bot { background: transparent; box-shadow: none; }
+body.skin-cars .flip {
+  color: #1d3a7a; font-family: var(--sign-font); font-weight: 700; letter-spacing: 0.02em;
+  text-shadow: 0 2px 0 #fff, 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+body.skin-cars .flip::after { display: none; }
+body.skin-cars .flip-ampm { color: #1d3a7a; }
+body.skin-cars .tile { background: none; box-shadow: none; color: #1d3a7a; font-family: var(--sign-font); width: auto; }
+body.skin-cars .tile::after { display: none; }
+body.skin-cars .tile-word { gap: 1px; }
+/* Countdowns as yellow road signs; footer buttons as white signs. */
+body.skin-cars .cd-pill { background: #ffd200; color: #111; border: 2px solid #111; border-radius: 6px; line-height: 18px; font-family: var(--sign-font); font-weight: 600; }
+body.skin-cars .cd-pill.today { background: #c8102e; color: #fff; border-color: #fff; }
+body.skin-cars .timer-btn { background: #fff; color: #111; border-radius: 8px; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4); }
+body.skin-cars .pill-count { background: #111; color: #fff; }
+body.skin-cars .list-pill.has-items .pill-count { background: #c8102e; }
+body.skin-cars.evening .card, body.skin-cars.evening .clock-unit, body.skin-cars.evening .weather { filter: brightness(0.88); }
+
+/* Vehicles driving across in their lanes (built in hub.js): each crosses in the first
+   part of its cycle, then waits off-screen; a little bounce makes them look driven. */
+.car-lane { position: absolute; left: 0; line-height: 1; opacity: 0; animation: car-rtl 27s linear infinite; }
+.car-lane.car-ltr { animation-name: car-ltr; }
+.car-body { animation: car-bounce 0.45s ease-in-out infinite alternate; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.4)); }
+.car-ltr .car-body { transform: scaleX(-1); animation-name: car-bounce-flip; }
+@keyframes car-rtl {
+  0% { opacity: 1; transform: translate3d(calc(100vw + 40px), 0, 0); }
+  32% { opacity: 1; transform: translate3d(-120px, 0, 0); }
+  32.1%, 100% { opacity: 0; transform: translate3d(-120px, 0, 0); }
+}
+@keyframes car-ltr {
+  0% { opacity: 1; transform: translate3d(-120px, 0, 0); }
+  32% { opacity: 1; transform: translate3d(calc(100vw + 40px), 0, 0); }
+  32.1%, 100% { opacity: 0; transform: translate3d(calc(100vw + 40px), 0, 0); }
+}
+@keyframes car-bounce { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+@keyframes car-bounce-flip { from { transform: scaleX(-1) translateY(0); } to { transform: scaleX(-1) translateY(-3px); } }

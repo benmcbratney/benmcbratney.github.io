@@ -487,12 +487,14 @@
   // Weekends are for the kids, swapping every hour on the hour:
   //   hero      comic book: halftone dots, black outlines, POW!, a caped hero flying by
   //   princess  pastel castle in the clouds: gold trim, a crown, sparkles, a unicorn
+  //   cars      asphalt with lane lines, road-sign cards, a license-plate clock, and
+  //             cars and trucks driving across in their lanes
   // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
   // ?skin=cork (or glass, bento, bauhaus, hero, princess, kids, bears) to preview one.
 
   var SKINS = ["glass", "cork", "bento", "bauhaus"]; // the daily rotation
-  var WILDCARDS = ["hero", "princess"]; // weekends, taking turns hourly
+  var WILDCARDS = ["hero", "princess", "cars"]; // weekends, taking turns hourly
   var ALL_SKINS = SKINS.concat(WILDCARDS, ["bears"]);
   var OLD_SKINS = { paper: "cork", soft: "bauhaus" }; // renamed looks, for saved settings and old links
   var skinPreview = (location.search.match(/(?:^|[?&])skin=(\w+)/) || [])[1] || "";
@@ -526,7 +528,7 @@
     if (ALL_SKINS.indexOf(skinPreview) < 0 && skinPreview !== "kids" && bearsGame(now)) return "bears";
     var pick = ALL_SKINS.indexOf(skinPreview) >= 0 || skinPreview === "kids" ? skinPreview : settings.skin;
     if (ALL_SKINS.indexOf(pick) >= 0) return pick;
-    var kidsNow = WILDCARDS[now.getHours() % WILDCARDS.length]; // Superhero on even hours, Princess on odd
+    var kidsNow = WILDCARDS[now.getHours() % WILDCARDS.length]; // Superhero, Princess, Cars, Superhero…
     if (pick === "kids") return kidsNow;
     // Days since Jan 1 2026 (round() absorbs DST's 23/25-hour days), so each day of the
     // week doesn't always get the same look.
@@ -589,6 +591,31 @@
       pill.appendChild(el("span", null, "Bear Down!"));
       pill.appendChild(el("span", "bears-detail"));
       $("status-text").parentNode.insertBefore(pill, $("status-text"));
+    },
+    cars: function (scene, front) {
+      // Four lanes, each sending a vehicle across now and then, a different one each
+      // pass. Emoji vehicles face left, so the left-to-right lanes flip them around.
+      var FLEET = ["🏎️", "🚒", "🚜", "🚚", "🚓", "🚑", "🛻", "🚌", "🚛", "🚕", "🚙", "🚗"];
+      [
+        { top: "0", dur: 30, delay: -4, ltr: false, size: 34, fleet: ["🚁", "🚒", "🏎️"] }, // skims the top edge
+        { top: "29%", dur: 24, delay: -14, ltr: true, size: 50 },
+        { top: "58%", dur: 27, delay: -2, ltr: false, size: 54 },
+        { top: "83%", dur: 33, delay: -21, ltr: true, size: 46 },
+      ].forEach(function (lane, i) {
+        var list = lane.fleet || FLEET, n = (i * 3) % list.length;
+        var car = el("div", "car-lane " + (lane.ltr ? "car-ltr" : "car-rtl"));
+        car.style.top = lane.top;
+        car.style.fontSize = lane.size + "px";
+        car.style.animationDuration = lane.dur + "s";
+        car.style.animationDelay = lane.delay + "s";
+        var body = el("div", "car-body", list[n]);
+        car.appendChild(body);
+        car.addEventListener("animationiteration", function () {
+          n = (n + 1) % list.length;
+          body.textContent = list[n];
+        });
+        front.appendChild(car);
+      });
     },
     hero: function (scene, front) {
       var hero = el("div", "sk-flyer");
