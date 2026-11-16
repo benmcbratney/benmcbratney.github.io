@@ -489,13 +489,19 @@
   //   princess  pastel castle in the clouds: gold trim, a crown, sparkles, a unicorn
   //   cars      asphalt with lane lines, road-sign cards, a license-plate clock, and
   //             cars and trucks driving across in their lanes
+  // Every evening from 8 to 11pm (ahead of the rotation and the kids' looks, behind
+  // Bears games, holidays and a look pinned in Settings):
+  //   afterdark  dim lamplight: near-black page, amber-edged dark cards, a thin glowing
+  //              amber clock, softened emoji, faint stars and a few drifting fireflies
   // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
-  // ?skin=cork (or glass, bento, bauhaus, hero, princess, kids, bears) to preview one.
+  // ?skin=cork (or glass, bento, bauhaus, hero, princess, cars, kids, bears, afterdark)
+  // to preview one.
 
   var SKINS = ["glass", "cork", "bento", "bauhaus"]; // the daily rotation
   var WILDCARDS = ["hero", "princess", "cars"]; // weekends, taking turns hourly
-  var ALL_SKINS = SKINS.concat(WILDCARDS, ["bears"]);
+  var ALL_SKINS = SKINS.concat(WILDCARDS, ["bears", "afterdark"]);
+  var AFTER_DARK = [20, 23]; // 8pm until 11pm
   var OLD_SKINS = { paper: "cork", soft: "bauhaus" }; // renamed looks, for saved settings and old links
   var skinPreview = (location.search.match(/(?:^|[?&])skin=(\w+)/) || [])[1] || "";
   skinPreview = OLD_SKINS[skinPreview] || skinPreview;
@@ -530,6 +536,7 @@
     if (ALL_SKINS.indexOf(pick) >= 0) return pick;
     var kidsNow = WILDCARDS[now.getHours() % WILDCARDS.length]; // Superhero, Princess, Cars, Superhero…
     if (pick === "kids") return kidsNow;
+    if (now.getHours() >= AFTER_DARK[0] && now.getHours() < AFTER_DARK[1]) return "afterdark";
     // Days since Jan 1 2026 (round() absorbs DST's 23/25-hour days), so each day of the
     // week doesn't always get the same look.
     var day = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(2026, 0, 1)) / 864e5);
@@ -569,6 +576,18 @@
   }
 
   var SKIN_DECOR = {
+    afterdark: function (scene, front) {
+      scene.appendChild(el("div", "hd-stars ad-stars"));
+      // A few fireflies drifting slowly, each on its own loop and pace.
+      for (var i = 0; i < 7; i++) {
+        var fly = el("div", "ad-firefly");
+        fly.style.left = (6 + Math.random() * 88) + "%";
+        fly.style.top = (8 + Math.random() * 84) + "%";
+        fly.style.animationDuration = (18 + Math.random() * 14) + "s, " + (2.5 + Math.random() * 2.5) + "s";
+        fly.style.animationDelay = (-Math.random() * 30) + "s, " + (-Math.random() * 5) + "s";
+        front.appendChild(fly);
+      }
+    },
     bauhaus: function (scene) {
       // Big flat shapes behind the panels, peeking out around the edges like a poster.
       ["bh-circle", "bh-half", "bh-quarter", "bh-tri", "bh-dot"].forEach(function (cls) {

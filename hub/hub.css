@@ -1216,7 +1216,7 @@ body.skin-hero .weather, body.skin-princess .weather,
 body.skin-hero .cd-pill, body.skin-princess .cd-pill,
 body.skin-hero .timer-btn, body.skin-princess .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .sk-scene, .sk-front { display: none; }
-body.skin-hero .sk-hero, body.skin-princess .sk-princess, body.skin-bauhaus .sk-bauhaus, body.skin-cars .sk-cars { display: block; }
+body.skin-hero .sk-hero, body.skin-princess .sk-princess, body.skin-bauhaus .sk-bauhaus, body.skin-cars .sk-cars, body.skin-afterdark .sk-afterdark { display: block; }
 .sk-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .sk-front { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
 
@@ -1601,3 +1601,83 @@ body.skin-cars.evening .card, body.skin-cars.evening .clock-unit, body.skin-cars
 }
 @keyframes car-bounce { from { transform: translateY(0); } to { transform: translateY(-3px); } }
 @keyframes car-bounce-flip { from { transform: scaleX(-1) translateY(0); } to { transform: scaleX(-1) translateY(-3px); } }
+
+/* ---------------------------------------------------------------- After dark */
+/* skin-afterdark: 8 to 11pm every evening (see the skins section in hub.js). Dim
+   lamplight: a near-black warm page, dark cards with thin amber edges, a thin glowing
+   amber clock, emoji toned down so they don't glare, faint stars and a few fireflies.
+   From 10pm the night clock covers the hub, so it gets the same colors. */
+
+body.skin-afterdark .bg-layer, body.skin-afterdark .backdrop::after { display: none; }
+body.skin-afterdark .card, body.skin-afterdark .clock-unit, body.skin-afterdark .weather,
+body.skin-afterdark .cd-pill, body.skin-afterdark .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.skin-afterdark {
+  --ad-ink: #eadbc6; --ad-muted: rgba(234, 219, 198, 0.6); --ad-amber: #f0a35c; --ad-glow: rgba(245, 170, 90, 0.45);
+  --on-photo: var(--ad-ink); --on-photo-muted: var(--ad-muted); --photo-shadow: none;
+  --accent: var(--ad-amber); --accent-soft: rgba(240, 163, 92, 0.16);
+}
+/* A warm ember glow low on the page and a hint of violet up top, on near-black. */
+body.skin-afterdark .backdrop {
+  background:
+    radial-gradient(ellipse 70% 38% at 50% 112%, rgba(240, 140, 70, 0.2), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 88% -12%, rgba(120, 90, 200, 0.16), transparent 70%),
+    #0d0a12;
+}
+.ad-stars { opacity: 0.5; }
+body.skin-afterdark .card, body.skin-afterdark .clock-unit, body.skin-afterdark .weather {
+  background: rgba(24, 19, 30, 0.94); border: 1px solid rgba(240, 163, 92, 0.22); border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+body.skin-afterdark .card {
+  --ink: var(--ad-ink); --muted: var(--ad-muted); --line: rgba(234, 219, 198, 0.1); --control-bg: rgba(234, 219, 198, 0.07);
+}
+body.skin-afterdark .card h2 { color: var(--ad-amber); font-weight: 600; letter-spacing: 2px; }
+body.skin-afterdark .weather { color: var(--ad-ink); }
+body.skin-afterdark .wx-strip { border-left-color: rgba(234, 219, 198, 0.12); }
+body.skin-afterdark .fc-pop { color: #c9a2ff; }
+/* A bedside clock: big, thin, glowing amber numerals. */
+body.skin-afterdark .flip, body.skin-afterdark .fl-top, body.skin-afterdark .fl-bot { background: transparent; box-shadow: none; }
+body.skin-afterdark .flip {
+  color: #f5b56e; font-family: "Avenir Next", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-weight: 200; text-shadow: 0 0 18px var(--ad-glow);
+}
+body.skin-afterdark .flip::after { display: none; }
+body.skin-afterdark .flip-ampm { color: var(--ad-muted); }
+body.skin-afterdark .tile { background: none; box-shadow: none; color: var(--ad-muted); width: auto; font-weight: 600; letter-spacing: 1px; }
+body.skin-afterdark .tile::after { display: none; }
+body.skin-afterdark .tile-word { gap: 0; }
+/* Soften the bright emoji and pictures so the wall doesn't glare in a dark room. */
+body.skin-afterdark .wear-tile-icon, body.skin-afterdark .wx-icon, body.skin-afterdark .fc-icon,
+body.skin-afterdark .sp-art, body.skin-afterdark .sm-emoji, body.skin-afterdark .card h2 .icon { filter: brightness(0.82) saturate(0.8); }
+body.skin-afterdark .cd-pill { background: rgba(234, 219, 198, 0.08); color: var(--ad-ink); }
+body.skin-afterdark .cd-pill.today { background: var(--ad-amber); color: #1a1208; }
+body.skin-afterdark .timer-btn { background: rgba(234, 219, 198, 0.08); color: var(--ad-ink); }
+body.skin-afterdark .pill-count { background: rgba(234, 219, 198, 0.16); color: var(--ad-ink); }
+body.skin-afterdark .list-pill.has-items .pill-count { background: var(--ad-amber); color: #1a1208; }
+body.skin-afterdark .event.now { background: rgba(240, 163, 92, 0.12); }
+body.skin-afterdark .event.now .pill { background: var(--ad-amber); color: #1a1208; }
+body.skin-afterdark .sm-tile.live { background: rgba(240, 120, 90, 0.18); }
+body.skin-afterdark .sm-wl.win { color: #9fd9a8; }
+body.skin-afterdark .tstat.heating .t-status, body.skin-afterdark .tstat.heating .t-target { color: #ff9a62; }
+body.skin-afterdark .tstat.cooling .t-status, body.skin-afterdark .tstat.cooling .t-target { color: #8cc0ff; }
+body.skin-afterdark .wk-col { background: rgba(234, 219, 198, 0.05); }
+body.skin-afterdark .wk-col.today { background: rgba(240, 163, 92, 0.1); box-shadow: inset 0 0 0 1px var(--ad-amber); }
+body.skin-afterdark .wk-col.today .wk-dow { color: var(--ad-amber); }
+/* 10 to 11pm: the night clock in the same amber. */
+body.skin-afterdark .night { background: rgba(8, 6, 12, 0.88); color: var(--ad-ink); }
+body.skin-afterdark .night-time .flip, body.skin-afterdark .night-time .fl-top, body.skin-afterdark .night-time .fl-bot { background: transparent; }
+body.skin-afterdark .night-time .flip { color: #f5b56e; text-shadow: 0 0 26px var(--ad-glow); }
+
+/* Fireflies: tiny warm lights wandering slowly and pulsing. */
+.ad-firefly {
+  position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #ffd27a;
+  box-shadow: 0 0 8px 3px rgba(255, 196, 90, 0.55);
+  animation: firefly-wander 24s ease-in-out infinite, firefly-pulse 3.5s ease-in-out infinite alternate;
+}
+@keyframes firefly-wander {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(40px, -30px, 0); }
+  50% { transform: translate3d(-20px, -60px, 0); }
+  75% { transform: translate3d(-50px, -20px, 0); }
+}
+@keyframes firefly-pulse { from { opacity: 0.15; } to { opacity: 0.9; } }

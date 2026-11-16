@@ -367,6 +367,13 @@ navy-white-orange sleeve stripes. A footer pill follows the game ("🐻 Bear Dow
 Packers", then the live score, then "W 24–20"; just "Bear Down!" in portrait), and a football
 spirals across now and then. "What to wear" swaps the T-shirt or long sleeves for a Bears jersey. The pennant and pill carry the bear-head logo (`bears-logo.png`).
 
+**After dark (8 to 11pm, every evening):** a dim lamplight look for winding down. A near-black warm
+page with an ember glow, dark cards with thin amber edges, a big thin glowing amber clock like a
+bedside clock, emoji and pictures toned down so they don't glare, faint stars and a few slow
+fireflies. It replaces the daily rotation and the kids' weekend looks for those hours; Bears games,
+holidays and a look pinned in Settings still win. From 10pm the night clock takes over, in the same
+amber.
+
 **Weekends are for the kids:** all day Saturday and Sunday the hub swaps between these three every hour, on the hour (Superhero, then Princess, then Cars & trucks, and around again):
 
 - **Superhero:** a comic book. Halftone dots on bright blue, thick black outlines with hard shadows, yellow caption-box titles, outlined comic numerals, a "POW!" bursting off the clock, and a caped hero swooping across now and then.
@@ -378,7 +385,7 @@ pick "Kids' looks, every hour" to keep the hourly swap going all week.
 
 Every look except Glass skips the weather photo and turns darker once the sun is down. On a holiday,
 the holiday's own look takes over. To keep one look instead of rotating, pick it in ⚙︎ → **Look**.
-To preview one, add `?skin=cork` (or `glass`, `bento`, `bauhaus`, `hero`, `princess`, `cars`, `kids`, `bears`) to the address.
+To preview one, add `?skin=cork` (or `glass`, `bento`, `bauhaus`, `hero`, `princess`, `cars`, `kids`, `bears`, `afterdark`) to the address.
 
 ## Holidays
 
