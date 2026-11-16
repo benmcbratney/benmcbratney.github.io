@@ -338,7 +338,7 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Tap a thermostat's name or temperature for a pop-up: switch between Heat, Cool, Heat · Cool, Off and
   Eco (only the modes that thermostat supports), with big −/+ for the setpoint (both ends in Heat · Cool,
   kept at least 3° apart). Picking a mode while it's in Eco takes it off Eco first.
-- Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
+- Night mode (default 11pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check.
 - Updates itself: every 10 minutes (and whenever it's reopened) it checks `version.json`; when a
   newer version is published it reloads through a fresh URL, so the iPad never sticks on cached files.
@@ -367,6 +367,18 @@ navy-white-orange sleeve stripes. A footer pill follows the game ("🐻 Bear Dow
 Packers", then the live score, then "W 24–20"; just "Bear Down!" in portrait), and a football
 spirals across now and then. "What to wear" swaps the T-shirt or long sleeves for a Bears jersey. The pennant and pill carry the bear-head logo (`bears-logo.png`).
 
+**After dark (8 to 11pm, every evening):** a candlelit art deco salon, drawn in the page as one
+picture behind the cards. Black walls with gold deco panels and a cream cornice, glowing wall
+sconces and crystal chandeliers whose drops glint; a gold sunburst mirror over a black-and-gold
+fireplace with a live fire (flickering flames, embers, sparks) and candles on the mantel; an emerald
+velvet armchair, a curved cream sofa with black-and-gold cushions, palms, a black-and-gold geometric
+rug, a round coffee table with candles, and candle lanterns on the floor. The firelight and
+candlelight breathe across the room. Cards are smoked glass in double gold frames with fan
+ornaments in the corners and gold deco titles; the clock is Didot numerals on a sunburst plaque.
+Emoji and pictures are toned down so the wall doesn't glare in a dark room. It replaces the daily
+rotation and the kids' weekend looks for those hours; Bears games, holidays and a look pinned in
+Settings still win. If night mode starts before 11pm (⚙︎ → Night starts), the night clock matches.
+
 **Weekends are for the kids:** all day Saturday and Sunday the hub swaps between these three every hour, on the hour (Superhero, then Princess, then Cars & trucks, and around again):
 
 - **Superhero:** a comic book. Halftone dots on bright blue, thick black outlines with hard shadows, yellow caption-box titles, outlined comic numerals, a "POW!" bursting off the clock, and a caped hero swooping across now and then.
@@ -378,7 +390,7 @@ pick "Kids' looks, every hour" to keep the hourly swap going all week.
 
 Every look except Glass skips the weather photo and turns darker once the sun is down. On a holiday,
 the holiday's own look takes over. To keep one look instead of rotating, pick it in ⚙︎ → **Look**.
-To preview one, add `?skin=cork` (or `glass`, `bento`, `bauhaus`, `hero`, `princess`, `cars`, `kids`, `bears`) to the address.
+To preview one, add `?skin=cork` (or `glass`, `bento`, `bauhaus`, `hero`, `princess`, `cars`, `kids`, `bears`, `afterdark`) to the address.
 
 ## Holidays
 
