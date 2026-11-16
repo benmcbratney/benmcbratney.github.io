@@ -491,9 +491,9 @@
   //             cars and trucks driving across in their lanes
   // Every evening from 8 to 11pm (ahead of the rotation and the kids' looks, behind
   // Bears games, holidays and a look pinned in Settings):
-  //   afterdark  an art deco lounge by lamplight: smoked-glass cards in double gold
-  //              frames, a sunburst clock plaque in Didot, a gold sunburst, a ringed
-  //              moon, a deco skyline with flickering windows and a glowing brass lamp
+  //   afterdark  a lamp-lit art deco lounge: oxblood velvet walls over walnut, a
+  //              black-marble fireplace with a crackling fire, a tufted leather
+  //              armchair, a brass lamp; smoked-glass cards in gold frames
   // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
   // ?skin=cork (or glass, bento, bauhaus, hero, princess, cars, kids, bears, afterdark)
@@ -576,9 +576,9 @@
     return box;
   }
 
-  // After dark's art, drawn here: a brass deco table lamp with a pleated, glowing shade,
-  // and an art deco skyline (stepped towers, a spire with a sunburst crown, and windows
-  // that slowly light up and go dark).
+  // After dark's room, drawn here: a brass deco table lamp with a glowing pleated
+  // shade on a small side table, a black-marble deco fireplace with a live fire, and
+  // a tufted cognac leather armchair. (The velvet walls and wainscoting are CSS.)
   var DECO_LAMP_SVG = '<svg viewBox="0 0 120 210">' +
     '<defs><linearGradient id="adShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a8"/>' +
     '<stop offset="1" stop-color="#d98a34"/></linearGradient>' +
@@ -592,60 +592,96 @@
     '<path d="M52 128H68M54 150H66" stroke="#f1d58e" stroke-width="2"/>' +
     '<path d="M40 174H80V182H40ZM30 182H90V192H30ZM22 192H98V200H22Z" fill="url(#adBrass)" stroke="#6b5122" stroke-width="1"/></svg>';
 
-  function decoSkyline() {
-    var W = 1200, G = 240; // drawing width and ground line
-    // [left, width, height, setbacks, crown]: crown "spire" gets sunburst arches.
-    var towers = [[0, 90, 120, 2], [80, 70, 165, 3], [160, 110, 95, 1], [250, 80, 190, 3], [340, 60, 140, 2],
-      [420, 120, 110, 1], [520, 90, 210, 4, "spire"], [620, 70, 150, 2], [700, 120, 100, 1], [810, 80, 175, 3],
-      [900, 100, 125, 2], [990, 70, 195, 3, "spire"], [1070, 130, 115, 2]];
-    var parts = [], windows = [];
-    towers.forEach(function (t) {
-      var x = t[0], w = t[1], h = t[2], steps = t[3], inset = Math.min(10, w / (2 * steps + 2));
-      var top = G - h, stepH = Math.round(h * 0.18);
-      // Draw the narrowest (top) level first so each wider level below overlaps it.
-      for (var i = steps; i >= 0; i--) {
-        var lx = x + inset * i, lw = w - 2 * inset * i, ly = top + stepH * (steps - i);
-        if (i === steps) ly = top;
-        parts.push('<rect x="' + lx + '" y="' + ly + '" width="' + lw + '" height="' + (G - ly) + '" class="t"/>');
-      }
-      if (t[4] === "spire") {
-        var cx = x + w / 2;
-        for (var r = 26; r >= 10; r -= 8) parts.push('<path d="M' + (cx - r) + ' ' + top + 'A' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + top + '" class="c"/>');
-        parts.push('<path d="M' + cx + ' ' + (top - 26) + 'V' + (top - 70) + '" class="c"/>');
-      }
-      // A grid of windows on the base, about a quarter of them lit.
-      for (var wy = top + stepH * steps + 14; wy < G - 12; wy += 16) {
-        for (var wx = x + 10; wx < x + w - 10; wx += 12) {
-          if (Math.random() < 0.26) windows.push('<rect x="' + wx + '" y="' + wy + '" width="4" height="7" class="w' +
-            (Math.random() < 0.3 ? ' tw" style="animation-delay:' + (-Math.random() * 24).toFixed(1) + 's' : '') + '"/>');
-        }
-      }
-    });
-    var box = el("div", "ad-skyline");
-    box.innerHTML = '<svg viewBox="0 -80 ' + W + ' ' + (G + 80) + '" preserveAspectRatio="xMidYMax slice">' +
-      parts.join("") + windows.join("") + "</svg>";
-    return box;
-  }
+  var SIDE_TABLE_SVG = '<svg viewBox="0 0 170 96">' +
+    '<rect x="4" y="0" width="162" height="10" rx="3" fill="#2a1a12" stroke="#c9a35a" stroke-width="1.5"/>' +
+    '<path d="M20 10H150L140 18H30Z" fill="#1c120c"/>' +
+    '<rect x="78" y="18" width="14" height="56" fill="#8a6a2e"/><path d="M85 18V74" stroke="#f1d58e" stroke-width="2"/>' +
+    '<path d="M60 74H110V82H60ZM48 82H122V90H48ZM40 90H130V96H40Z" fill="#2a1a12" stroke="#c9a35a" stroke-width="1"/></svg>';
+
+  var FIREPLACE_SVG = '<svg viewBox="0 0 520 330">' +
+    '<defs><radialGradient id="lgEmber" cx=".5" cy=".9" r=".6"><stop offset="0" stop-color="#ffb347" stop-opacity=".95"/>' +
+    '<stop offset=".5" stop-color="#e2561b" stop-opacity=".55"/><stop offset="1" stop-color="#5a1406" stop-opacity="0"/></radialGradient>' +
+    '<linearGradient id="lgFlameO" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff6a14"/><stop offset=".6" stop-color="#ff9a2e"/>' +
+    '<stop offset="1" stop-color="#ffd36a" stop-opacity=".2"/></linearGradient>' +
+    '<linearGradient id="lgFlameI" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#ffc24a" stop-opacity=".3"/></linearGradient>' +
+    '<linearGradient id="lgMarble" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d1816"/><stop offset=".5" stop-color="#2a2321"/>' +
+    '<stop offset="1" stop-color="#141110"/></linearGradient></defs>' +
+    // Overmantel crest: a stepped deco block with a gold sunburst.
+    '<path d="M180 108V80H206V60H314V80H340V108Z" fill="url(#lgMarble)" stroke="#c9a35a" stroke-width="2"/>' +
+    '<path d="M260 106L222 70M260 106L241 64M260 106V62M260 106L279 64M260 106L298 70" stroke="#c9a35a" stroke-width="1.6"/>' +
+    // Mantel shelf, surround with an inner gold line, and the arched firebox.
+    '<rect x="0" y="106" width="520" height="16" fill="#2b1d15" stroke="#c9a35a" stroke-width="2"/>' +
+    '<rect x="26" y="122" width="468" height="208" fill="url(#lgMarble)" stroke="#c9a35a" stroke-width="1.6"/>' +
+    '<rect x="42" y="138" width="436" height="192" fill="none" stroke="#c9a35a" stroke-opacity=".55" stroke-width="1"/>' +
+    '<path d="M120 330V206Q120 166 160 166H360Q400 166 400 206V330Z" fill="#070403" stroke="#c9a35a" stroke-width="2"/>' +
+    '<ellipse class="lg-embers" cx="260" cy="320" rx="132" ry="58" fill="url(#lgEmber)"/>' +
+    // The fire: outer flames, then inner flames, each flickering on its own beat.
+    '<path class="lg-flame f1" d="M205 312C176 278 200 252 206 214C220 246 236 268 225 312Z" fill="url(#lgFlameO)"/>' +
+    '<path class="lg-flame f2" d="M236 314C206 262 242 222 256 172C274 222 300 262 278 314Z" fill="url(#lgFlameO)"/>' +
+    '<path class="lg-flame f3" d="M286 312C276 270 300 246 312 210C324 248 336 276 314 312Z" fill="url(#lgFlameO)"/>' +
+    '<path class="lg-flame f4" d="M244 314C232 282 252 256 258 226C270 258 284 284 270 314Z" fill="url(#lgFlameI)"/>' +
+    '<path class="lg-flame f5" d="M210 314C204 296 214 282 216 266C224 284 230 298 222 314Z" fill="url(#lgFlameI)"/>' +
+    // Logs on a grate.
+    '<rect x="168" y="304" width="190" height="18" rx="9" fill="#3b2416" transform="rotate(-5 263 313)"/>' +
+    '<rect x="176" y="308" width="180" height="16" rx="8" fill="#4a2c1a" transform="rotate(6 266 316)"/>' +
+    '<circle cx="176" cy="320" r="7" fill="#8a5a34"/><circle cx="350" cy="303" r="7" fill="#8a5a34"/>' +
+    '<path d="M150 326H370" stroke="#1a1a1a" stroke-width="5"/></svg>';
+
+  // A tufted Chesterfield armchair: buttoned diamond tufting on the back, rolled arms.
+  var LEATHER_CHAIR_SVG = '<svg viewBox="0 0 300 250">' +
+    '<defs><linearGradient id="lgLeather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a4f24"/>' +
+    '<stop offset="1" stop-color="#4f220e"/></linearGradient>' +
+    '<linearGradient id="lgLeatherHi" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a2810"/>' +
+    '<stop offset=".45" stop-color="#b8673a"/><stop offset="1" stop-color="#5a2810"/></linearGradient>' +
+    '<pattern id="lgTuft" width="26" height="26" patternUnits="userSpaceOnUse">' +
+    '<path d="M13 0L26 13L13 26L0 13Z" fill="none" stroke="#3a1606" stroke-opacity=".55" stroke-width="1.4"/>' +
+    '<circle cx="13" cy="0" r="2.4" fill="#2a1004"/><circle cx="0" cy="13" r="2.4" fill="#2a1004"/>' +
+    '<circle cx="26" cy="13" r="2.4" fill="#2a1004"/><circle cx="13" cy="26" r="2.4" fill="#2a1004"/></pattern>' +
+    '<clipPath id="lgBack"><path d="M48 42Q48 14 78 14H222Q252 14 252 42V176H48Z"/></clipPath></defs>' +
+    '<path d="M48 42Q48 14 78 14H222Q252 14 252 42V176H48Z" fill="url(#lgLeather)"/>' +
+    '<rect x="40" y="10" width="220" height="170" fill="url(#lgTuft)" clip-path="url(#lgBack)"/>' +
+    '<path d="M60 24Q150 6 240 24" fill="none" stroke="#e0a070" stroke-opacity=".25" stroke-width="3"/>' +
+    '<rect x="60" y="164" width="180" height="40" rx="14" fill="url(#lgLeatherHi)"/>' +
+    '<path d="M8 124Q8 92 38 92H66V232H24Q8 232 8 214Z" fill="url(#lgLeather)"/>' +
+    '<path d="M292 124Q292 92 262 92H234V232H276Q292 232 292 214Z" fill="url(#lgLeather)"/>' +
+    '<path d="M14 112Q36 98 62 104M286 112Q264 98 238 104" fill="none" stroke="#e0a070" stroke-opacity=".3" stroke-width="3"/>' +
+    '<rect x="30" y="200" width="240" height="34" rx="6" fill="#3e1a0a"/>' +
+    '<path d="M36 212H264" stroke="#c9a35a" stroke-opacity=".5" stroke-width="1"/>' +
+    '<rect x="40" y="234" width="14" height="14" fill="#1c120c"/><rect x="246" y="234" width="14" height="14" fill="#1c120c"/></svg>';
 
   var SKIN_DECOR = {
     afterdark: function (scene, front) {
-      // A gold sunburst fan rising behind everything, and a ringed crescent moon.
-      scene.appendChild(el("div", "ad-sunburst"));
-      var moon = el("div", "ad-moon");
-      moon.appendChild(el("div", "ad-moon-ring"));
-      scene.appendChild(moon);
-      // The deco skyline along the bottom, drawn from a list of towers.
-      scene.appendChild(decoSkyline());
-      // A brass table lamp throwing a warm pool of light into its corner.
+      // Velvet walls above walnut wainscoting (CSS), the fire's pulsing glow, then the
+      // fireplace, the lamp on its side table with its own pool of light, and the chair.
+      scene.appendChild(el("div", "lg-wainscot"));
+      scene.appendChild(el("div", "lg-fireglow"));
+      var fire = el("div", "lg-fireplace");
+      fire.innerHTML = FIREPLACE_SVG;
+      scene.appendChild(fire);
+      // Sparks drifting up out of the fire.
+      for (var i = 0; i < 10; i++) {
+        var spark = el("div", "lg-spark");
+        spark.style.left = (46 + Math.random() * 8) + "%";
+        spark.style.animationDuration = (2.8 + Math.random() * 3) + "s";
+        spark.style.animationDelay = (-Math.random() * 6) + "s";
+        spark.style.setProperty("--sway", (Math.random() * 60 - 30) + "px");
+        scene.appendChild(spark);
+      }
       scene.appendChild(el("div", "ad-lamp-glow"));
+      var table = el("div", "lg-table");
+      table.innerHTML = SIDE_TABLE_SVG;
+      scene.appendChild(table);
       var lamp = el("div", "ad-lamp");
       lamp.innerHTML = DECO_LAMP_SVG;
       scene.appendChild(lamp);
+      var chair = el("div", "lg-chair");
+      chair.innerHTML = LEATHER_CHAIR_SVG;
+      scene.appendChild(chair);
       // Dust motes floating in the lamplight.
-      for (var i = 0; i < 9; i++) {
+      for (var j = 0; j < 8; j++) {
         var mote = el("div", "ad-mote");
-        mote.style.left = (2 + Math.random() * 30) + "%";
-        mote.style.top = (48 + Math.random() * 46) + "%";
+        mote.style.left = (2 + Math.random() * 26) + "%";
+        mote.style.top = (40 + Math.random() * 40) + "%";
         mote.style.animationDuration = (16 + Math.random() * 12) + "s, " + (3 + Math.random() * 3) + "s";
         mote.style.animationDelay = (-Math.random() * 28) + "s, " + (-Math.random() * 6) + "s";
         front.appendChild(mote);
