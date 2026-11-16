@@ -491,9 +491,9 @@
   //             cars and trucks driving across in their lanes
   // Every evening from 8 to 11pm (ahead of the rotation and the kids' looks, behind
   // Bears games, holidays and a look pinned in Settings):
-  //   afterdark  a lamp-lit art deco lounge: oxblood velvet walls over walnut, a
-  //              black-marble fireplace with a crackling fire, a tufted leather
-  //              armchair, a brass lamp; smoked-glass cards in gold frames
+  //   afterdark  a lamp-lit art deco salon: black walls with gold deco panels, sconces
+  //              and crystal chandeliers, a sunburst mirror over a fireplace with a
+  //              live fire, emerald velvet and cream sofa, candles; gold-framed cards
   // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
   // ?skin=cork (or glass, bento, bauhaus, hero, princess, cars, kids, bears, afterdark)
@@ -576,115 +576,168 @@
     return box;
   }
 
-  // After dark's room, drawn here: a brass deco table lamp with a glowing pleated
-  // shade on a small side table, a black-marble deco fireplace with a live fire, and
-  // a tufted cognac leather armchair. (The velvet walls and wainscoting are CSS.)
-  var DECO_LAMP_SVG = '<svg viewBox="0 0 120 210">' +
-    '<defs><linearGradient id="adShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a8"/>' +
-    '<stop offset="1" stop-color="#d98a34"/></linearGradient>' +
-    '<linearGradient id="adBrass" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6a2e"/>' +
-    '<stop offset=".5" stop-color="#f1d58e"/><stop offset="1" stop-color="#8a6a2e"/></linearGradient></defs>' +
-    '<path d="M24 100L42 30H78L96 100Z" fill="url(#adShade)"/>' +
-    '<path d="M42 30L33 100M51 30L47 100M60 30V100M69 30L73 100M78 30L87 100" stroke="#a0571c" stroke-opacity=".35" stroke-width="1.5"/>' +
-    '<path d="M50 30V22H70V30M42 30H78M24 100H96" fill="none" stroke="url(#adBrass)" stroke-width="3.5"/>' +
-    '<circle cx="60" cy="18" r="4" fill="url(#adBrass)"/>' +
-    '<rect x="57" y="100" width="6" height="74" fill="url(#adBrass)"/>' +
-    '<path d="M52 128H68M54 150H66" stroke="#f1d58e" stroke-width="2"/>' +
-    '<path d="M40 174H80V182H40ZM30 182H90V192H30ZM22 192H98V200H22Z" fill="url(#adBrass)" stroke="#6b5122" stroke-width="1"/></svg>';
+  // After dark's room, drawn here as one picture (1200×800, anchored bottom-center):
+  // a symmetrical art deco salon. Black walls with gold deco panels and a cream cornice,
+  // glowing wall sconces, crystal chandeliers, a gold sunburst mirror over a black-and-
+  // gold fireplace with a live fire and candles on the mantel, an emerald velvet armchair,
+  // a curved cream sofa with black-and-gold cushions, a geometric rug, a round coffee
+  // table with candles, palms and candle lanterns. Fire, candles, sconces and crystals
+  // are animated in hub.css (.lg-flame, .rm-candle, .rm-glow, .rm-crystal).
+  function decoSalonSVG() {
+    var o = [];
+    var GOLD = "#c9a35a";
+    function line(d, w, op) { o.push('<path d="' + d + '" fill="none" stroke="' + GOLD + '" stroke-width="' + (w || 1.5) + '" stroke-opacity="' + (op || 1) + '"/>'); }
+    function candle(x, base, h, scale) {
+      scale = scale || 1;
+      o.push('<circle class="rm-glow" cx="' + x + '" cy="' + (base - h - 6) + '" r="' + (18 * scale) + '" fill="url(#rmCandleGlow)"/>');
+      o.push('<rect x="' + (x - 3 * scale) + '" y="' + (base - h) + '" width="' + (6 * scale) + '" height="' + h + '" rx="1.5" fill="#f2e4c4"/>');
+      o.push('<ellipse class="rm-candle" cx="' + x + '" cy="' + (base - h - 5 * scale) + '" rx="' + (2.6 * scale) + '" ry="' + (5.5 * scale) + '" fill="#ffd27a"/>');
+    }
+    // Tall wall panel: gold frame with a stepped deco motif inside.
+    function panel(x, y, w, h) {
+      o.push('<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="#0d0b08" stroke="' + GOLD + '" stroke-width="2"/>');
+      var cx = x + w / 2, i = 12;
+      line("M" + (x + i) + " " + (y + h - i) + "V" + (y + 70) + "H" + (cx - 22) + "V" + (y + 40) + "H" + (cx + 22) + "V" + (y + 70) + "H" + (x + w - i) + "V" + (y + h - i) + "Z", 1.4, 0.8);
+      line("M" + (x + 24) + " " + (y + h - 24) + "V" + (y + 90) + "H" + (cx - 10) + "V" + (y + 62) + "H" + (cx + 10) + "V" + (y + 90) + "H" + (x + w - 24) + "V" + (y + h - 24), 1, 0.5);
+      line("M" + cx + " " + (y + 100) + "V" + (y + h - 40), 1, 0.45);
+      for (var k = 0; k < 3; k++) {
+        var dy = y + 150 + k * ((h - 220) / 2);
+        o.push('<path d="M' + cx + ' ' + (dy - 8) + 'L' + (cx + 8) + ' ' + dy + 'L' + cx + ' ' + (dy + 8) + 'L' + (cx - 8) + ' ' + dy + 'Z" fill="' + GOLD + '" fill-opacity=".7"/>');
+      }
+    }
+    function sconce(x) {
+      o.push('<circle class="rm-glow" cx="' + x + '" cy="150" r="58" fill="url(#rmSconceGlow)"/>');
+      o.push('<rect x="' + (x - 10) + '" y="104" width="20" height="96" rx="3" fill="#2a2216" stroke="' + GOLD + '" stroke-width="1.5"/>');
+      o.push('<rect x="' + (x - 6) + '" y="116" width="12" height="70" rx="6" fill="url(#rmTube)"/>');
+      line("M" + (x - 12) + " 104H" + (x + 12) + "M" + (x - 12) + " 200H" + (x + 12), 3);
+    }
+    function chandelier(cx) {
+      o.push('<circle class="rm-glow" cx="' + cx + '" cy="80" r="120" fill="url(#rmSconceGlow)" opacity=".7"/>');
+      line("M" + cx + " 0V58", 2);
+      o.push('<circle cx="' + cx + '" cy="62" r="6" fill="' + GOLD + '"/>');
+      for (var t = 0; t < 3; t++) {
+        var rx = 74 - t * 20, ty = 70 + t * 30, n = 11 - t * 3;
+        line("M" + (cx - rx) + " " + ty + "Q" + cx + " " + (ty + 22) + " " + (cx + rx) + " " + ty, 1.6, 0.9);
+        for (var k = 0; k < n; k++) {
+          var a = Math.PI * k / (n - 1), px = cx - rx * Math.cos(a), py = ty + 11 * Math.sin(a);
+          o.push('<path d="M' + px.toFixed(1) + ' ' + py.toFixed(1) + 'V' + (py + 12).toFixed(1) + '" stroke="#e8d6a8" stroke-opacity=".6" stroke-width=".8"/>');
+          o.push('<path class="rm-crystal" style="animation-delay:' + (-Math.random() * 3).toFixed(2) + 's" d="M' + px.toFixed(1) + ' ' + (py + 12).toFixed(1) +
+            'l3 5-3 6-3-6z" fill="#fff4d6"/>');
+        }
+      }
+    }
+    function palm(x, flip) {
+      var s = flip ? -1 : 1;
+      o.push('<g transform="translate(' + x + ' 560) scale(' + s + ' 1)" fill="#0f2a1c" stroke="#2f5a3a" stroke-width="1">');
+      [[-70, -150], [-30, -190], [20, -200], [60, -160], [80, -100], [-90, -90]].forEach(function (p) {
+        o.push('<path d="M0 0Q' + (p[0] * 0.4) + ' ' + (p[1] * 0.6) + ' ' + p[0] + ' ' + p[1] + 'Q' + (p[0] * 0.5 + 12) + ' ' + (p[1] * 0.5) + ' 0 0Z"/>');
+      });
+      o.push('</g>');
+      o.push('<path d="M' + (x - 26) + ' 560H' + (x + 26) + 'L' + (x + 20) + ' 600H' + (x - 20) + 'Z" fill="#1a1510" stroke="' + GOLD + '" stroke-width="1.5"/>');
+    }
+    function lantern(x) {
+      o.push('<rect x="' + (x - 26) + '" y="680" width="52" height="96" fill="none" stroke="#1a1714" stroke-width="5"/>');
+      o.push('<path d="M' + (x - 30) + ' 680L' + x + ' 660L' + (x + 30) + ' 680Z" fill="#1a1714"/>');
+      candle(x - 8, 772, 46, 1.2); candle(x + 10, 772, 30, 1);
+    }
 
-  var SIDE_TABLE_SVG = '<svg viewBox="0 0 170 96">' +
-    '<rect x="4" y="0" width="162" height="10" rx="3" fill="#2a1a12" stroke="#c9a35a" stroke-width="1.5"/>' +
-    '<path d="M20 10H150L140 18H30Z" fill="#1c120c"/>' +
-    '<rect x="78" y="18" width="14" height="56" fill="#8a6a2e"/><path d="M85 18V74" stroke="#f1d58e" stroke-width="2"/>' +
-    '<path d="M60 74H110V82H60ZM48 82H122V90H48ZM40 90H130V96H40Z" fill="#2a1a12" stroke="#c9a35a" stroke-width="1"/></svg>';
-
-  var FIREPLACE_SVG = '<svg viewBox="0 0 520 330">' +
-    '<defs><radialGradient id="lgEmber" cx=".5" cy=".9" r=".6"><stop offset="0" stop-color="#ffb347" stop-opacity=".95"/>' +
-    '<stop offset=".5" stop-color="#e2561b" stop-opacity=".55"/><stop offset="1" stop-color="#5a1406" stop-opacity="0"/></radialGradient>' +
-    '<linearGradient id="lgFlameO" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff6a14"/><stop offset=".6" stop-color="#ff9a2e"/>' +
-    '<stop offset="1" stop-color="#ffd36a" stop-opacity=".2"/></linearGradient>' +
-    '<linearGradient id="lgFlameI" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#ffc24a" stop-opacity=".3"/></linearGradient>' +
-    '<linearGradient id="lgMarble" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d1816"/><stop offset=".5" stop-color="#2a2321"/>' +
-    '<stop offset="1" stop-color="#141110"/></linearGradient></defs>' +
-    // Overmantel crest: a stepped deco block with a gold sunburst.
-    '<path d="M180 108V80H206V60H314V80H340V108Z" fill="url(#lgMarble)" stroke="#c9a35a" stroke-width="2"/>' +
-    '<path d="M260 106L222 70M260 106L241 64M260 106V62M260 106L279 64M260 106L298 70" stroke="#c9a35a" stroke-width="1.6"/>' +
-    // Mantel shelf, surround with an inner gold line, and the arched firebox.
-    '<rect x="0" y="106" width="520" height="16" fill="#2b1d15" stroke="#c9a35a" stroke-width="2"/>' +
-    '<rect x="26" y="122" width="468" height="208" fill="url(#lgMarble)" stroke="#c9a35a" stroke-width="1.6"/>' +
-    '<rect x="42" y="138" width="436" height="192" fill="none" stroke="#c9a35a" stroke-opacity=".55" stroke-width="1"/>' +
-    '<path d="M120 330V206Q120 166 160 166H360Q400 166 400 206V330Z" fill="#070403" stroke="#c9a35a" stroke-width="2"/>' +
-    '<ellipse class="lg-embers" cx="260" cy="320" rx="132" ry="58" fill="url(#lgEmber)"/>' +
-    // The fire: outer flames, then inner flames, each flickering on its own beat.
-    '<path class="lg-flame f1" d="M205 312C176 278 200 252 206 214C220 246 236 268 225 312Z" fill="url(#lgFlameO)"/>' +
-    '<path class="lg-flame f2" d="M236 314C206 262 242 222 256 172C274 222 300 262 278 314Z" fill="url(#lgFlameO)"/>' +
-    '<path class="lg-flame f3" d="M286 312C276 270 300 246 312 210C324 248 336 276 314 312Z" fill="url(#lgFlameO)"/>' +
-    '<path class="lg-flame f4" d="M244 314C232 282 252 256 258 226C270 258 284 284 270 314Z" fill="url(#lgFlameI)"/>' +
-    '<path class="lg-flame f5" d="M210 314C204 296 214 282 216 266C224 284 230 298 222 314Z" fill="url(#lgFlameI)"/>' +
-    // Logs on a grate.
-    '<rect x="168" y="304" width="190" height="18" rx="9" fill="#3b2416" transform="rotate(-5 263 313)"/>' +
-    '<rect x="176" y="308" width="180" height="16" rx="8" fill="#4a2c1a" transform="rotate(6 266 316)"/>' +
-    '<circle cx="176" cy="320" r="7" fill="#8a5a34"/><circle cx="350" cy="303" r="7" fill="#8a5a34"/>' +
-    '<path d="M150 326H370" stroke="#1a1a1a" stroke-width="5"/></svg>';
-
-  // A tufted Chesterfield armchair: buttoned diamond tufting on the back, rolled arms.
-  var LEATHER_CHAIR_SVG = '<svg viewBox="0 0 300 250">' +
-    '<defs><linearGradient id="lgLeather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a4f24"/>' +
-    '<stop offset="1" stop-color="#4f220e"/></linearGradient>' +
-    '<linearGradient id="lgLeatherHi" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a2810"/>' +
-    '<stop offset=".45" stop-color="#b8673a"/><stop offset="1" stop-color="#5a2810"/></linearGradient>' +
-    '<pattern id="lgTuft" width="26" height="26" patternUnits="userSpaceOnUse">' +
-    '<path d="M13 0L26 13L13 26L0 13Z" fill="none" stroke="#3a1606" stroke-opacity=".55" stroke-width="1.4"/>' +
-    '<circle cx="13" cy="0" r="2.4" fill="#2a1004"/><circle cx="0" cy="13" r="2.4" fill="#2a1004"/>' +
-    '<circle cx="26" cy="13" r="2.4" fill="#2a1004"/><circle cx="13" cy="26" r="2.4" fill="#2a1004"/></pattern>' +
-    '<clipPath id="lgBack"><path d="M48 42Q48 14 78 14H222Q252 14 252 42V176H48Z"/></clipPath></defs>' +
-    '<path d="M48 42Q48 14 78 14H222Q252 14 252 42V176H48Z" fill="url(#lgLeather)"/>' +
-    '<rect x="40" y="10" width="220" height="170" fill="url(#lgTuft)" clip-path="url(#lgBack)"/>' +
-    '<path d="M60 24Q150 6 240 24" fill="none" stroke="#e0a070" stroke-opacity=".25" stroke-width="3"/>' +
-    '<rect x="60" y="164" width="180" height="40" rx="14" fill="url(#lgLeatherHi)"/>' +
-    '<path d="M8 124Q8 92 38 92H66V232H24Q8 232 8 214Z" fill="url(#lgLeather)"/>' +
-    '<path d="M292 124Q292 92 262 92H234V232H276Q292 232 292 214Z" fill="url(#lgLeather)"/>' +
-    '<path d="M14 112Q36 98 62 104M286 112Q264 98 238 104" fill="none" stroke="#e0a070" stroke-opacity=".3" stroke-width="3"/>' +
-    '<rect x="30" y="200" width="240" height="34" rx="6" fill="#3e1a0a"/>' +
-    '<path d="M36 212H264" stroke="#c9a35a" stroke-opacity=".5" stroke-width="1"/>' +
-    '<rect x="40" y="234" width="14" height="14" fill="#1c120c"/><rect x="246" y="234" width="14" height="14" fill="#1c120c"/></svg>';
+    o.push('<svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice"><defs>' +
+      '<linearGradient id="rmWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2014"/><stop offset="1" stop-color="#140e08"/></linearGradient>' +
+      '<linearGradient id="rmFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1d12"/><stop offset="1" stop-color="#120c07"/></linearGradient>' +
+      '<radialGradient id="rmCandleGlow"><stop offset="0" stop-color="#ffd27a" stop-opacity=".55"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="rmSconceGlow"><stop offset="0" stop-color="#ffe2a0" stop-opacity=".6"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="rmTube" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f5c46a"/><stop offset=".5" stop-color="#fff6d8"/><stop offset="1" stop-color="#f5c46a"/></linearGradient>' +
+      '<radialGradient id="rmMirror" cx=".4" cy=".35"><stop offset="0" stop-color="#fff7e0"/><stop offset=".6" stop-color="#c9b48a"/><stop offset="1" stop-color="#6b5a3a"/></radialGradient>' +
+      '<radialGradient id="lgEmber" cx=".5" cy=".9" r=".6"><stop offset="0" stop-color="#ffb347" stop-opacity=".95"/><stop offset=".5" stop-color="#e2561b" stop-opacity=".55"/><stop offset="1" stop-color="#5a1406" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="lgFlameO" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff6a14"/><stop offset=".6" stop-color="#ff9a2e"/><stop offset="1" stop-color="#ffd36a" stop-opacity=".2"/></linearGradient>' +
+      '<linearGradient id="lgFlameI" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#ffc24a" stop-opacity=".3"/></linearGradient>' +
+      '<linearGradient id="rmVelvet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f5a44"/><stop offset="1" stop-color="#0c2a1f"/></linearGradient>' +
+      '<linearGradient id="rmCream" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#efe3cc"/><stop offset="1" stop-color="#b9a685"/></linearGradient>' +
+      '</defs>');
+    // Walls, cornice and floor.
+    o.push('<rect width="1200" height="580" fill="url(#rmWall)"/>');
+    o.push('<rect width="1200" height="34" fill="#5c4a2c"/>'); line("M0 34H1200", 2); line("M0 40H1200", 1, 0.6);
+    o.push('<rect y="560" width="1200" height="240" fill="url(#rmFloor)"/>'); line("M0 560H1200", 2);
+    // Gold deco wall panels, symmetrical about the fireplace.
+    panel(30, 80, 170, 460); panel(250, 80, 90, 460); panel(860, 80, 90, 460); panel(1000, 80, 170, 460);
+    sconce(225); sconce(975); sconce(365); sconce(835);
+    // The fireplace wall: a sunburst mirror above the mantel.
+    o.push('<rect x="390" y="60" width="420" height="250" fill="#0d0b08" stroke="' + GOLD + '" stroke-width="2"/>');
+    for (var r = 0; r < 48; r++) {
+      var ang = r * Math.PI / 24, r2 = r % 2 ? 108 : 84;
+      line("M" + (600 + 42 * Math.cos(ang)).toFixed(1) + " " + (182 + 42 * Math.sin(ang)).toFixed(1) + "L" +
+        (600 + r2 * Math.cos(ang)).toFixed(1) + " " + (182 + r2 * Math.sin(ang)).toFixed(1), r % 2 ? 1.6 : 2.6);
+    }
+    o.push('<circle cx="600" cy="182" r="38" fill="url(#rmMirror)" stroke="' + GOLD + '" stroke-width="4"/>');
+    // Mantel with candles and a few deco vases.
+    o.push('<rect x="380" y="306" width="440" height="16" fill="#1a1510" stroke="' + GOLD + '" stroke-width="2"/>');
+    candle(410, 306, 34); candle(428, 306, 22); candle(772, 306, 22); candle(790, 306, 34);
+    o.push('<path d="M470 306V280Q470 270 480 268Q478 258 486 256Q494 258 492 268Q502 270 502 280V306Z" fill="#2a2216" stroke="' + GOLD + '" stroke-width="1.2"/>');
+    o.push('<path d="M700 306V286Q700 276 712 272V262H720V272Q732 276 732 286V306Z" fill="#2a2216" stroke="' + GOLD + '" stroke-width="1.2"/>');
+    // The fireplace: black surround with gold deco steps and fans, and a live fire.
+    o.push('<rect x="410" y="322" width="380" height="238" fill="#0b0907" stroke="' + GOLD + '" stroke-width="2"/>');
+    line("M430 540V350H770V540", 1.2, 0.7);
+    for (var f = 0; f < 4; f++) line("M" + (470 + f * 12) + " 350V" + (372 + f * 10) + "M" + (730 - f * 12) + " 350V" + (372 + f * 10), 1.2, 0.7);
+    line("M540 360L600 340L660 360M555 372L600 356L645 372", 1.4, 0.9);
+    o.push('<path d="M500 560V430Q500 400 530 400H670Q700 400 700 430V560Z" fill="#050302" stroke="' + GOLD + '" stroke-width="2"/>');
+    o.push('<ellipse class="lg-embers" cx="600" cy="552" rx="96" ry="44" fill="url(#lgEmber)"/>');
+    o.push('<path class="lg-flame f1" d="M552 548C532 524 548 504 552 476C562 500 574 520 566 548Z" fill="url(#lgFlameO)"/>');
+    o.push('<path class="lg-flame f2" d="M574 550C552 512 578 482 590 446C604 482 622 512 606 550Z" fill="url(#lgFlameO)"/>');
+    o.push('<path class="lg-flame f3" d="M612 548C604 518 622 500 630 474C640 502 648 522 632 548Z" fill="url(#lgFlameO)"/>');
+    o.push('<path class="lg-flame f4" d="M580 550C572 526 586 508 590 486C600 508 610 526 600 550Z" fill="url(#lgFlameI)"/>');
+    o.push('<path class="lg-flame f5" d="M554 550C550 536 557 526 559 514C565 528 569 538 563 550Z" fill="url(#lgFlameI)"/>');
+    o.push('<rect x="540" y="544" width="130" height="12" rx="6" fill="#3b2416" transform="rotate(-4 605 550)"/>');
+    o.push('<rect x="532" y="548" width="140" height="11" rx="5" fill="#4a2c1a" transform="rotate(5 602 553)"/>');
+    // Chandeliers in the top corners.
+    chandelier(170); chandelier(1030);
+    // Palms behind the furniture.
+    palm(110, false); palm(1090, true);
+    // The rug: black with gold deco geometry, in perspective.
+    o.push('<path d="M300 600H900L1060 800H140Z" fill="#0c0a07" stroke="' + GOLD + '" stroke-width="2"/>');
+    line("M330 616H870L1010 790H190Z", 1.2, 0.8);
+    line("M360 632H840L960 780H240Z", 1, 0.5);
+    line("M600 616V790M330 616L600 700L870 616M190 790L600 700L1010 790", 1, 0.5);
+    for (var g = 0; g < 4; g++) line("M" + (420 + g * 30) + " 632L" + (360 + g * 50) + " 780M" + (780 - g * 30) + " 632L" + (840 - g * 50) + " 780", 0.8, 0.35);
+    // The coffee table: round, black glass with a gold rim, candles on top.
+    o.push('<path d="M520 712L530 770H670L680 712Z" fill="#14100b" stroke="' + GOLD + '" stroke-width="1.5"/>');
+    o.push('<ellipse cx="600" cy="706" rx="120" ry="26" fill="#0e0b08" stroke="' + GOLD + '" stroke-width="3"/>');
+    o.push('<ellipse cx="600" cy="702" rx="96" ry="16" fill="none" stroke="#fff3d0" stroke-opacity=".12" stroke-width="2"/>');
+    candle(560, 706, 26); candle(578, 706, 16); candle(640, 706, 20);
+    // The emerald velvet armchair at the left: a rounded barrel back, a cushion, a gold base.
+    o.push('<path d="M40 640Q40 560 120 556H230Q300 560 300 640V700H40Z" fill="url(#rmVelvet)"/>');
+    o.push('<path d="M62 590Q120 572 160 574M200 574Q250 572 280 590" fill="none" stroke="#3f8a6c" stroke-opacity=".5" stroke-width="3"/>');
+    o.push('<rect x="70" y="650" width="200" height="54" rx="16" fill="#185040"/>');
+    o.push('<rect x="128" y="606" width="86" height="56" rx="10" fill="#8a6a2e"/><path d="M140 620L171 640L202 620M140 646L171 626L202 646" stroke="#e8c97a" stroke-width="1.5" fill="none"/>');
+    o.push('<rect x="36" y="700" width="268" height="14" rx="3" fill="' + GOLD + '"/><rect x="50" y="714" width="10" height="26" fill="' + GOLD + '"/><rect x="280" y="714" width="10" height="26" fill="' + GOLD + '"/>');
+    // The curved cream sofa at the right, with black-and-gold cushions.
+    o.push('<path d="M880 600Q900 572 960 570H1150Q1190 572 1196 610V720H900Q872 690 880 600Z" fill="url(#rmCream)"/>');
+    o.push('<path d="M900 660Q910 640 950 640H1190V730H930Q898 706 900 660Z" fill="#e7dac0"/>');
+    [[930, 600], [1000, 596], [1070, 596], [1140, 600]].forEach(function (c, i) {
+      o.push('<rect x="' + c[0] + '" y="' + c[1] + '" width="56" height="50" rx="8" fill="' + (i % 2 ? "#14110d" : "#d8c49a") + '" transform="rotate(' + (i % 2 ? 6 : -5) + ' ' + (c[0] + 28) + ' ' + (c[1] + 25) + ')"/>');
+      if (i % 2) o.push('<path d="M' + (c[0] + 10) + ' ' + (c[1] + 25) + 'L' + (c[0] + 28) + ' ' + (c[1] + 10) + 'L' + (c[0] + 46) + ' ' + (c[1] + 25) + 'L' + (c[0] + 28) + ' ' + (c[1] + 40) + 'Z" fill="none" stroke="' + GOLD + '" stroke-width="1.5" transform="rotate(6 ' + (c[0] + 28) + ' ' + (c[1] + 25) + ')"/>');
+    });
+    o.push('<rect x="904" y="726" width="292" height="10" rx="3" fill="' + GOLD + '"/>');
+    // Candle lanterns on the floor in the front corners.
+    lantern(36); lantern(1164);
+    o.push('</svg>');
+    return o.join("");
+  }
 
   var SKIN_DECOR = {
     afterdark: function (scene, front) {
-      // Velvet walls above walnut wainscoting (CSS), the fire's pulsing glow, then the
-      // fireplace, the lamp on its side table with its own pool of light, and the chair.
-      scene.appendChild(el("div", "lg-wainscot"));
+      // The salon picture, a warm glow from the fire and candles that breathes over it,
+      // and sparks drifting up out of the fireplace.
+      var room = el("div", "rm-room");
+      room.innerHTML = decoSalonSVG();
+      scene.appendChild(room);
       scene.appendChild(el("div", "lg-fireglow"));
-      var fire = el("div", "lg-fireplace");
-      fire.innerHTML = FIREPLACE_SVG;
-      scene.appendChild(fire);
-      // Sparks drifting up out of the fire.
-      for (var i = 0; i < 10; i++) {
+      for (var i = 0; i < 9; i++) {
         var spark = el("div", "lg-spark");
         spark.style.left = (46 + Math.random() * 8) + "%";
         spark.style.animationDuration = (2.8 + Math.random() * 3) + "s";
         spark.style.animationDelay = (-Math.random() * 6) + "s";
-        spark.style.setProperty("--sway", (Math.random() * 60 - 30) + "px");
+        spark.style.setProperty("--sway", (Math.random() * 50 - 25) + "px");
         scene.appendChild(spark);
-      }
-      scene.appendChild(el("div", "ad-lamp-glow"));
-      var table = el("div", "lg-table");
-      table.innerHTML = SIDE_TABLE_SVG;
-      scene.appendChild(table);
-      var lamp = el("div", "ad-lamp");
-      lamp.innerHTML = DECO_LAMP_SVG;
-      scene.appendChild(lamp);
-      var chair = el("div", "lg-chair");
-      chair.innerHTML = LEATHER_CHAIR_SVG;
-      scene.appendChild(chair);
-      // Dust motes floating in the lamplight.
-      for (var j = 0; j < 8; j++) {
-        var mote = el("div", "ad-mote");
-        mote.style.left = (2 + Math.random() * 26) + "%";
-        mote.style.top = (40 + Math.random() * 40) + "%";
-        mote.style.animationDuration = (16 + Math.random() * 12) + "s, " + (3 + Math.random() * 3) + "s";
-        mote.style.animationDelay = (-Math.random() * 28) + "s, " + (-Math.random() * 6) + "s";
-        front.appendChild(mote);
       }
     },
     bauhaus: function (scene) {

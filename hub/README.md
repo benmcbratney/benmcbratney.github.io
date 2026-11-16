@@ -367,16 +367,17 @@ navy-white-orange sleeve stripes. A footer pill follows the game ("🐻 Bear Dow
 Packers", then the live score, then "W 24–20"; just "Bear Down!" in portrait), and a football
 spirals across now and then. "What to wear" swaps the T-shirt or long sleeves for a Bears jersey. The pennant and pill carry the bear-head logo (`bears-logo.png`).
 
-**After dark (8 to 11pm, every evening):** a lamp-lit art deco lounge, all drawn in the page.
-Oxblood velvet walls with a faint gold deco pattern rise over walnut wainscoting with a brass rail;
-a black-marble deco fireplace with a gold sunburst crest burns in the middle, its flames flickering,
-sparks drifting up and its glow pulsing across the room; a tufted cognac leather Chesterfield
-armchair sits to the right; a brass lamp on a side table lights the left corner, with dust motes in
-its light. Cards are smoked glass in double gold frames with fan ornaments in the corners and gold
-deco titles; the clock is Didot numerals on a sunburst plaque. Emoji and pictures are toned down so
-the wall doesn't glare in a dark room. It replaces the daily rotation and the kids' weekend looks
-for those hours; Bears games, holidays and a look pinned in Settings still win. If night mode
-starts before 11pm (⚙︎ → Night starts), the night clock matches.
+**After dark (8 to 11pm, every evening):** a candlelit art deco salon, drawn in the page as one
+picture behind the cards. Black walls with gold deco panels and a cream cornice, glowing wall
+sconces and crystal chandeliers whose drops glint; a gold sunburst mirror over a black-and-gold
+fireplace with a live fire (flickering flames, embers, sparks) and candles on the mantel; an emerald
+velvet armchair, a curved cream sofa with black-and-gold cushions, palms, a black-and-gold geometric
+rug, a round coffee table with candles, and candle lanterns on the floor. The firelight and
+candlelight breathe across the room. Cards are smoked glass in double gold frames with fan
+ornaments in the corners and gold deco titles; the clock is Didot numerals on a sunburst plaque.
+Emoji and pictures are toned down so the wall doesn't glare in a dark room. It replaces the daily
+rotation and the kids' weekend looks for those hours; Bears games, holidays and a look pinned in
+Settings still win. If night mode starts before 11pm (⚙︎ → Night starts), the night clock matches.
 
 **Weekends are for the kids:** all day Saturday and Sunday the hub swaps between these three every hour, on the hour (Superhero, then Princess, then Cars & trucks, and around again):
 
