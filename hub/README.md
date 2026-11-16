@@ -338,7 +338,7 @@ doesn't have `/countdowns` yet, the holidays still show.
 - Tap a thermostat's name or temperature for a pop-up: switch between Heat, Cool, Heat · Cool, Off and
   Eco (only the modes that thermostat supports), with big −/+ for the setpoint (both ends in Heat · Cool,
   kept at least 3° apart). Picking a mode while it's in Eco takes it off Eco first.
-- Night mode (default 10pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
+- Night mode (default 11pm–6am): a big clock, your next event and the coming day's forecast over a dimmed photo. Tap to wake for 2 min.
 - Reloads itself at 3:30am to keep memory in check.
 - Updates itself: every 10 minutes (and whenever it's reopened) it checks `version.json`; when a
   newer version is published it reloads through a fresh URL, so the iPad never sticks on cached files.
@@ -371,7 +371,7 @@ spirals across now and then. "What to wear" swaps the T-shirt or long sleeves fo
 page with an ember glow, dark cards with thin amber edges, a big thin glowing amber clock like a
 bedside clock, emoji and pictures toned down so they don't glare, faint stars and a few slow
 fireflies. It replaces the daily rotation and the kids' weekend looks for those hours; Bears games,
-holidays and a look pinned in Settings still win. From 10pm the night clock takes over, in the same
+holidays and a look pinned in Settings still win. If night mode starts before 11pm (⚙︎ → Night starts), the night clock takes the same
 amber.
 
 **Weekends are for the kids:** all day Saturday and Sunday the hub swaps between these three every hour, on the hour (Superhero, then Princess, then Cars & trucks, and around again):
