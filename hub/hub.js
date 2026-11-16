@@ -491,8 +491,9 @@
   //             cars and trucks driving across in their lanes
   // Every evening from 8 to 11pm (ahead of the rotation and the kids' looks, behind
   // Bears games, holidays and a look pinned in Settings):
-  //   afterdark  dim lamplight: near-black page, amber-edged dark cards, a thin glowing
-  //              amber clock, softened emoji, faint stars and a few drifting fireflies
+  //   afterdark  an art deco lounge by lamplight: smoked-glass cards in double gold
+  //              frames, a sunburst clock plaque in Didot, a gold sunburst, a ringed
+  //              moon, a deco skyline with flickering windows and a glowing brass lamp
   // All but glass swap the photo for a plain page and turn darker once the sun is
   // down (the "evening" class). Holidays bring their own look and use glass. Add
   // ?skin=cork (or glass, bento, bauhaus, hero, princess, cars, kids, bears, afterdark)
@@ -575,17 +576,79 @@
     return box;
   }
 
+  // After dark's art, drawn here: a brass deco table lamp with a pleated, glowing shade,
+  // and an art deco skyline (stepped towers, a spire with a sunburst crown, and windows
+  // that slowly light up and go dark).
+  var DECO_LAMP_SVG = '<svg viewBox="0 0 120 210">' +
+    '<defs><linearGradient id="adShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a8"/>' +
+    '<stop offset="1" stop-color="#d98a34"/></linearGradient>' +
+    '<linearGradient id="adBrass" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6a2e"/>' +
+    '<stop offset=".5" stop-color="#f1d58e"/><stop offset="1" stop-color="#8a6a2e"/></linearGradient></defs>' +
+    '<path d="M24 100L42 30H78L96 100Z" fill="url(#adShade)"/>' +
+    '<path d="M42 30L33 100M51 30L47 100M60 30V100M69 30L73 100M78 30L87 100" stroke="#a0571c" stroke-opacity=".35" stroke-width="1.5"/>' +
+    '<path d="M50 30V22H70V30M42 30H78M24 100H96" fill="none" stroke="url(#adBrass)" stroke-width="3.5"/>' +
+    '<circle cx="60" cy="18" r="4" fill="url(#adBrass)"/>' +
+    '<rect x="57" y="100" width="6" height="74" fill="url(#adBrass)"/>' +
+    '<path d="M52 128H68M54 150H66" stroke="#f1d58e" stroke-width="2"/>' +
+    '<path d="M40 174H80V182H40ZM30 182H90V192H30ZM22 192H98V200H22Z" fill="url(#adBrass)" stroke="#6b5122" stroke-width="1"/></svg>';
+
+  function decoSkyline() {
+    var W = 1200, G = 240; // drawing width and ground line
+    // [left, width, height, setbacks, crown]: crown "spire" gets sunburst arches.
+    var towers = [[0, 90, 120, 2], [80, 70, 165, 3], [160, 110, 95, 1], [250, 80, 190, 3], [340, 60, 140, 2],
+      [420, 120, 110, 1], [520, 90, 210, 4, "spire"], [620, 70, 150, 2], [700, 120, 100, 1], [810, 80, 175, 3],
+      [900, 100, 125, 2], [990, 70, 195, 3, "spire"], [1070, 130, 115, 2]];
+    var parts = [], windows = [];
+    towers.forEach(function (t) {
+      var x = t[0], w = t[1], h = t[2], steps = t[3], inset = Math.min(10, w / (2 * steps + 2));
+      var top = G - h, stepH = Math.round(h * 0.18);
+      // Draw the narrowest (top) level first so each wider level below overlaps it.
+      for (var i = steps; i >= 0; i--) {
+        var lx = x + inset * i, lw = w - 2 * inset * i, ly = top + stepH * (steps - i);
+        if (i === steps) ly = top;
+        parts.push('<rect x="' + lx + '" y="' + ly + '" width="' + lw + '" height="' + (G - ly) + '" class="t"/>');
+      }
+      if (t[4] === "spire") {
+        var cx = x + w / 2;
+        for (var r = 26; r >= 10; r -= 8) parts.push('<path d="M' + (cx - r) + ' ' + top + 'A' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + top + '" class="c"/>');
+        parts.push('<path d="M' + cx + ' ' + (top - 26) + 'V' + (top - 70) + '" class="c"/>');
+      }
+      // A grid of windows on the base, about a quarter of them lit.
+      for (var wy = top + stepH * steps + 14; wy < G - 12; wy += 16) {
+        for (var wx = x + 10; wx < x + w - 10; wx += 12) {
+          if (Math.random() < 0.26) windows.push('<rect x="' + wx + '" y="' + wy + '" width="4" height="7" class="w' +
+            (Math.random() < 0.3 ? ' tw" style="animation-delay:' + (-Math.random() * 24).toFixed(1) + 's' : '') + '"/>');
+        }
+      }
+    });
+    var box = el("div", "ad-skyline");
+    box.innerHTML = '<svg viewBox="0 -80 ' + W + ' ' + (G + 80) + '" preserveAspectRatio="xMidYMax slice">' +
+      parts.join("") + windows.join("") + "</svg>";
+    return box;
+  }
+
   var SKIN_DECOR = {
     afterdark: function (scene, front) {
-      scene.appendChild(el("div", "hd-stars ad-stars"));
-      // A few fireflies drifting slowly, each on its own loop and pace.
-      for (var i = 0; i < 7; i++) {
-        var fly = el("div", "ad-firefly");
-        fly.style.left = (6 + Math.random() * 88) + "%";
-        fly.style.top = (8 + Math.random() * 84) + "%";
-        fly.style.animationDuration = (18 + Math.random() * 14) + "s, " + (2.5 + Math.random() * 2.5) + "s";
-        fly.style.animationDelay = (-Math.random() * 30) + "s, " + (-Math.random() * 5) + "s";
-        front.appendChild(fly);
+      // A gold sunburst fan rising behind everything, and a ringed crescent moon.
+      scene.appendChild(el("div", "ad-sunburst"));
+      var moon = el("div", "ad-moon");
+      moon.appendChild(el("div", "ad-moon-ring"));
+      scene.appendChild(moon);
+      // The deco skyline along the bottom, drawn from a list of towers.
+      scene.appendChild(decoSkyline());
+      // A brass table lamp throwing a warm pool of light into its corner.
+      scene.appendChild(el("div", "ad-lamp-glow"));
+      var lamp = el("div", "ad-lamp");
+      lamp.innerHTML = DECO_LAMP_SVG;
+      scene.appendChild(lamp);
+      // Dust motes floating in the lamplight.
+      for (var i = 0; i < 9; i++) {
+        var mote = el("div", "ad-mote");
+        mote.style.left = (2 + Math.random() * 30) + "%";
+        mote.style.top = (48 + Math.random() * 46) + "%";
+        mote.style.animationDuration = (16 + Math.random() * 12) + "s, " + (3 + Math.random() * 3) + "s";
+        mote.style.animationDelay = (-Math.random() * 28) + "s, " + (-Math.random() * 6) + "s";
+        front.appendChild(mote);
       }
     },
     bauhaus: function (scene) {

@@ -367,12 +367,15 @@ navy-white-orange sleeve stripes. A footer pill follows the game ("🐻 Bear Dow
 Packers", then the live score, then "W 24–20"; just "Bear Down!" in portrait), and a football
 spirals across now and then. "What to wear" swaps the T-shirt or long sleeves for a Bears jersey. The pennant and pill carry the bear-head logo (`bears-logo.png`).
 
-**After dark (8 to 11pm, every evening):** a dim lamplight look for winding down. A near-black warm
-page with an ember glow, dark cards with thin amber edges, a big thin glowing amber clock like a
-bedside clock, emoji and pictures toned down so they don't glare, faint stars and a few slow
-fireflies. It replaces the daily rotation and the kids' weekend looks for those hours; Bears games,
-holidays and a look pinned in Settings still win. If night mode starts before 11pm (⚙︎ → Night starts), the night clock takes the same
-amber.
+**After dark (8 to 11pm, every evening):** an art deco lounge by lamplight, all drawn in the
+page. A brass table lamp with a glowing pleated shade lights the lower-left corner, with dust motes
+floating in its light; a deco skyline of stepped towers and sunburst-crowned spires runs along the
+bottom, its windows slowly lighting up and going dark; a gold sunburst fans up behind everything,
+with a ringed crescent moon. Cards are smoked glass in double gold frames with fan ornaments in the
+corners and gold deco titles; the clock is Didot numerals on a sunburst plaque. Emoji and pictures
+are toned down so the wall doesn't glare in a dark room. It replaces the daily rotation and the
+kids' weekend looks for those hours; Bears games, holidays and a look pinned in Settings still win.
+If night mode starts before 11pm (⚙︎ → Night starts), the night clock matches.
 
 **Weekends are for the kids:** all day Saturday and Sunday the hub swaps between these three every hour, on the hour (Superhero, then Princess, then Cars & trucks, and around again):
 

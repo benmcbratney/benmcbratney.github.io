@@ -1603,81 +1603,141 @@ body.skin-cars.evening .card, body.skin-cars.evening .clock-unit, body.skin-cars
 @keyframes car-bounce-flip { from { transform: scaleX(-1) translateY(0); } to { transform: scaleX(-1) translateY(-3px); } }
 
 /* ---------------------------------------------------------------- After dark */
-/* skin-afterdark: 8 to 11pm every evening (see the skins section in hub.js). Dim
-   lamplight: a near-black warm page, dark cards with thin amber edges, a thin glowing
-   amber clock, emoji toned down so they don't glare, faint stars and a few fireflies.
-   If night mode starts before 11pm, the night clock gets the same colors. */
+/* skin-afterdark: 8 to 11pm every evening (see the skins section in hub.js). An art deco
+   lounge by lamplight. Behind smoked-glass cards: a gold sunburst, a ringed crescent
+   moon, a deco skyline whose windows slowly flicker, and a brass table lamp throwing a
+   warm pool of light into the lower-left corner, with dust motes floating in it. Cards
+   wear double gold frames with fan ornaments in the corners; the clock sits on a
+   sunburst plaque in Didot. If night mode starts before 11pm, the night clock matches. */
 
 body.skin-afterdark .bg-layer, body.skin-afterdark .backdrop::after { display: none; }
 body.skin-afterdark .card, body.skin-afterdark .clock-unit, body.skin-afterdark .weather,
 body.skin-afterdark .cd-pill, body.skin-afterdark .timer-btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
 body.skin-afterdark {
-  --ad-ink: #eadbc6; --ad-muted: rgba(234, 219, 198, 0.6); --ad-amber: #f0a35c; --ad-glow: rgba(245, 170, 90, 0.45);
+  --ad-ink: #f1e6d0; --ad-muted: rgba(241, 230, 208, 0.62); --ad-gold: #d9b76a; --ad-gold-hi: #f3d995;
+  --ad-glass: rgba(10, 9, 8, 0.84);
   --on-photo: var(--ad-ink); --on-photo-muted: var(--ad-muted); --photo-shadow: none;
-  --accent: var(--ad-amber); --accent-soft: rgba(240, 163, 92, 0.16);
+  --accent: var(--ad-gold); --accent-soft: rgba(217, 183, 106, 0.16);
+  --ad-deco: "Futura", "Avenir Next", "Century Gothic", sans-serif;
+  --ad-didot: "Didot", "Bodoni 72", "Bodoni MT", "Playfair Display", Georgia, serif;
 }
-/* A warm ember glow low on the page and a hint of violet up top, on near-black. */
-body.skin-afterdark .backdrop {
+/* The room: deep green-black, darkest in the corner away from the lamp. */
+body.skin-afterdark .backdrop { background: radial-gradient(ellipse 120% 90% at 10% 100%, #1b1a12 0%, #0b100d 45%, #060706 100%); }
+.ad-sunburst {
+  position: absolute; left: 50%; bottom: -40%; width: 1500px; height: 1500px; margin-left: -750px; border-radius: 50%;
   background:
-    radial-gradient(ellipse 70% 38% at 50% 112%, rgba(240, 140, 70, 0.2), transparent 70%),
-    radial-gradient(ellipse 55% 40% at 88% -12%, rgba(120, 90, 200, 0.16), transparent 70%),
-    #0d0a12;
+    repeating-radial-gradient(circle, transparent 0 58px, rgba(217, 183, 106, 0.1) 58px 60px),
+    repeating-conic-gradient(rgba(217, 183, 106, 0.07) 0deg 4deg, transparent 4deg 9deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, #000 42%, transparent 70%); mask-image: radial-gradient(circle, #000 0, #000 42%, transparent 70%);
 }
-.ad-stars { opacity: 0.5; }
-body.skin-afterdark .card, body.skin-afterdark .clock-unit, body.skin-afterdark .weather {
-  background: rgba(24, 19, 30, 0.94); border: 1px solid rgba(240, 163, 92, 0.22); border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+/* The moon sits at the open right end of the countdown row, under the weather panel. */
+.ad-moon {
+  position: absolute; top: 25%; right: 3.5%; width: 64px; height: 64px; border-radius: 50%;
+  box-shadow: inset -14px 5px 0 0 #f3dca4, 0 0 30px rgba(243, 220, 164, 0.12);
+  transform: rotate(-18deg);
+}
+.ad-moon-ring { position: absolute; inset: -11px; border-radius: 50%; border: 1px solid rgba(217, 183, 106, 0.4); box-shadow: 0 0 0 10px transparent, 0 0 0 11px rgba(217, 183, 106, 0.22); }
+.ad-skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 34%; }
+.ad-skyline svg { display: block; width: 100%; height: 100%; }
+.ad-skyline .t { fill: #050605; stroke: rgba(217, 183, 106, 0.75); stroke-width: 1.4; }
+.ad-skyline .c { fill: none; stroke: rgba(217, 183, 106, 0.85); stroke-width: 1.6; }
+.ad-skyline .w { fill: #f0c46a; opacity: 0.75; }
+.ad-skyline .w.tw { animation: deco-window 24s steps(1, end) infinite; }
+@keyframes deco-window { 0%, 55% { opacity: 0.75; } 56%, 100% { opacity: 0.08; } }
+/* The lamp and its pool of light. */
+.ad-lamp-glow {
+  position: absolute; left: -260px; bottom: -280px; width: 900px; height: 900px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 196, 110, 0.42) 0%, rgba(240, 150, 60, 0.18) 30%, rgba(240, 150, 60, 0.05) 52%, transparent 68%);
+}
+.ad-lamp { position: absolute; left: 1.5%; bottom: 0; width: 150px; filter: drop-shadow(0 0 22px rgba(255, 190, 100, 0.55)); }
+.ad-lamp svg { display: block; width: 100%; }
+.ad-mote {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #ffe1a6;
+  box-shadow: 0 0 6px 2px rgba(255, 210, 140, 0.45);
+  animation: mote-drift 22s ease-in-out infinite, mote-glint 4s ease-in-out infinite alternate;
+}
+@keyframes mote-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  33% { transform: translate3d(30px, -50px, 0); }
+  66% { transform: translate3d(-24px, -90px, 0); }
+}
+@keyframes mote-glint { from { opacity: 0.1; } to { opacity: 0.8; } }
+
+/* Smoked-glass cards in double gold frames with fan ornaments in each corner. */
+body.skin-afterdark .card, body.skin-afterdark .weather {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"%3E%3Cg transform="" fill="none" stroke="%23d9b76a" stroke-width="1.2"%3E%3Cpath d="M0 22A22 22 0 0 0 22 0M0 15A15 15 0 0 0 15 0M0 8A8 8 0 0 0 8 0"/%3E%3Cpath d="M0 0L20 9M0 0L9 20M0 0L15 15"/%3E%3Cpath d="M15 15l3 3-3 3-3-3z" fill="%23d9b76a"/%3E%3C/g%3E%3C/svg%3E") 7px 7px no-repeat, url("data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"%3E%3Cg transform="translate%2830 0%29 scale%28-1 1%29" fill="none" stroke="%23d9b76a" stroke-width="1.2"%3E%3Cpath d="M0 22A22 22 0 0 0 22 0M0 15A15 15 0 0 0 15 0M0 8A8 8 0 0 0 8 0"/%3E%3Cpath d="M0 0L20 9M0 0L9 20M0 0L15 15"/%3E%3Cpath d="M15 15l3 3-3 3-3-3z" fill="%23d9b76a"/%3E%3C/g%3E%3C/svg%3E") calc(100% - 7px) 7px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"%3E%3Cg transform="translate%280 30%29 scale%281 -1%29" fill="none" stroke="%23d9b76a" stroke-width="1.2"%3E%3Cpath d="M0 22A22 22 0 0 0 22 0M0 15A15 15 0 0 0 15 0M0 8A8 8 0 0 0 8 0"/%3E%3Cpath d="M0 0L20 9M0 0L9 20M0 0L15 15"/%3E%3Cpath d="M15 15l3 3-3 3-3-3z" fill="%23d9b76a"/%3E%3C/g%3E%3C/svg%3E") 7px calc(100% - 7px) no-repeat, url("data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"%3E%3Cg transform="translate%2830 30%29 scale%28-1 -1%29" fill="none" stroke="%23d9b76a" stroke-width="1.2"%3E%3Cpath d="M0 22A22 22 0 0 0 22 0M0 15A15 15 0 0 0 15 0M0 8A8 8 0 0 0 8 0"/%3E%3Cpath d="M0 0L20 9M0 0L9 20M0 0L15 15"/%3E%3Cpath d="M15 15l3 3-3 3-3-3z" fill="%23d9b76a"/%3E%3C/g%3E%3C/svg%3E") calc(100% - 7px) calc(100% - 7px) no-repeat,
+    var(--ad-glass);
+  border: 0; border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--ad-gold), inset 0 0 0 4px rgba(10, 9, 8, 0.6), inset 0 0 0 5px rgba(217, 183, 106, 0.55), 0 14px 34px rgba(0, 0, 0, 0.6);
 }
 body.skin-afterdark .card {
-  --ink: var(--ad-ink); --muted: var(--ad-muted); --line: rgba(234, 219, 198, 0.1); --control-bg: rgba(234, 219, 198, 0.07);
+  --ink: var(--ad-ink); --muted: var(--ad-muted); --line: rgba(217, 183, 106, 0.16); --control-bg: rgba(241, 230, 208, 0.07);
+  padding: 18px 22px;
 }
-body.skin-afterdark .card h2 { color: var(--ad-amber); font-weight: 600; letter-spacing: 2px; }
+/* Titles: wide-tracked gold capitals, with a deco rule and diamond running off to the right. */
+body.skin-afterdark .card h2 { color: var(--ad-gold-hi); font-family: var(--ad-deco); font-weight: 500; letter-spacing: 4px; font-size: 14px; }
+body.skin-afterdark .card h2::after {
+  content: ""; flex: 1; height: 8px; margin-left: 8px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="8" height="8"%3E%3Cpath d="M4 0L8 4L4 8L0 4Z" fill="%23d9b76a"/%3E%3C/svg%3E") 0 0 / 8px 8px no-repeat,
+    linear-gradient(var(--ad-gold), var(--ad-gold)) 12px 3.5px / 100% 1px no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, #000 60%, transparent); mask-image: linear-gradient(90deg, #000 60%, transparent);
+}
 body.skin-afterdark .weather { color: var(--ad-ink); }
-body.skin-afterdark .wx-strip { border-left-color: rgba(234, 219, 198, 0.12); }
-body.skin-afterdark .fc-pop { color: #c9a2ff; }
-/* A bedside clock: big, thin, glowing amber numerals. */
-body.skin-afterdark .flip, body.skin-afterdark .fl-top, body.skin-afterdark .fl-bot { background: transparent; box-shadow: none; }
-body.skin-afterdark .flip {
-  color: #f5b56e; font-family: "Avenir Next", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  font-weight: 200; text-shadow: 0 0 18px var(--ad-glow);
+/* A soft dark halo on all card text, so the art behind never cuts through words. */
+body.skin-afterdark .card, body.skin-afterdark .weather, body.skin-afterdark .status {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.8);
 }
+/* Portrait stacks the cards over the lamp and skyline, so they shrink and fade back. */
+@media (orientation: portrait) {
+  .ad-skyline { height: 16%; opacity: 0.7; }
+  .ad-lamp { width: 96px; opacity: 0.6; }
+  .ad-lamp-glow { width: 640px; height: 640px; left: -220px; bottom: -220px; opacity: 0.7; }
+  .ad-moon { top: 21%; }
+}
+body.skin-afterdark .wx-strip { border-left: 1px solid rgba(217, 183, 106, 0.35); }
+body.skin-afterdark .fc-pop { color: #b8d4c4; }
+body.skin-afterdark .wx-temp { font-family: var(--ad-didot); font-weight: 400; }
+/* The clock: Didot numerals on a sunburst plaque. */
+body.skin-afterdark .clock-unit {
+  border: 0; border-radius: 2px;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 100%, rgba(217, 183, 106, 0.16) 0deg 3deg, transparent 3deg 8deg),
+    linear-gradient(#141210, #0a0908);
+  box-shadow: inset 0 0 0 1px var(--ad-gold), inset 0 0 0 4px #0a0908, inset 0 0 0 5px rgba(217, 183, 106, 0.55), 0 14px 34px rgba(0, 0, 0, 0.6);
+}
+body.skin-afterdark .flip, body.skin-afterdark .fl-top, body.skin-afterdark .fl-bot { background: transparent; box-shadow: none; }
+body.skin-afterdark .flip { color: var(--ad-gold-hi); font-family: var(--ad-didot); font-weight: 400; text-shadow: 0 0 16px rgba(243, 217, 149, 0.35); }
 body.skin-afterdark .flip::after { display: none; }
-body.skin-afterdark .flip-ampm { color: var(--ad-muted); }
-body.skin-afterdark .tile { background: none; box-shadow: none; color: var(--ad-muted); width: auto; font-weight: 600; letter-spacing: 1px; }
+body.skin-afterdark .flip-ampm { color: var(--ad-gold); font-family: var(--ad-deco); letter-spacing: 2px; }
+body.skin-afterdark .tile { background: none; box-shadow: none; color: var(--ad-gold); width: auto; font-family: var(--ad-deco); font-weight: 500; letter-spacing: 3px; font-size: 18px; }
 body.skin-afterdark .tile::after { display: none; }
 body.skin-afterdark .tile-word { gap: 0; }
 /* Soften the bright emoji and pictures so the wall doesn't glare in a dark room. */
 body.skin-afterdark .wear-tile-icon, body.skin-afterdark .wx-icon, body.skin-afterdark .fc-icon,
-body.skin-afterdark .sp-art, body.skin-afterdark .sm-emoji, body.skin-afterdark .card h2 .icon { filter: brightness(0.82) saturate(0.8); }
-body.skin-afterdark .cd-pill { background: rgba(234, 219, 198, 0.08); color: var(--ad-ink); }
-body.skin-afterdark .cd-pill.today { background: var(--ad-amber); color: #1a1208; }
-body.skin-afterdark .timer-btn { background: rgba(234, 219, 198, 0.08); color: var(--ad-ink); }
-body.skin-afterdark .pill-count { background: rgba(234, 219, 198, 0.16); color: var(--ad-ink); }
-body.skin-afterdark .list-pill.has-items .pill-count { background: var(--ad-amber); color: #1a1208; }
-body.skin-afterdark .event.now { background: rgba(240, 163, 92, 0.12); }
-body.skin-afterdark .event.now .pill { background: var(--ad-amber); color: #1a1208; }
-body.skin-afterdark .sm-tile.live { background: rgba(240, 120, 90, 0.18); }
+body.skin-afterdark .sp-art, body.skin-afterdark .sm-emoji, body.skin-afterdark .card h2 .icon { filter: brightness(0.8) saturate(0.75) sepia(0.15); }
+/* Pills and buttons: black with a thin gold rule, square deco corners. */
+body.skin-afterdark .cd-pill, body.skin-afterdark .timer-btn {
+  background: rgba(10, 9, 8, 0.82); color: var(--ad-ink); border-radius: 0; box-shadow: inset 0 0 0 1px rgba(217, 183, 106, 0.6);
+  letter-spacing: 0.5px;
+}
+body.skin-afterdark .cd-pill.today { background: var(--ad-gold); color: #14100a; }
+body.skin-afterdark .pill-count { background: rgba(217, 183, 106, 0.2); color: var(--ad-ink); border-radius: 0; }
+body.skin-afterdark .list-pill.has-items .pill-count { background: var(--ad-gold); color: #14100a; }
+body.skin-afterdark .event.now { background: rgba(217, 183, 106, 0.12); }
+body.skin-afterdark .event.now .pill { background: var(--ad-gold); color: #14100a; }
+body.skin-afterdark .sm-tile { border-radius: 0; }
+body.skin-afterdark .sm-tile.live { background: rgba(200, 90, 70, 0.22); }
 body.skin-afterdark .sm-wl.win { color: #9fd9a8; }
-body.skin-afterdark .tstat.heating .t-status, body.skin-afterdark .tstat.heating .t-target { color: #ff9a62; }
-body.skin-afterdark .tstat.cooling .t-status, body.skin-afterdark .tstat.cooling .t-target { color: #8cc0ff; }
-body.skin-afterdark .wk-col { background: rgba(234, 219, 198, 0.05); }
-body.skin-afterdark .wk-col.today { background: rgba(240, 163, 92, 0.1); box-shadow: inset 0 0 0 1px var(--ad-amber); }
-body.skin-afterdark .wk-col.today .wk-dow { color: var(--ad-amber); }
-/* The night clock in the same amber, if night mode starts before 11pm. */
-body.skin-afterdark .night { background: rgba(8, 6, 12, 0.88); color: var(--ad-ink); }
+body.skin-afterdark .tstat.heating .t-status, body.skin-afterdark .tstat.heating .t-target { color: #ffad72; }
+body.skin-afterdark .tstat.cooling .t-status, body.skin-afterdark .tstat.cooling .t-target { color: #9cc8ff; }
+body.skin-afterdark .t-ctrl button { border-color: rgba(217, 183, 106, 0.45); }
+body.skin-afterdark .wk-col { background: rgba(241, 230, 208, 0.04); border-radius: 0; }
+body.skin-afterdark .wk-col.today { background: rgba(217, 183, 106, 0.1); box-shadow: inset 0 0 0 1px var(--ad-gold); }
+body.skin-afterdark .wk-col.today .wk-dow { color: var(--ad-gold); }
+/* The night clock, if night mode starts before 11pm. */
+body.skin-afterdark .night { background: rgba(6, 7, 6, 0.86); color: var(--ad-ink); }
 body.skin-afterdark .night-time .flip, body.skin-afterdark .night-time .fl-top, body.skin-afterdark .night-time .fl-bot { background: transparent; }
-body.skin-afterdark .night-time .flip { color: #f5b56e; text-shadow: 0 0 26px var(--ad-glow); }
-
-/* Fireflies: tiny warm lights wandering slowly and pulsing. */
-.ad-firefly {
-  position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #ffd27a;
-  box-shadow: 0 0 8px 3px rgba(255, 196, 90, 0.55);
-  animation: firefly-wander 24s ease-in-out infinite, firefly-pulse 3.5s ease-in-out infinite alternate;
-}
-@keyframes firefly-wander {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  25% { transform: translate3d(40px, -30px, 0); }
-  50% { transform: translate3d(-20px, -60px, 0); }
-  75% { transform: translate3d(-50px, -20px, 0); }
-}
-@keyframes firefly-pulse { from { opacity: 0.15; } to { opacity: 0.9; } }
+body.skin-afterdark .night-time .flip { color: var(--ad-gold-hi); font-family: var(--ad-didot); font-weight: 400; text-shadow: 0 0 24px rgba(243, 217, 149, 0.35); }
