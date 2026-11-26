@@ -358,7 +358,8 @@ The iPad has four looks and shows a different one each day, cycling through them
 - **Bento:** a dark page with every tile in its own solid color. A mustard clock, a blue weather tile, an indigo calendar, a green scores tile, a rust thermostat tile and a purple "What to wear" tile.
 - **Bauhaus:** a mid-century poster. A cream page with big flat shapes (coral circle, mustard half-moon, teal quarter-circle) peeking out behind square, black-outlined cards with color-block labels, Futura type, and a mustard clock tile.
 
-**Bears game days** beat everything else, holidays and the kids' weekend included: any day the
+**Bears game days** beat everything except a holiday's actual day (Thanksgiving Day, Christmas
+Day, Halloween, New Year's Day...), the kids' weekend included: any day the
 Bears play (as the Scores feed knows it, including a late game running past midnight), the hub
 goes navy and orange all day, with the bear-head logo filling the background behind
 see-through navy cards. Card headers get an orange stripe, the clock shows white jersey numerals

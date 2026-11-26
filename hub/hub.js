@@ -326,6 +326,7 @@
       },
     },
     thanksgiving: {
+      day: function (d) { return d.getMonth() === 10 && d.getDate() === thanksgivingDay(d.getFullYear()); },
       on: function (d) {
         if (d.getMonth() !== 10) return false;
         var t = thanksgivingDay(d.getFullYear());
@@ -344,6 +345,7 @@
       },
     },
     christmas: {
+      day: function (d) { return d.getMonth() === 11 && d.getDate() === 25; },
       on: function (d) { return d.getMonth() === 11; },
       icons: { agenda: "🎄", scores: "⭐", nest: "🔥", wear: "🧣" },
       greeting: function (d) {
@@ -430,10 +432,17 @@
     },
   };
 
+  // On a holiday's actual day the holiday wins over everything, Bears games included.
+  // Around it (the Wed/Fri of Thanksgiving week, the rest of December) a Bears game
+  // day still gets the Bears look. Single-day holidays are always their actual day.
   function activeHoliday(now) {
     if (holidayPreview) return holidayPreview;
-    if (!skinPreview && bearsGame(now)) return ""; // Bears game days beat holidays (see skins)
-    for (var name in HOLIDAYS) if (HOLIDAYS[name].on(now)) return name;
+    for (var name in HOLIDAYS) {
+      var h = HOLIDAYS[name];
+      if (!h.on(now)) continue;
+      if (!skinPreview && bearsGame(now) && !(h.day || h.on)(now)) return "";
+      return name;
+    }
     return "";
   }
 
@@ -481,7 +490,8 @@
   //   bauhaus  mid-century poster: cream page, big bold shapes, black-outlined
   //            square cards with color-block labels, a mustard clock tile
   // Bears game days (any day the Bears play, from the Scores feed) get their own
-  // look all day, ahead of everything else:
+  // look all day, ahead of everything but a holiday's actual day (Thanksgiving Day,
+  // Christmas Day, Halloween...; see activeHoliday):
   //   bears     navy and orange, sleeve stripes, a "Bear Down!" pennant on the clock,
   //             a footer pill following the game, and a football spiraling by
   // Weekends are for the kids, swapping every hour on the hour:
